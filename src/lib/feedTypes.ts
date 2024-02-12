@@ -1,0 +1,112 @@
+
+interface Story {
+    story_hash: string;
+    story_tags: string[];
+    story_date: string;
+    story_timestamp: string;
+    story_authors: string;
+    story_title: string;
+    story_permalink: string;
+    image_urls: string[];
+    secure_image_urls: Record<string, unknown>;
+    secure_image_thumbnails: Record<string, unknown>;
+    story_feed_id: number;
+    has_modifications: boolean;
+    comment_count: null | number;
+    comment_user_ids: string[];
+    share_count: null | number;
+    share_user_ids: string[];
+    guid_hash: string;
+    id: string;
+    friend_comments: unknown[];
+    friend_shares: unknown[];
+    public_comments: unknown[];
+    reply_count: number;
+    short_parsed_date: string;
+    long_parsed_date: string;
+    read_status: number;
+    intelligence: {
+        feed: number;
+        author: number;
+        tags: number;
+        title: number;
+    };
+    score: number;
+}
+
+interface StoryWithColor extends Story {
+    color: string;
+}
+
+
+
+
+interface FeedInfo {
+    id: number;
+    feed_title: string;
+    feed_address: string;
+    feed_link: string;
+    num_subscribers: number;
+    updated: string;
+    updated_seconds_ago: number;
+    fs_size_bytes: number;
+    archive_count: number;
+    last_story_date: string;
+    last_story_seconds_ago: number;
+    stories_last_month: number;
+    average_stories_per_month: number;
+    min_to_decay: number;
+    subs: number;
+    is_push: boolean;
+    is_newsletter: boolean;
+    fetched_once: boolean;
+    search_indexed: boolean;
+    not_yet_fetched: boolean;
+    favicon_color: string;
+    favicon_fade: string;
+    favicon_border: string;
+    favicon_text_color: string;
+    favicon_fetching: boolean;
+    favicon_url: string;
+    s3_page: boolean;
+    s3_icon: boolean;
+    disabled_page: boolean;
+    ps: number;
+    nt: number;
+    ng: number;
+    active: boolean;
+    feed_opens: number;
+    subscribed: boolean;
+}
+
+interface FeedWithColor extends FeedInfo {
+    color: string;
+}
+
+interface FeedWithUnreadStories extends FeedWithColor {
+    unreadStories: string[];
+}
+
+
+interface Feeds {
+    [key: string]: FeedInfo
+}
+
+interface FeedsWithColor {
+    [key: string]: FeedWithColor;
+}
+
+interface FeedsWithUnreadStories {
+    [key: string]: FeedWithUnreadStories;
+}
+
+export type {
+    Story,
+    StoryWithColor,
+    FeedInfo,
+    FeedWithColor,
+    FeedWithUnreadStories,
+    Feeds,
+    FeedsWithColor,
+    FeedsWithUnreadStories
+}
