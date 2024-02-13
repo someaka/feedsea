@@ -1,5 +1,5 @@
 import chroma from 'chroma-js';
-import type { FeedsWithColor, FeedWithColor, Feeds } from '../../lib/feedTypes';
+import type { FeedsWithColor, FeedWithColor, Feeds } from '../../lib/types';
 
 function getColorForFeed(index: number, totalFeeds: number): string {
 

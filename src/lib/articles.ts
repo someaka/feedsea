@@ -1,11 +1,11 @@
 import axios from 'axios';
-import { deflateSync } from 'fflate';
+import { compress } from './compression';
 import { v4 as uuidv4 } from 'uuid';
 import { extract } from '@extractus/article-extractor';
 import sanitizeHtml from 'sanitize-html';
 import fastq from 'fastq';
 import type { queue, done } from 'fastq';
-import type { FeedWithUnreadStories } from './feedTypes';
+import type { FeedWithUnreadStories, ArticleType } from './types';
 
 // import { getSubscriber } from './subscribers';
 
@@ -19,7 +19,7 @@ interface ArticleTask {
 }
 
 
-class Article {
+class Article implements ArticleType {
     id: string;
     feedId: string;
     feedColor: string;
@@ -41,6 +41,7 @@ class Articles {
     private static instance: Articles | null = null;
     private requestQueue: queue<ArticleTask, string>;
     private userAgent: string;
+    private compress: typeof compress;
 
     public articleEvents: EventEmitter;
 
@@ -48,6 +49,7 @@ class Articles {
         this.userAgent = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
         this.requestQueue = fastq(this, this.worker, 1);
         this.articleEvents = new EventEmitter();
+        this.compress = compress;
     }
 
     static getInstance(): Articles {
@@ -59,11 +61,16 @@ class Articles {
 
     private async worker(task: ArticleTask, callback: done<string>): Promise<void> {
         try {
-            const article = await this.fetchArticle(task);
-            const compressedArticles = this.compress([article]);
-            this.articleEvents.emit('articleFetched', compressedArticles);
-            console.log(`Article processed for feed ${task.feedId}: ${task.story}`);
-            callback(null, compressedArticles);
+            if (task.story === "fetchStarting") {
+                this.articleEvents.emit('fetchStarting');
+                callback(null);
+            } else {
+                const article = await this.fetchArticle(task);
+                const compressedArticles = this.compress([article]);
+                this.articleEvents.emit('articleFetched', task.feedId, compressedArticles,);
+                console.log(`Article processed for feed ${task.feedId}: ${task.story}`);
+                callback(null, compressedArticles);
+            }
         } catch (error) {
             callback(error as Error);
         }
@@ -103,6 +110,14 @@ class Articles {
     }
 
     queueFeedRequest(selectedFeed: FeedWithUnreadStories): void {
+        this.requestQueue.push({
+            feedId: selectedFeed.id.toString(),
+            feedColor: selectedFeed.color,
+            story: "fetchStarting"
+        }, () => {
+
+        });
+
         selectedFeed.unreadStories.forEach(story => {
             this.requestQueue.push(
                 {
@@ -116,16 +131,14 @@ class Articles {
                     } else {
                         logger.error(`Error processing article request for feed ${selectedFeed.id}: ${err}`);
                     }
+                    // if (this.requestQueue.idle()) {
+                    //    // this.articleEvents.emit('jobComplete');
+                    // }
                 });
         });
     }
 
 
-    private compress(articles: Article[]): string {
-        const jsonStr = JSON.stringify(articles);
-        const encoded = deflateSync(new TextEncoder().encode(jsonStr));
-        return btoa(String.fromCharCode(...encoded));
-    }
 
     stopAllRequests(): void {
         this.requestQueue.kill();
@@ -147,6 +160,3 @@ export {
     stopAllRequests
 };
 
-export type {
-    Article
-};

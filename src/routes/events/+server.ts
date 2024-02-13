@@ -1,6 +1,6 @@
 import { hasSubscriber, removeSubscriber } from '$lib/subscribers';
 import { articleEvents } from '$lib/articles';
-import type { Article } from '$lib/articles';
+
 
 export async function GET({ request }) {
     const clientId = request.headers.get('cookie')?.split('=')[2];
@@ -16,22 +16,30 @@ export async function GET({ request }) {
 
     const stream = new TransformStream({
         start(controller) {
-            const articleFetchedListener = (article: Article) => {
-                controller.enqueue(`event: articleFetched\ndata: ${JSON.stringify(article)}\n\n`);
+            const fetchingStartedListener = () => {
+                controller.enqueue(`event: fetchStarting\ndata: ${JSON.stringify("")}\n\n`);
+            };
+
+            const articleFetchedListener = (feedId: string, compressedArticles: string) => {
+                const eventData = { feedId, compressedArticles };
+                controller.enqueue(`event: articleFetched\ndata: ${JSON.stringify(eventData)}\n\n`);
             };
 
             const jobCompleteListener = () => {
-                articleEvents.off('jobComplete', jobCompleteListener);
+                controller.enqueue(`event: jobComplete\n\n`);
+                articleEvents.off('fetchStarting', fetchingStartedListener);
                 articleEvents.off('articleFetched', articleFetchedListener);
+                articleEvents.off('jobComplete', jobCompleteListener);
                 removeSubscriber(clientId);
                 controller.terminate();
             };
 
+            articleEvents.on('fetchStarting', fetchingStartedListener);
             articleEvents.on('articleFetched', articleFetchedListener);
             articleEvents.on('jobComplete', jobCompleteListener);
         },
         flush() {
-            removeSubscriber(clientId);
+            // removeSubscriber(clientId);
         }
     });
 

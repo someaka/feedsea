@@ -1,4 +1,5 @@
 import loginUser from '../../components/login/loginService';
+import { addSubscriber } from '$lib/subscribers';
 
 export async function POST(event) {
   const request = event.request;
@@ -7,6 +8,10 @@ export async function POST(event) {
   try {
     const loginResult = await loginUser(username, password);
     if (loginResult.authenticated && loginResult.sessionCookie) {
+
+      const clientId = loginResult.sessionCookie?.split('=')[1];
+      addSubscriber(clientId);
+  
       const newCookie = `sessionid=${loginResult.sessionCookie}; HttpOnly; Secure; SameSite=None; Max-Age=3600`;
       const options: ResponseInit = {
         status:  200,

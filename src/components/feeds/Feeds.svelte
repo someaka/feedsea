@@ -1,91 +1,76 @@
 <script lang="ts">
-	import axios from 'axios';
-	import ArticlesPanel from '../articles/ArticlesPanel.svelte';
-	import { articleCache } from '../../lib/articleCacheStore';
 	import { onMount, onDestroy } from 'svelte';
-	import { selectFeed as selectFeedAPI, setupSSE, cleanup } from '../../lib/articlesFromFeeds';
+	import { feedsStore, articlesStore } from '$lib/stores';
+	import { fetchFeeds, selectFeed } from '$lib/api';
+	import { startSSE, stopSSE } from '$lib/SSEService';
+	import ArticlesPanel from '../articles/ArticlesPanel.svelte';
+	import type { FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
+	import { isLoadingFeeds, isLoadingArticles } from '$lib/loadingState';
 
-	import type { FeedWithUnreadStories } from '../../lib/feedTypes';
-	import type { Article } from '../../lib/articles';
+	let feeds: FeedWithUnreadStories[] = [];
+	let selectedFeed: FeedWithUnreadStories | null = null;
 
-	let feeds: FeedWithUnreadStories;
-	let isLoading = true;
-	let selectedFeed: FeedWithUnreadStories;
-	let articles: Article[];
-	let listernersUp = false;
+	// Subscribe to feedsStore
+	const unsubscribeFeeds = feedsStore.subscribe((value) => {
+		feeds = Object.values(value);
+		isLoadingFeeds.set(false);
+	});
 
 	onMount(async () => {
-		try {
-			const response = await axios.get('/feeds', { withCredentials: true });
-			feeds = response.data;
-		} catch (error) {
-			console.error('Failed to fetch feeds:', error);
-		} finally {
-			isLoading = false;
-		}
+		isLoadingFeeds.set(true);
+		await fetchFeeds();
+		isLoadingFeeds.set(false);
+		startSSE();
 	});
-
-	let cachedArticles: Article[];
-	const unsubscribeFunction = articleCache.subscribe((cache) => {
-		cachedArticles = cache.get(selectedFeed?.id.toString()) as Article[];
-	});
-
-	const selectFeed = async (feed: FeedWithUnreadStories) => {
-		selectedFeed = feed;
-
-		if (cachedArticles && cachedArticles.length > 0) {
-			articles = cachedArticles;
-		} else {
-			articles = [];
-			const queueResponse = await selectFeedAPI(feed);
-
-			if (queueResponse.status === 200 && !listernersUp) {
-				const addArticleAndUpdateCache = (article: Article) => {
-					articles = [...articles, article];
-					articleCache.update((cache) => {
-						const currentArticles = cache.get(feed.id.toString()) || [];
-						cache.set(feed.id.toString(), [...currentArticles, article]);
-						return cache;
-					});
-				};
-				const cleanupAndLogCompletion = () => {
-					listernersUp = false;
-					cleanup();
-					console.log('Job complete');
-				};
-				setupSSE(addArticleAndUpdateCache, cleanupAndLogCompletion);
-				listernersUp = true;
-			}
-		}
-	};
 
 	onDestroy(() => {
-		unsubscribeFunction();
-		cleanup();
+		unsubscribeFeeds();
+		stopSSE();
 	});
+
+	async function sendSelectFeed(feed: FeedWithUnreadStories) {
+		selectedFeed = feed;
+		isLoadingArticles.set(true); // Start loading articles
+		let cachedArticles: Article[] = [];
+		const unsubscribe = articlesStore.subscribe(($articlesStore) => {
+			cachedArticles = $articlesStore[feed.id];
+		});
+		unsubscribe(); // Immediately unsubscribe since we only need the current value
+
+		if (cachedArticles && cachedArticles.length > 0) {
+			console.log('Using cached articles for feed', feed.id);
+			isLoadingArticles.set(false); // Stop loading articles
+		} else {
+			console.log('Fetching new articles for feed', feed.id);
+			await selectFeed(feed); // This should trigger fetching and updating the articlesStore
+			isLoadingArticles.set(false); // Stop loading articles
+		}
+	}
 </script>
 
 <div>
 	<h1>Feeds</h1>
-	{#if isLoading}
-		<div class="spinner"></div>
+	{#if $isLoadingFeeds}
+		<div class="spinner" aria-label="Loading feeds"></div>
 	{:else}
-		{#each Object.entries(feeds) as [id, feed]}
-			<button class="feed-item" on:click|preventDefault={() => selectFeed(feed)}>
-				<h2>{feed.feed_title}</h2>
+		{#each feeds as feed}
+			<button
+				class="feed-item"
+				on:click={() => sendSelectFeed(feed)}
+				style="background-color: {feed.color};"
+			>
+				{feed.feed_title}
 			</button>
 		{/each}
 	{/if}
 </div>
 
 {#if selectedFeed}
-	<ArticlesPanel isVisible={selectedFeed !== undefined} {articles} />
-	{#each articles as article}
-		<div class="article">
-			<h3>{article.title}</h3>
-			<p>{article.text}</p>
-		</div>
-	{/each}
+	{#if $isLoadingArticles}
+		<div class="spinner" aria-label="Loading articles"></div>
+	{:else}
+		<ArticlesPanel {selectedFeed} />
+	{/if}
 {/if}
 
 <style>
@@ -96,6 +81,7 @@
 		border-radius: 50%;
 		border-left-color: #09f;
 		animation: spin 1s linear infinite;
+		margin: auto;
 	}
 
 	@keyframes spin {
@@ -105,11 +91,17 @@
 	}
 
 	.feed-item {
+		display: block;
 		cursor: pointer;
+		padding: 10px;
+		margin: 5px 0;
+		border: none;
+		background-color: #f0f0f0;
+		transition: background-color 0.3s;
 	}
 
-	.article {
-		margin-top: 10px;
+	.feed-item:hover,
+	.feed-item:active {
+		background-color: #e2e2e2;
 	}
-
 </style>

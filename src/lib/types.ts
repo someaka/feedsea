@@ -100,6 +100,17 @@ interface FeedsWithUnreadStories {
     [key: string]: FeedWithUnreadStories;
 }
 
+
+
+interface ArticleType {
+    id: string;
+    feedId: string;
+    feedColor: string;
+    title: string;
+    text: string;
+    url: string;
+}
+
 export type {
     Story,
     StoryWithColor,
@@ -108,5 +119,6 @@ export type {
     FeedWithUnreadStories,
     Feeds,
     FeedsWithColor,
-    FeedsWithUnreadStories
+    FeedsWithUnreadStories,
+    ArticleType
 }

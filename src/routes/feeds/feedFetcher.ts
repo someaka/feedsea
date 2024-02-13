@@ -1,7 +1,7 @@
 import axios, { AxiosError, type AxiosResponse } from 'axios';
 // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 import { serverLogger as logger } from '../../logger';
-import type { Feeds, Story, StoryWithColor,  } from '../../lib/feedTypes'
+import type { Feeds, Story, StoryWithColor,  } from '../../lib/types'
 
 
 const NEWSBLUR_URL = 'https://www.newsblur.com';

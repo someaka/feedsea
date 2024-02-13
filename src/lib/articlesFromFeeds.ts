@@ -1,19 +1,12 @@
-import axios, { type AxiosResponse } from 'axios';
-import { inflateSync } from 'fflate';
-
-import type { FeedWithUnreadStories } from './feedTypes';
-import type { Article } from './articles';
-
+import { decompress } from './compression';
+import type { ArticleType as Article } from '$lib/types';
 
 let eventSource: EventSource | null = null;
 
-export async function selectFeed(feed: FeedWithUnreadStories): Promise<AxiosResponse> {
-    // Send the selected feed to the server
-    return await axios.post("/select-feed", feed, { withCredentials: true });
-}
+
 
 export function setupSSE(
-    onArticleFetched: (article: Article) => void,
+    onArticleFetched: (article: Article | undefined) => void,
     onJobComplete: () => void
 ): void {
     if (eventSource) {
@@ -23,10 +16,9 @@ export function setupSSE(
     eventSource = new EventSource(`/events`, { withCredentials: true });
 
 
-    // eventSource.addEventListener('articleFetched', function(event) {
-    //     const data = decompress(event.data);
-    //     data.forEach(article => onArticleFetched(article));
-    // });
+    function firstmessage() {
+        onArticleFetched(undefined);
+    }
 
     function processMessage(event: { data: string; }) {
         const data = decompress(event.data);
@@ -35,6 +27,7 @@ export function setupSSE(
 
     function removeListeners(): void {
         if (eventSource) {
+            eventSource.removeEventListener('fetchStarting', firstmessage);
             eventSource.removeEventListener('articleFetched', processMessage);
             eventSource.removeEventListener('jobComplete', cleanupJobComplete);
         }
@@ -45,6 +38,7 @@ export function setupSSE(
         removeListeners();
     };
 
+    eventSource.addEventListener('fetchStarting', firstmessage);
     eventSource.addEventListener('articleFetched', processMessage);
     eventSource.addEventListener('jobComplete', cleanupJobComplete);
 
@@ -56,30 +50,7 @@ export function setupSSE(
 
 }
 
-function decompress(compressedArticles: string): Article[] {
-    const base64Data = compressedArticles;
-    // strip ''
-    const strippedBase64Data = base64Data.substring(1, base64Data.length - 1);
-    const binaryString = atob(strippedBase64Data);
-    const data = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-        data[i] = binaryString.charCodeAt(i);
-    }
 
-    const decompressedData = inflateSync(data);
-    return uint8ArrayToArticle(decompressedData);
-}
-
-function uint8ArrayToArticle(uint8Array: Uint8Array): Article[] {
-    try {
-        const decoder = new TextDecoder();
-        const jsonStr = decoder.decode(uint8Array);
-        return JSON.parse(jsonStr) as Article[];
-    } catch (error) {
-        console.error("Failed to convert Uint8Array to Article[]", error);
-        throw error;
-    }
-}
 
 
 export function cleanup(): void {

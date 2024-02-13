@@ -1,11 +1,12 @@
 <script>
+	import axios from 'axios';
+	import { onDestroy } from 'svelte';
 	import isLoggedIn from './stores/auth';
 	import Feeds from './feeds/Feeds.svelte';
-	import { onDestroy } from 'svelte';
-	import axios from 'axios';
+	import { callServerCleanUp } from '$lib/api';
 
 	onDestroy(() => {
-        axios.post('/cleanup', {}, { withCredentials: true });
+		callServerCleanUp();
 	});
 
 	// Reactive statement to watch the isLoggedIn store
