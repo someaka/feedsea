@@ -4,20 +4,20 @@
     import type { FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
     import { isLoadingArticles } from '$lib/loadingState';
 
-    export let selectedFeed: FeedWithUnreadStories;
+    export let latestSelectedFeed: FeedWithUnreadStories;
 
     let articles: Article[] = [];
     let isVisible: boolean = false;
     let startX: number, startWidth: number;
 
     // When selectedFeed changes, automatically show the panel
-    $: if (selectedFeed) {
+    $: if (latestSelectedFeed) {
         isVisible = true;
         // Optionally, reset articles array or perform other actions here
     }
 
     // Reactive subscription to articlesStore
-    $: $articlesStore[selectedFeed?.id] ? articles = $articlesStore[selectedFeed.id] : articles = [];
+    $: $articlesStore[latestSelectedFeed?.id] ? articles = $articlesStore[latestSelectedFeed.id] : articles = [];
     $: if (articles.length > 0) isLoadingArticles.set(false); // Stop loading when the first article appears
 
     function initDrag(e: MouseEvent) {
@@ -51,8 +51,8 @@
 {:else}
     <div class="articles-panel-wrapper" class:visible={isVisible}>
         <div class="resizer" on:mousedown={initDrag} role="button" tabindex="0"></div>
-        {#if selectedFeed}
-            <h3>{selectedFeed.feed_title}</h3>
+        {#if latestSelectedFeed}
+            <h3>{latestSelectedFeed.feed_title}</h3>
             {#if articles.length > 0}
                 <ul>
                     {#each articles as article (article.id)}
