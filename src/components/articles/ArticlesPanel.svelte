@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onDestroy } from 'svelte';
-    import { articlesStore } from '$lib/stores';
+    import { articlesStore } from '../stores/stores';
     import type { FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
     import { isLoadingArticles } from '$lib/loadingState';
 

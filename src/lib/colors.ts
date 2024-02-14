@@ -1,5 +1,5 @@
 import chroma from 'chroma-js';
-import type { FeedsWithColor, FeedWithColor, Feeds } from '../../lib/types';
+import type { FeedsWithColor, FeedWithColor, Feeds } from './types';
 
 function getColorForFeed(index: number, totalFeeds: number): string {
 
@@ -41,7 +41,7 @@ export function generateColors(feeds: Feeds): FeedsWithColor {
 }
 
 
-export function getColorFromString(color: string) {
+export function getColorFromString(color: string) : string {
     // Extract the hue, saturation, and lightness components from the color string
     const hslMatch = color.match(/hsl\(([^,]+),\s*([^,]+)%,\s*([^,]+)%\)/);
     if (!hslMatch) {

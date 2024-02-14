@@ -1,5 +1,5 @@
 
-import { articlesStore } from './stores';
+import { articlesStore } from '../components/stores/stores';
 import { decompress } from './compression';
 
 let eventSource: EventSource | null = null;

@@ -1,5 +1,5 @@
 import axios, { type AxiosResponse } from 'axios';
-import { feedsStore } from './stores';
+import { feedsStore } from '../components/stores/stores';
 import type { FeedWithUnreadStories } from './types';
 
 

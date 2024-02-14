@@ -1,6 +1,6 @@
 
 import { fetchFeeds, fetchStories } from './feedFetcher';
-import { generateColors } from './colors';
+import { generateColors } from '../../lib/colors';
 import type { RequestHandler } from '@sveltejs/kit';
 import type { FeedsWithUnreadStories, FeedsWithColor } from '../../lib/types';
 

@@ -111,6 +111,17 @@ interface ArticleType {
     url: string;
 }
 
+interface FeedChange {
+    type: 'add' | 'remove';
+    feedId: number;
+    articles?: ArticleType[];
+}
+
+interface SelectedFeedsState {
+    feeds: Record<string, ArticleType[]>;
+    change?: FeedChange;
+}
+
 export type {
     Story,
     StoryWithColor,
@@ -120,5 +131,7 @@ export type {
     Feeds,
     FeedsWithColor,
     FeedsWithUnreadStories,
-    ArticleType
+    ArticleType,
+    FeedChange,
+    SelectedFeedsState,
 }

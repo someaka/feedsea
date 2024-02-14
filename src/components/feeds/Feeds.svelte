@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { feedsStore, articlesStore } from '$lib/stores';
+	import { feedsStore, articlesStore, selectedFeedsStore } from '../stores/stores';
 	import { fetchFeeds, selectFeed } from '$lib/api';
 	import { startSSE, stopSSE } from '$lib/SSEService';
 	import ArticlesPanel from '../articles/ArticlesPanel.svelte';
-	import type { FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
 	import { isLoadingFeeds, isLoadingArticles } from '$lib/loadingState';
+
+	import type { FeedChange, FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
 
 	let feeds: FeedWithUnreadStories[] = [];
 	let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds
@@ -30,39 +31,59 @@
 	});
 
 	async function handleFeedClick(feed: FeedWithUnreadStories) {
-		const index = selectedFeeds.findIndex((f) => f.id === feed.id);
-		if (index === -1) {
-			selectedFeeds = [...selectedFeeds, feed];
-			latestSelectedFeed = feed; // Update the latest selected feed
-		} else {
-			selectedFeeds = selectedFeeds.filter((f) => f.id !== feed.id);
-			if (latestSelectedFeed && latestSelectedFeed.id === feed.id) {
-				latestSelectedFeed = selectedFeeds[selectedFeeds.length - 1] || null;
+		let feedAdded = false;
+		selectedFeedsStore.update(({ feeds }) => {
+			const updatedFeeds = { ...feeds };
+			let updatedChange: FeedChange;
+
+			if (!feeds[feed.id]) {
+				// Feed is being selected
+				updatedFeeds[feed.id] = [];
+				updatedChange = { type: 'add', feedId: feed.id, articles: [] };
+				feedAdded = true;
+			} else {
+				// Feed is being deselected
+				delete updatedFeeds[feed.id];
+				updatedChange = { type: 'remove', feedId: feed.id };
+				if (latestSelectedFeed && latestSelectedFeed.id === feed.id) {
+					latestSelectedFeed = null;
+				}
 			}
+
+			return { feeds: updatedFeeds, change: updatedChange };
+		});
+
+		if (feedAdded) {
+			latestSelectedFeed = feed;
 		}
-		await sendSelectFeed(feed); // Call sendSelectFeed when a feed is clicked
+
+		await sendSelectFeed(feed);
 	}
 
 	async function sendSelectFeed(feed: FeedWithUnreadStories) {
-		isLoadingArticles.set(true); // Start loading articles
-		let cachedArticles: Article[] = [];
-		const unsubscribe = articlesStore.subscribe(($articlesStore) => {
-			cachedArticles = $articlesStore[feed.id];
-		});
-		unsubscribe(); // Immediately unsubscribe since we only need the current value
-
-		if (cachedArticles && cachedArticles.length > 0) {
-			console.log('Using cached articles for feed', feed.id);
-			isLoadingArticles.set(false); // Stop loading articles
-		} else {
-			console.log('Fetching new articles for feed', feed.id);
-			await selectFeed(feed); // This should trigger fetching and updating the articlesStore
-			isLoadingArticles.set(false); // Stop loading articles
+		if (!latestSelectedFeed || latestSelectedFeed.id !== feed.id) {
+			// Only fetch articles if the feed is the latest selected feed
+			return;
 		}
-	}
 
-	function isSelected(feed: FeedWithUnreadStories): boolean {
-		return selectedFeeds.some((f) => f.id === feed.id);
+		isLoadingArticles.set(true);
+		let cachedArticles: Article[] = [];
+		// Assume selectFeed function fetches articles and updates articlesStore
+		await selectFeed(feed);
+
+		articlesStore.subscribe(($articlesStore) => {
+			cachedArticles = $articlesStore[feed.id] || [];
+		})(); // Immediately invoke to unsubscribe
+
+		selectedFeedsStore.update(({ feeds }) => {
+			const updatedFeeds = { ...feeds, [feed.id]: cachedArticles };
+			const type: 'add' | 'remove' = 'add'; 
+			const updatedChange = { type, feedId: feed.id, articles: cachedArticles };
+
+			return { feeds: updatedFeeds, change: updatedChange };
+		});
+
+		isLoadingArticles.set(false);
 	}
 </script>
 
@@ -136,7 +157,7 @@
 	.feed-item.selected {
 		/* background-color: #102402d3 !important; */
 		transform: translateX(-2px); /* Retract the button 2px to the left */
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); 
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 
 		/* border: 1px solid #d0d0d0; */
 		transition:

@@ -1,8 +1,9 @@
 <script>
 	import { onDestroy } from 'svelte';
 	import isLoggedIn from './stores/auth';
-	import Feeds from './feeds/Feeds.svelte';
 	import { callServerCleanUp } from '$lib/api';
+	import Feeds from './feeds/Feeds.svelte';
+	import Graph from './graph/Graph.svelte';
 
 	onDestroy(() => {
 		callServerCleanUp();
@@ -14,6 +15,7 @@
 
 <div class="main-wrapper {mainWrapperClass}">
 	<Feeds />
+	<Graph />
 </div>
 
 <style>
