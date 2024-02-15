@@ -77,8 +77,11 @@
 
 		selectedFeedsStore.update(({ feeds }) => {
 			const updatedFeeds = { ...feeds, [feed.id]: cachedArticles };
-			const type: 'add' | 'remove' = 'add'; 
-			const updatedChange = { type, feedId: feed.id, articles: cachedArticles };
+			const updatedChange: FeedChange = {
+				type: 'new',
+				feedId: feed.id,
+				articles: cachedArticles
+			};
 
 			return { feeds: updatedFeeds, change: updatedChange };
 		});

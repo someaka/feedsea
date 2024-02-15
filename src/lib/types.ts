@@ -112,7 +112,7 @@ interface ArticleType {
 }
 
 interface FeedChange {
-    type: 'add' | 'remove';
+    type: 'add' | 'remove' | 'new';
     feedId: number;
     articles?: ArticleType[];
 }
@@ -121,6 +121,46 @@ interface SelectedFeedsState {
     feeds: Record<string, ArticleType[]>;
     change?: FeedChange;
 }
+
+interface Node {
+    id: string;
+    title: string;
+    color: string;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    degree: number;
+    mass: number;
+    size: number;
+}
+
+
+interface GraphData {
+    nodes: Node[];
+    links: Link[];
+ }
+
+interface Link {
+    source: Node;
+    target: Node;
+    weight: number;
+    color: string,
+    day_color: string,
+    night_color: string
+}
+
+interface PendingPair {
+    id1: string;
+    id2: string;
+
+}
+
+interface Pair extends PendingPair {
+    similarity: number;
+}
+
+
 
 export type {
     Story,
@@ -134,4 +174,11 @@ export type {
     ArticleType,
     FeedChange,
     SelectedFeedsState,
+    Node,
+    Link,
+    GraphData,
+    PendingPair,
+    Pair,
+
+
 }

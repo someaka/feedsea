@@ -1,23 +1,27 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { updateGraphForSelectedFeeds } from './graph';
-    import { selectedFeedsStore } from '../stores/stores';
-    import type { ArticleType as Article } from '$lib/types';
+	import { selectedFeedsStore } from '../stores/stores';
+	import type { ArticleType as Article } from '$lib/types';
 
 	let graphContainer;
 
-    import { handleAddition, handleRemoval } from './graph';
+	import { handleAddition, handleRemoval, handleNewArticles } from './graph';
 
-    selectedFeedsStore.subscribe(({ feeds, change }) => {
-    if (change) {
-      if (change.type === 'add' && change.feedId && change.articles) {
-        handleAddition(change.feedId, change.articles);
-      } else if (change.type === 'remove' && change.feedId) {
-        handleRemoval(change.feedId);
-      }
-    }
-  });
+	selectedFeedsStore.subscribe(({ feeds, change }) => {
+		if (change) {
+			if (change.type === 'new' && change.feedId && change.articles) {
+				handleNewArticles(change.feedId, change.articles);
+			} else if (change.type === 'add' && change.feedId && change.articles) {
+				// Only process articles that are unprocessed or have embeddings but not all cosine similarities calculated
+        // TODO
+        // TODO articles to nodes and links stored
+				(change.feedId, change.articles);
+			} else if (change.type === 'remove' && change.feedId) {
+				handleRemoval(change.feedId);
+			}
 
+		}
+	});
 
 </script>
 
