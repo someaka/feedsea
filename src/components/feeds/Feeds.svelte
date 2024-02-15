@@ -41,6 +41,7 @@
 				updatedFeeds[feed.id] = [];
 				updatedChange = { type: 'add', feedId: feed.id, articles: [] };
 				feedAdded = true;
+				selectedFeeds = [...selectedFeeds, feed];
 			} else {
 				// Feed is being deselected
 				delete updatedFeeds[feed.id];
@@ -48,6 +49,7 @@
 				if (latestSelectedFeed && latestSelectedFeed.id === feed.id) {
 					latestSelectedFeed = null;
 				}
+				selectedFeeds = selectedFeeds.filter(f => f.id !== feed.id);
 			}
 
 			return { feeds: updatedFeeds, change: updatedChange };

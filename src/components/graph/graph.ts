@@ -1,5 +1,5 @@
 import type { GraphData } from '$lib/types';
-import handleNewArticles from './articleProcessor';
+import { handleNewArticles } from './articleProcessor';
 
 // TODO 
 // if articles have already been calculated display nodes with their links
