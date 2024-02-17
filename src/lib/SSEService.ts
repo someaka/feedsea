@@ -27,7 +27,10 @@ export function startSSE() {
         });
 
         selectedFeedsStore.update(({ feeds }) => {
-            const updatedFeeds = { ...feeds, [id]: articlesBatch };
+            const updatedFeeds = {
+                ...feeds,
+                [id]: feeds[id] ? [...feeds[id], ...articlesBatch] : articlesBatch
+            };
             const updatedChange: FeedChange = {
                 type: 'new',
                 feedId: +id,

@@ -41,10 +41,10 @@ function nodesToLinks(
     for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
             const mix = chroma.mix(nodes[i].color, nodes[j].color, 0.5, 'rgb');
-            const day = mix.brighten(0.77).hex();
+            const day = mix.brighten(0.07).hex();
             const night = mix.darken(0.77).hex();
             const similarity = getSimilarity(nodes[i].id, nodes[j].id, filteredLinks);
-            links.push({
+            if (similarity) links.push({
                 source: nodes[i],
                 target: nodes[j],
                 weight: similarity,
@@ -65,7 +65,7 @@ function getSimilarity(
     const pairKey = `${id1}-${id2}`;
     const reverseKey = `${id2}-${id1}`;
     const pair = pairsStore[pairKey] || pairsStore[reverseKey];
-    return pair?.similarity ?? -2;
+    return pair?.similarity;
 }
 
 export {

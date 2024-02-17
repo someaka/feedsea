@@ -37,7 +37,6 @@
 		handleBeforeUnload();
 	});
 
-
 	async function handleFeedClick(feed: FeedWithUnreadStories) {
 		let feedAdded = false;
 		selectedFeedsStore.update(({ feeds }) => {
@@ -46,6 +45,7 @@
 
 			if (!feeds[feed.id]) {
 				// Feed is being selected
+				updatedFeeds[feed.id] = get(articlesStore)[feed.id];
 				updatedChange = { type: 'add', feedId: feed.id, articles: [] };
 				feedAdded = true;
 				selectedFeeds = [...selectedFeeds, feed];
@@ -67,58 +67,58 @@
 			// Check if the feed is already in the cache before sending the request
 			const cachedArticles = get(articlesStore)[feed.id];
 			if (!cachedArticles || cachedArticles.length === 0) {
-				await sendSelectFeed(feed);
+				await selectFeed(feed);
 			}
 		}
 	}
 
-	async function sendSelectFeed(feed: FeedWithUnreadStories) {
-		if (!latestSelectedFeed || latestSelectedFeed.id !== feed.id) {
-			// Only fetch articles if the feed is the latest selected feed
-			return;
+	let selectAll = true; // True means "Select All" is shown, false for "Unselect All"
+
+	function toggleSelectAll() {
+		if (selectAll) {
+			// Logic to select all feeds
+			feeds.forEach(async (feed) => {
+				if (!selectedFeeds.some((f) => f.id === feed.id)) {
+					await handleFeedClick(feed);
+				}
+			});
+		} else {
+			// Logic to unselect all feeds
+			selectedFeeds.slice().forEach(async (feed) => {
+				await handleFeedClick(feed);
+			});
 		}
-
-		isLoadingArticles.set(true);
-		let cachedArticles: Article[] = [];
-		// Assume selectFeed function fetches articles and updates articlesStore
-		await selectFeed(feed);
-
-		// articlesStore.subscribe(($articlesStore) => {
-		// 	cachedArticles = $articlesStore[feed.id] || [];
-		// })(); // Immediately invoke to unsubscribe
-
-		// selectedFeedsStore.update(({ feeds }) => {
-		// 	const updatedFeeds = { ...feeds, [feed.id]: cachedArticles };
-		// 	const updatedChange: FeedChange = {
-		// 		type: 'new',
-		// 		feedId: feed.id,
-		// 		articles: cachedArticles
-		// 	};
-
-		// 	return { feeds: updatedFeeds, change: updatedChange };
-		// });
-
-		isLoadingArticles.set(false);
+		selectAll = !selectAll;
 	}
 </script>
 
-<div>
-	<h1>Feeds</h1>
-	{#if $isLoadingFeeds}
-		<div class="spinner" aria-label="Loading feeds"></div>
-	{:else}
-		{#each feeds as feed}
+<div class="feeds-wrapper">
+	<div class="feeds-container {$isLoadingFeeds ? 'loading' : ''}">
+		{#if $isLoadingFeeds}
+			<h1>Feeds</h1>
+			<div class="spinner" aria-label="Loading feeds"></div>
+		{:else}
 			<button
 				class="feed-item"
-				class:selected={selectedFeeds.some((f) => f.id === feed.id)}
-				on:click={() => handleFeedClick(feed)}
-				style="background-color: {feed.color};"
+				on:click={toggleSelectAll}
+				style="color: #fff; padding: 9px 20px; margin-top: 7px; background-color: #9156f0;"
 			>
-				<div class="feed-item-content">{feed.feed_title}</div>
-				<div class="unread-count">{feed.nt}</div>
+				<div class="feed-item-content">{selectAll ? 'Select All' : 'Unselect All'}</div>
 			</button>
-		{/each}
-	{/if}
+
+			{#each feeds as feed}
+				<button
+					class="feed-item"
+					class:selected={selectedFeeds.some((f) => f.id === feed.id)}
+					on:click={() => handleFeedClick(feed)}
+					style="background-color: {feed.color};"
+				>
+					<div class="feed-item-content">{feed.feed_title}</div>
+					<div class="unread-count">{feed.nt}</div>
+				</button>
+			{/each}
+		{/if}
+	</div>
 </div>
 
 {#if latestSelectedFeed}
@@ -137,7 +137,8 @@
 		border-radius: 50%;
 		border-left-color: #09f;
 		animation: spin 1s linear infinite;
-		margin: auto;
+		/* margin: auto; */
+		margin-left: 10px;
 	}
 
 	@keyframes spin {
@@ -229,5 +230,43 @@
 	.feed-item:focus {
 		outline: none;
 		/* box-shadow: 0 0 0 1px rgba(0, 123, 255, 0.5); */
+	}
+
+	.feeds-wrapper {
+		display: inline-block; /* Or width: fit-content; */
+		max-height: 100vh;
+		overflow: hidden; /* Prevents the wrapper from expanding beyond the width of its content */
+	}
+
+	.feeds-container {
+		overflow-y: auto;
+		overflow-x: hidden; /* Prevent horizontal scrolling */
+		max-height: 100vh;
+	}
+
+	.feeds-container.loading {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.feeds-container::-webkit-scrollbar {
+		width: 4px; /* Make the scrollbar thinner */
+	}
+
+	.feeds-container::-webkit-scrollbar-track {
+		background: transparent; /* Make the track transparent */
+	}
+
+	.feeds-container::-webkit-scrollbar-thumb {
+		background: transparent; /* Make the thumb transparent by default */
+	}
+
+	.feeds-container:hover::-webkit-scrollbar-thumb {
+		background: rgba(136, 136, 136, 0.5); /* Show the thumb on hover with transparency */
+	}
+
+	.feeds-container::-webkit-scrollbar-thumb:hover {
+		background: rgba(85, 85, 85, 0.5); /* Darker color on thumb hover */
 	}
 </style>
