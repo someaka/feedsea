@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import { get } from 'svelte/store';
 	import { feedsStore, articlesStore, selectedFeedsStore } from '../stores/stores';
 	import { fetchFeeds, selectFeed } from '$lib/api';
 	import { startSSE, stopSSE } from '$lib/SSEService';
@@ -18,17 +19,24 @@
 		isLoadingFeeds.set(false);
 	});
 
+	function handleBeforeUnload() {
+		unsubscribeFeeds();
+		stopSSE();
+		window.removeEventListener('beforeunload', handleBeforeUnload);
+	}
+
 	onMount(async () => {
 		isLoadingFeeds.set(true);
 		await fetchFeeds();
 		isLoadingFeeds.set(false);
 		startSSE();
+		window.addEventListener('beforeunload', handleBeforeUnload);
 	});
 
 	onDestroy(() => {
-		unsubscribeFeeds();
-		stopSSE();
+		handleBeforeUnload();
 	});
+
 
 	async function handleFeedClick(feed: FeedWithUnreadStories) {
 		let feedAdded = false;
@@ -38,7 +46,6 @@
 
 			if (!feeds[feed.id]) {
 				// Feed is being selected
-				updatedFeeds[feed.id] = [];
 				updatedChange = { type: 'add', feedId: feed.id, articles: [] };
 				feedAdded = true;
 				selectedFeeds = [...selectedFeeds, feed];
@@ -49,7 +56,7 @@
 				if (latestSelectedFeed && latestSelectedFeed.id === feed.id) {
 					latestSelectedFeed = null;
 				}
-				selectedFeeds = selectedFeeds.filter(f => f.id !== feed.id);
+				selectedFeeds = selectedFeeds.filter((f) => f.id !== feed.id);
 			}
 
 			return { feeds: updatedFeeds, change: updatedChange };
@@ -57,9 +64,12 @@
 
 		if (feedAdded) {
 			latestSelectedFeed = feed;
+			// Check if the feed is already in the cache before sending the request
+			const cachedArticles = get(articlesStore)[feed.id];
+			if (!cachedArticles || cachedArticles.length === 0) {
+				await sendSelectFeed(feed);
+			}
 		}
-
-		await sendSelectFeed(feed);
 	}
 
 	async function sendSelectFeed(feed: FeedWithUnreadStories) {
@@ -73,20 +83,20 @@
 		// Assume selectFeed function fetches articles and updates articlesStore
 		await selectFeed(feed);
 
-		articlesStore.subscribe(($articlesStore) => {
-			cachedArticles = $articlesStore[feed.id] || [];
-		})(); // Immediately invoke to unsubscribe
+		// articlesStore.subscribe(($articlesStore) => {
+		// 	cachedArticles = $articlesStore[feed.id] || [];
+		// })(); // Immediately invoke to unsubscribe
 
-		selectedFeedsStore.update(({ feeds }) => {
-			const updatedFeeds = { ...feeds, [feed.id]: cachedArticles };
-			const updatedChange: FeedChange = {
-				type: 'new',
-				feedId: feed.id,
-				articles: cachedArticles
-			};
+		// selectedFeedsStore.update(({ feeds }) => {
+		// 	const updatedFeeds = { ...feeds, [feed.id]: cachedArticles };
+		// 	const updatedChange: FeedChange = {
+		// 		type: 'new',
+		// 		feedId: feed.id,
+		// 		articles: cachedArticles
+		// 	};
 
-			return { feeds: updatedFeeds, change: updatedChange };
-		});
+		// 	return { feeds: updatedFeeds, change: updatedChange };
+		// });
 
 		isLoadingArticles.set(false);
 	}

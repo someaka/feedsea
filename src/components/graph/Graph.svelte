@@ -1,45 +1,59 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { selectedFeedsStore } from '../stores/stores';
-	import { prepareGraphData } from './articleProcessor';
-	import type { ArticleType as Article, GraphData } from '$lib/types';
+	import {
+		newArticlesStore,
+		pairsCalculationStore,
+		nodesStore,
+		linksStore,
+		articlesWithNodesAndLinksStore
+	} from '../stores/stores';
+	import { setContainer } from './graphologySigma';
 
-	let graphContainer;
+	let graphContainer: HTMLElement;
+	onMount(() => {
+		setContainer(graphContainer);
+	});
 
-	import { handleAddition, handleRemoval, handleNewArticles } from './graph';
 
-	// let unsubscribe: () => void;
+	let newArticlesStatus;
+	let pairsCalculationStatus;
+	let nodes;
+	let links;
+	let articlesWithNodesAndLinks;
 
-	// onMount(() => {
-	// 	unsubscribe = selectedFeedsStore.subscribe(({ feeds, change }) => {
-	// 		if (change) {
-	// 			switch (change.type) {
-	// 				case 'new':
-	// 					if (change.feedId && change.articles) {
-	// 						handleNewArticles(change.feedId, change.articles);
-	// 					}
-	// 					break;
-	// 				case 'add':
-	// 					if (change.feedId && change.articles) {
-	// 						const graphData: GraphData = prepareGraphData(change.articles);
-	// 						handleAddition(graphData);
-	// 					}
-	// 					break;
-	// 				case 'remove':
-	// 					if (change.feedId) {
-	// 						handleRemoval(change.feedId);
-	// 					}
-	// 					break;
-	// 			}
-	// 		}
-	// 	});
-	// });
+	// Subscribe to newArticlesStore
+	const unsubscribeNewArticles = newArticlesStore.subscribe((value) => {
+		newArticlesStatus = value;
+	});
 
-	// onDestroy(() => {
-	// 	if (unsubscribe) {
-	// 		unsubscribe();
-	// 	}
-	// });
+	// Subscribe to pairsCalculationStore
+	const unsubscribePairsCalculation = pairsCalculationStore.subscribe((value) => {
+		pairsCalculationStatus = value;
+	});
+
+	// Subscribe to nodesStore
+	const unsubscribeNodes = nodesStore.subscribe((value) => {
+		nodes = value;
+	});
+
+	// Subscribe to linksStore
+	const unsubscribeLinks = linksStore.subscribe((value) => {
+		links = value;
+	});
+
+	// Subscribe to articlesWithNodesAndLinksStore
+	const unsubscribeArticlesWithNodesAndLinks = articlesWithNodesAndLinksStore.subscribe((value) => {
+		articlesWithNodesAndLinks = value;
+	});
+
+
+	onDestroy(() => {
+		unsubscribeNewArticles();
+		unsubscribePairsCalculation();
+		unsubscribeNodes();
+		unsubscribeLinks();
+		unsubscribeArticlesWithNodesAndLinks();
+	});
 </script>
 
 <div bind:this={graphContainer} id="graph-container" style="width:  100%; height:  100%;"></div>

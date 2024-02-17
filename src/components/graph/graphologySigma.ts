@@ -7,19 +7,25 @@ import ForceSupervisor from "graphology-layout-force/worker";
 import type { Settings } from 'sigma/settings';
 import type { Attributes } from 'graphology-types';
 
-import type { Node, Link } from "./graph";
+import type { Node, Link } from '$lib/types';
 
 // import { pointArticleFromNode } from "../Feeds/ui/FeedUI";
 // import ForceSupervisor from 'graphology-layout-forceatlas2/worker';
 
 //const CHUNK_SIZE = 1000;
 
+let graphContainer: HTMLElement | null;
+
+function setContainer(container: HTMLElement) {
+    graphContainer = container;
+}
 
 class SigmaGrapUpdate {
 
     static instance: SigmaGrapUpdate | null = null;
 
     static getInstance() {
+        if(!graphContainer) return;
         if (!this.instance) {
             this.instance = new SigmaGrapUpdate();
         }
@@ -36,11 +42,12 @@ class SigmaGrapUpdate {
     layout: ForceSupervisor;
     DayOrNight: number;
 
+
+
     constructor() {
-        const containerId = 'graph-container';
-        this.container = document.getElementById(containerId);
+        this.container = graphContainer;
         if (!this.container) {
-            throw new Error(`Container with id "${containerId}" not found.`);
+            throw new Error(`Container not found.`);
         }
 
         this.graph = new Graph();
@@ -315,14 +322,14 @@ class SigmaGrapUpdate {
 
 
 const visualizeGraph = (newGraphData: { nodes: Node[], links: Link[] }) =>
-    SigmaGrapUpdate.getInstance().updateGraph(newGraphData);
-const updateDayNightMode = () => SigmaGrapUpdate.getInstance().updateDayNightMode();
-const clearGraph = () => SigmaGrapUpdate.getInstance().clearGraph();
+    SigmaGrapUpdate.getInstance()?.updateGraph(newGraphData);
+const updateDayNightMode = () => SigmaGrapUpdate.getInstance()?.updateDayNightMode();
+const clearGraph = () => SigmaGrapUpdate.getInstance()?.clearGraph();
 // const updateForceSettings = (newSettings) => SigmaGrapUpdate.getInstance().updateForceSettings(newSettings);
 
 
-
 export {
+    setContainer,
     visualizeGraph,
     clearGraph,
     updateDayNightMode,

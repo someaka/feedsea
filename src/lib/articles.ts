@@ -129,7 +129,7 @@ class Articles {
                     if (!err && result) {
                         // this.articleEvents.emit('jobComplete', result);
                     } else {
-                        logger.error(`Error processing article request for feed ${selectedFeed.id}: ${err}`);
+                        console.error(`Error processing article request for feed ${selectedFeed.id}: ${err}`);
                     }
                     // if (this.requestQueue.idle()) {
                     //    // this.articleEvents.emit('jobComplete');
@@ -142,8 +142,8 @@ class Articles {
 
     stopAllRequests(): void {
         this.requestQueue.kill();
-        logger.log('All queued article requests have been stopped.');
         this.requestQueue = fastq(this, this.worker, 1);
+        logger.log('All queued article requests have been stopped.');
     }
 }
 

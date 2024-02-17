@@ -1,6 +1,7 @@
 
-import { articlesStore } from '../components/stores/stores';
+import { articlesStore, selectedFeedsStore } from '../components/stores/stores';
 import { decompress } from './compression';
+import type { FeedChange } from './types';
 
 let eventSource: EventSource | null = null;
 
@@ -24,6 +25,18 @@ export function startSSE() {
             articles[id] = [...articles[id], ...articlesBatch];
             return articles;
         });
+
+        selectedFeedsStore.update(({ feeds }) => {
+            const updatedFeeds = { ...feeds, [id]: articlesBatch };
+            const updatedChange: FeedChange = {
+                type: 'new',
+                feedId: +id,
+                articles: articlesBatch
+            };
+
+            return { feeds: updatedFeeds, change: updatedChange };
+        });
+
     });
 
     // Add other event listeners

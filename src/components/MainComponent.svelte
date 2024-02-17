@@ -1,12 +1,21 @@
 <script>
-	import { onDestroy } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import isLoggedIn from './stores/auth';
 	import { callServerCleanUp } from '$lib/api';
 	import Feeds from './feeds/Feeds.svelte';
 	import Graph from './graph/Graph.svelte';
 
-	onDestroy(() => {
+	function cleanup() {
 		callServerCleanUp();
+		window.removeEventListener('beforeunload', cleanup);
+	}
+
+	onMount(() => {
+		window.addEventListener('beforeunload', cleanup);
+	});
+
+	onDestroy(() => {
+		cleanup();
 	});
 
 	// Reactive statement to watch the isLoggedIn store
