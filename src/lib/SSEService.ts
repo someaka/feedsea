@@ -13,7 +13,6 @@ interface articleFetchedResponse {
 export function startSSE() {
     if (eventSource) eventSource.close();
     eventSource = new EventSource('/events');
-
     eventSource.addEventListener('articleFetched', (event) => {
         const { feedId: id, compressedArticles } = JSON.parse(event.data) as articleFetchedResponse;
         const articlesBatch = decompress(compressedArticles);
@@ -33,13 +32,10 @@ export function startSSE() {
                 feedId: +id,
                 articles: articlesBatch
             };
-
             return { feedIds: feedIds, change: updatedChange };
         });
 
     });
-
-    // Add other event listeners
 }
 
 export function stopSSE() {

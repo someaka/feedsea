@@ -34,8 +34,8 @@ export function setupSSE(
     }
 
     function cleanupJobComplete() {
-        onJobComplete();
         removeListeners();
+        onJobComplete();
     };
 
     eventSource.addEventListener('fetchStarting', firstmessage);

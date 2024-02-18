@@ -51,7 +51,7 @@ class Articles {
     private constructor() {
         this.userAgent = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
         this.numCPUs = os.cpus().length;
-        this.concurrency = this.numCPUs - 1;
+        this.concurrency = 1;//this.numCPUs - 1;
         this.requestQueue = fastq(this, this.worker, this.concurrency);
         this.articleEvents = new EventEmitter();
         this.compress = compress;

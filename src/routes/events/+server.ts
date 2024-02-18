@@ -26,11 +26,11 @@ export async function GET({ request }) {
             };
 
             const jobCompleteListener = () => {
-                controller.enqueue(`event: jobComplete\n\n`);
                 articleEvents.off('fetchStarting', fetchingStartedListener);
                 articleEvents.off('articleFetched', articleFetchedListener);
                 articleEvents.off('jobComplete', jobCompleteListener);
                 removeSubscriber(clientId);
+                //controller.enqueue(`event: jobComplete\n\n`);
                 controller.terminate();
             };
 
