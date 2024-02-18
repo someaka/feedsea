@@ -1,8 +1,11 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
-	import { articlesStore } from '../stores/stores';
-	import type { FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
+	import { onDestroy, tick } from 'svelte';
+	import { get } from 'svelte/store';
+	import { articlesStore, focusedArticleId, feedsStore } from '../stores/stores';
+	import { theme } from '../stores/night';
 	import { isLoadingArticles } from '$lib/loadingState';
+
+	import type { FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
 
 	import DayNightModeButton from '../daynight/DayNightModeButton.svelte';
 	import ForcesButton from '../forces/ForcesButton.svelte';
@@ -50,7 +53,14 @@
 		document.documentElement.removeEventListener('mouseup', stopDrag, false);
 	}
 
+	let unsubscribe = focusedArticleId.subscribe((id) => {
+		if (id) {
+			pointArticleFromNode(id);
+		}
+	});
+
 	onDestroy(() => {
+		unsubscribe(); // Clean up the subscription
 		isLoadingArticles.set(false); // Ensure loading state is reset when component is destroyed
 	});
 
@@ -64,7 +74,30 @@
 		}
 	}
 
-	import { theme } from '../stores/night';
+	async function pointArticleFromNode(nodeId: string) {
+		const allArticles = get(articlesStore);
+
+		// Use find to directly get the feedId
+		const foundEntry = Object.entries(allArticles).find(([_, articles]) =>
+			articles.some((article) => article.id === nodeId)
+		);
+
+		if (foundEntry) {
+			const [foundFeedId] = foundEntry;
+			latestSelectedFeed = get(feedsStore)[foundFeedId];
+
+			await tick(); // Wait for the DOM to update after displaying the feed
+
+			scrollToArticle(nodeId);
+		}
+	}
+
+	function scrollToArticle(nodeId: string) {
+		const articleElement = document.querySelector(`[data-article-id="${nodeId}"]`);
+		if (articleElement) {
+			articleElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
+	}
 </script>
 
 <!-- <button on:click={toggleVisibility}>Toggle Panel</button> -->
@@ -90,7 +123,7 @@
 			{#if articles.length > 0}
 				<ul>
 					{#each articles as article (article.id)}
-						<li style="background-color: {article.feedColor};">
+						<li data-article-id={article.id} style="background-color: {article.feedColor};">
 							<h4>{article.title}</h4>
 							<a href={article.url} target="_blank">{article.url}</a>
 							<p>{article.text}</p>
@@ -111,7 +144,7 @@
 		position: fixed;
 		top: 0;
 		right: 0;
-		width: calc(100vw / 2);
+		width: calc(100vw / 4);
 		height: 100%;
 		overflow-y: scroll;
 		background-color: white;
@@ -166,27 +199,29 @@
 
 	/* Dark mode styles */
 	.dark {
-		background-color: #222; 
+		background-color: #222;
 		color: #fff; /* Light text color */
 		transition:
 			background-color 0.1s ease-in-out,
 			color 0.1s ease-in-out;
 	}
 
-
 	/* Ensure article content does not change in dark mode */
 	.dark li {
-		background-color: initial; 
-		color: initial; 
+		background-color: initial;
+		color: initial;
 	}
 
+	.dark .resizer {
+		background: #1b1a1a;
+	}
 
-    ul {
-        list-style-type: none; /* Removes the default bullet points */
-        padding-left: 0; /* Removes padding */
-        margin-left: 10px; 
-    }
-    li {
-        margin-bottom: 1rem;
-    }
+	ul {
+		list-style-type: none; /* Removes the default bullet points */
+		padding-left: 0; /* Removes padding */
+		margin-left: 10px;
+	}
+	li {
+		margin-bottom: 1rem;
+	}
 </style>

@@ -99,7 +99,7 @@ const linksStore = derived(
    ($pairsStore, set) => {
       const currentLinks = get(linksStore);
       const nodes = get(nodesStore);
-      const newLinks =  nodesToLinks(nodes, $pairsStore.newPairs);
+      const newLinks = nodesToLinks(nodes, $pairsStore.newPairs);
       const updatedLinks = [...currentLinks, ...newLinks];
       set(updatedLinks);
    },
@@ -124,8 +124,8 @@ const articlesWithNodesAndLinksStore = derived(
       const selectedArticleIds = Object.keys($selectedFeedsStore.feeds).flatMap(feedId => {
          const articlesForFeed = articleCache[feedId];
          return articlesForFeed ? articlesForFeed.map(article => article.id) : [];
-       });
-       
+      });
+
       const nodes = $nodesStore.filter(node => selectedArticleIds.includes(node.id));
       const links = $linksStore.filter(link =>
          selectedArticleIds.includes(link.source.id) && selectedArticleIds.includes(link.target.id)
@@ -139,7 +139,7 @@ const articlesWithNodesAndLinksStore = derived(
    { nodes: [], links: [] } as GraphData
 );
 
-
+const focusedArticleId = writable<string | null>(null);
 
 
 export {
@@ -153,5 +153,6 @@ export {
    nodesStore,
    linksStore,
    graphDataStore,
-   articlesWithNodesAndLinksStore
+   articlesWithNodesAndLinksStore,
+   focusedArticleId
 }

@@ -7,13 +7,18 @@
 		linksStore,
 		articlesWithNodesAndLinksStore
 	} from '../stores/stores';
-	import { setContainer } from './graphologySigma';
+	import { theme } from '../stores/night';
+	import { setContainer, updateDayNightMode } from './graphologySigma';
 
 	let graphContainer: HTMLElement;
 	onMount(() => {
 		setContainer(graphContainer);
 	});
 
+
+	theme.subscribe((value) => {
+		updateDayNightMode();
+	});
 
 	let newArticlesStatus;
 	let pairsCalculationStatus;

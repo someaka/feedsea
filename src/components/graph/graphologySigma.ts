@@ -11,7 +11,8 @@ import defaultGraphSettings from '../forces/defautGraphSettings';
 
 import type { Node, Link, GraphSettings } from '$lib/types';
 
-// import { pointArticleFromNode } from "../Feeds/ui/FeedUI";
+import { focusedArticleId } from '../stores/stores';
+
 // import ForceSupervisor from 'graphology-layout-forceatlas2/worker';
 
 //const CHUNK_SIZE = 1000;
@@ -118,20 +119,18 @@ class SigmaGrapUpdate {
         });
 
 
-        // this.renderer.on('clickNode', (e) => {
-        //     logger.log('Node clicked:', e.node);
-        //     this.updateRightPanelWithFeed(e.node);
-        // });
+        this.renderer.on('clickNode', (e) => {
+            logger.log('Node clicked:', e.node);
+            this.updateRightPanelWithFeed(e.node);
+        });
 
 
     }
 
 
-    // updateRightPanelWithFeed(nodeId) {
-    //     // logger.log('Node clicked:', nodeId);
-    //     const nodeData = this.graph.getNodeAttributes(nodeId);
-    //     pointArticleFromNode(nodeData.color, nodeId);
-    // }
+    updateRightPanelWithFeed(nodeId: string) {
+        focusedArticleId.set(nodeId);
+    }
 
 
 
