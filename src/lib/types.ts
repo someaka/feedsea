@@ -162,6 +162,14 @@ interface Pair extends PendingPair {
     similarity: number;
 }
 
+interface GraphSettings {
+    attraction: number;
+    repulsion: number;
+    gravity: number;
+    inertia: number;
+    maxMove: number;
+
+}
 
 
 export type {
@@ -181,6 +189,5 @@ export type {
     GraphData,
     PendingPair,
     Pair,
-
-
+    GraphSettings
 }

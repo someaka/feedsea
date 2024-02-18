@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feeds</title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+    <link rel="stylesheet" href="feeds_styles.css">
+    <link rel="stylesheet" href="daynight.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+</head>
+
+<body class="day sa" id="bd">
+    <div id="container">
+        <div id="loading" class="spinner"></div>
+        <div id="feedsContainer" class="panel">
+            <button id="selectAllButton" class="btn btn-primary">Select All</button>
+            <div id="feedslist"></div>
+        </div>
+        <div id="graphcontent" class="panel">
+            <div id="graph-container"></div>
+        </div>
+        <div id="maincontent" class="panel_overlay">
+
+
+
+
+
+            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: -5px;">
+
+
+
+                <div id="daynighttoggle" style="margin-right: 10px;  margin-top: 10px">
+                    <input id="change" type="checkbox" onchange="toggleDayNightMode()">
+                    <label for="change" class="tg">
+
+                        <span class="sm">
+                            <i class="fas fa-cloud cloud1"></i>
+                        </span>
+
+                    </label>
+                </div>
+
+
+
+
+
+
+
+
+
+
+
+                <!-- <div style="text-align: right;"> -->
+                <button id="forcesButton" class="btn btn-primary" style="margin-right: 10px;">Forces</button>
+                <button id="toggleButton" class="btn btn-primary" style="margin-right: 10px;">Toggle Articles</button>
+            </div>
+            <div id="articles"></div>
+            <div id="forceSettings" style="display: none;">
+
+                <!-- Negative Edges Toggle -->
+                <div class="slider-container">
+                    <label for="negativeEdgesToggle" class="toggle-label">Negative Edges:</label>
+                    <small class="slider-explanation">Toggle to include or exclude negative edges in the graph.</small>
+                    <label class="custom-toggle-switch">
+                        <input type="checkbox" id="negativeEdgesToggle" checked>
+                        <span class="custom-toggle-slider"></span>
+                    </label>
+                </div>
+
+
+                <!-- Gravity Slider -->
+                <div class="slider-container">
+                    <label for="gravitySlider" class="slider-title">Gravity:</label>
+                    <small class="slider-explanation">Higher gravity pulls nodes closer to center, lower lets them drift
+                        apart.</small>
+                    <div class="range-slider">
+                        <input type="range" id="gravitySlider" min="0" max="100" value="1" class="slider"
+                            data-output="gravityOutput" data-scale-min="0.00001" data-scale-max="10"
+                            data-scale-factor="1" data-precision="5" data-scale-type="log">
+                        <output id="gravityOutput" class="slider-output">0.0001</output>
+                        <div class="slider-min-max">
+                            <span class="slider-min">0.00001</span>
+                            <span class="slider-max">10</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Repulsion Slider -->
+                <div class="slider-container">
+                    <label for="repulsionSlider" class="slider-title">Repulsion:</label>
+                    <small class="slider-explanation">Higher repulsion spreads nodes further apart, lower brings them
+                        closer.</small>
+                    <div class="range-slider">
+                        <input type="range" id="repulsionSlider" min="0" max="100" value="70" class="slider"
+                            data-output="repulsionOutput" data-scale-min="0.0001" data-scale-max="10"
+                            data-scale-factor="1" data-precision="5" data-scale-type="log">
+                        <output id="repulsionOutput" class="slider-output">0.2</output>
+                        <div class="slider-min-max">
+                            <span class="slider-min">0.0001</span>
+                            <span class="slider-max">10</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attraction Slider -->
+                <div class="slider-container">
+                    <label for="attractionSlider" class="slider-title">Attraction:</label>
+                    <small class="slider-explanation">Higher attraction increases the force pulling connected nodes
+                        together.</small>
+                    <div class="range-slider">
+                        <input type="range" id="attractionSlider" min="0" max="10000" value="10" class="slider"
+                            data-output="attractionOutput" data-scale-min="0.000001" data-scale-max="0.01"
+                            data-scale-factor="0.0001" data-precision="8" data-scale-type="log">
+                        <output id="attractionOutput" class="slider-output">0.00001</output>
+                        <div class="slider-min-max">
+                            <span class="slider-min">0.000001</span>
+                            <span class="slider-max">0.01</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inertia Slider -->
+                <div class="slider-container">
+                    <label for="inertiaSlider" class="slider-title">Inertia:</label>
+                    <small class="slider-explanation">Higher inertia maintains node velocity, lower inertia slows nodes
+                        down faster.</small>
+                    <div class="range-slider">
+                        <input type="range" id="inertiaSlider" min="0" max="100" value="60" class="slider"
+                            data-output="inertiaOutput" data-scale-min="0" data-scale-max="5" data-scale-factor="1"
+                            data-precision="1" data-scale-type="linear" step="0.1">
+                        <output id="inertiaOutput" class="slider-output">0.6</output>
+                        <div class="slider-min-max">
+                            <span class="slider-min">0</span>
+                            <span class="slider-max">5</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Max Move Slider -->
+                <div class="slider-container">
+                    <label for="maxMoveSlider" class="slider-title">Max Move:</label>
+                    <small class="slider-explanation">Higher max move allows nodes to move further in each
+                        iteration.</small>
+                    <div class="range-slider">
+                        <input type="range" id="maxMoveSlider" min="0" max="100" value="1" class="slider"
+                            data-output="maxMoveOutput" data-scale-min="0" data-scale-max="10" data-scale-factor="1"
+                            data-precision="0" data-scale-type="linear">
+                        <output id="maxMoveOutput" class="slider-output">1</output>
+                        <div class="slider-min-max">
+                            <span class="slider-min">0</span>
+                            <span class="slider-max">10</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div id="articles"></div>
+            <div id="mainContentSpinner" class="spinner center-in-maincontent"></div>
+        </div>
+        <template id="articleTemplate">
+            <div class="article">
+                <h2 class="title"></h2>
+                <p class="text"></p>
+            </div>
+        </template>
+        <!-- Add tooltip element to feeds.html -->
+        <div id="glow"></div>
+        <div id="tooltip" style="position: absolute; visibility: hidden; pointer-events: none; z-index: 1000;"></div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+        <script type="module" src="/src/Feeds/feeds.js"></script>
+        <script type="module" src="/src/forceSetting.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    </div>
+</body>
+
+</html>

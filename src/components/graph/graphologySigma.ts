@@ -7,7 +7,9 @@ import ForceSupervisor from "graphology-layout-force/worker";
 import type { Settings } from 'sigma/settings';
 import type { Attributes } from 'graphology-types';
 
-import type { Node, Link } from '$lib/types';
+import defaultGraphSettings from '../forces/defautGraphSettings';
+
+import type { Node, Link, GraphSettings } from '$lib/types';
 
 // import { pointArticleFromNode } from "../Feeds/ui/FeedUI";
 // import ForceSupervisor from 'graphology-layout-forceatlas2/worker';
@@ -25,7 +27,7 @@ class SigmaGrapUpdate {
     static instance: SigmaGrapUpdate | null = null;
 
     static getInstance() {
-        if(!graphContainer) return;
+        if (!graphContainer) return;
         if (!this.instance) {
             this.instance = new SigmaGrapUpdate();
         }
@@ -69,13 +71,7 @@ class SigmaGrapUpdate {
         // TODO set up forceatlas2 and different settings for each layout
         this.settings = {
             isNodeFixed: (attr: Attributes) => attr.highlighted,
-            settings: {
-                attraction: 0.00001,
-                repulsion: 0.2,
-                gravity: 0.0001,
-                inertia: 0.6,
-                maxMove: 5
-            }
+            settings: defaultGraphSettings
         };
         this.layout = new ForceSupervisor(this.graph, this.settings);
         this.DayOrNight = 1;
@@ -157,19 +153,6 @@ class SigmaGrapUpdate {
 
 
 
-    // Correct the closest node calculation
-    // getClosestNodes(coordForGraph, count = 2) {
-    //     return this.graph
-    //         .nodes()
-    //         .map(nodeId => {
-    //             const attrs = this.graph.getNodeAttributes(nodeId);
-    //             const distance = Math.pow(coordForGraph.x - attrs.x, 2) + Math.pow(coordForGraph.y - attrs.y, 2);
-    //             return { nodeId, distance };
-    //         })
-    //         .sort((a, b) => a.distance - b.distance)
-    //         .slice(0, count);
-    // }
-
     // Add methods to add nodes, edges, update the graph, etc.
     // addNode(attributes: Attributes) {
     //     const id = uuid();
@@ -180,14 +163,6 @@ class SigmaGrapUpdate {
     // addEdge(sourceId, targetId) {
     //     this.graph.addEdge(sourceId, targetId);
     // }
-
-
-
-
-
-
-
-
 
 
 
@@ -271,14 +246,15 @@ class SigmaGrapUpdate {
     }
 
 
-    // updateForceSettings(newSettings) {
-    //     this.stopLayout();
-    //     this.settings.settings = { ...this.settings.settings, ...newSettings };
-    //     this.layout = new ForceSupervisor(this.graph, this.settings);
-    //     this.startLayout();
-    //     this.renderer.refresh();
-    //     logger.log('New ForceSupervisor created with settings:', this.settings.settings);
-    // }
+    updateForceSettings(newSettings: GraphSettings) {
+        this.stopLayout();
+        this.settings.settings = { ...this.settings.settings, ...newSettings };
+        this.layout = new ForceSupervisor(this.graph, this.settings);
+        this.startLayout();
+        this.renderer.refresh();
+        logger.log('New ForceSupervisor created with settings:', this.settings.settings);
+
+    }
 
 
     updateDayNightMode() {
@@ -325,7 +301,8 @@ const visualizeGraph = (newGraphData: { nodes: Node[], links: Link[] }) =>
     SigmaGrapUpdate.getInstance()?.updateGraph(newGraphData);
 const updateDayNightMode = () => SigmaGrapUpdate.getInstance()?.updateDayNightMode();
 const clearGraph = () => SigmaGrapUpdate.getInstance()?.clearGraph();
-// const updateForceSettings = (newSettings) => SigmaGrapUpdate.getInstance().updateForceSettings(newSettings);
+const updateForceSettings = (newSettings: GraphSettings) =>
+    SigmaGrapUpdate.getInstance()?.updateForceSettings(newSettings);
 
 
 export {
@@ -333,5 +310,5 @@ export {
     visualizeGraph,
     clearGraph,
     updateDayNightMode,
-    // updateForceSettings,
+    updateForceSettings,
 };

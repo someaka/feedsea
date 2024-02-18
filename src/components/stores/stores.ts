@@ -97,9 +97,11 @@ const pairsStore = writable<PairsState>(initialPairsState);
 const linksStore = derived(
    pairsStore,
    ($pairsStore, set) => {
+      const currentLinks = get(linksStore);
       const nodes = get(nodesStore);
-      const links = nodesToLinks(nodes, $pairsStore.newPairs);
-      set(links);
+      const newLinks =  nodesToLinks(nodes, $pairsStore.newPairs);
+      const updatedLinks = [...currentLinks, ...newLinks];
+      set(updatedLinks);
    },
    [] as Link[]
 );

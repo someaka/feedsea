@@ -33,9 +33,9 @@
 		window.addEventListener('beforeunload', handleBeforeUnload);
 	});
 
-	onDestroy(() => {
-		handleBeforeUnload();
-	});
+	// onDestroy(() => {
+	// 	handleBeforeUnload();
+	// });
 
 	async function handleFeedClick(feed: FeedWithUnreadStories) {
 		let feedAdded = false;

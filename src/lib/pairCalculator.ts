@@ -44,7 +44,19 @@ function calculateAllPairs() {
     const selectedFeeds = get(selectedFeedsStore);
     const embeddings = get(embeddingsStore);
 
-    const allFeedArticleIds = Object.values(selectedFeeds.feeds).flat().map(article => article.id);
+    if (!selectedFeeds || !selectedFeeds.feeds || !embeddings) {
+        console.error('Selected feeds or embeddings are not defined');
+        return;
+    }
+
+    const allFeedArticleIds = Object.values(selectedFeeds.feeds).flat().map(article => {
+        if (!article) {
+            console.error('Article is undefined');
+            return null;
+        }
+        return article.id;
+    }).filter(id => id !== null);
+
     const allArticleIds = Object.keys(embeddings).filter(id => allFeedArticleIds.includes(id));
 
     const allEmbeddings = allArticleIds.reduce((acc, id) => {
