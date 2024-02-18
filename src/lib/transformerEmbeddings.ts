@@ -5,8 +5,15 @@ let articlesQueue: Article[] = [];
 let isCooldownActive = false;
 
 
-const Worker = await import('$lib/embedWorker?worker');
-const worker = new Worker.default();
+let worker: Worker;
+
+async function initWorker() {
+  const WorkerModule = await import('$lib/embedWorker?worker');
+  worker = new WorkerModule.default();
+}
+
+initWorker();
+
 
 async function getEmbeddingsForArticles(articles: Article[]): Promise<Record<string, number[]>> {
     const articlesText = articles.map(

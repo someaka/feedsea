@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { onDestroy, tick } from 'svelte';
+	import { onDestroy } from 'svelte';
 	import { get } from 'svelte/store';
-	import { articlesStore, focusedArticleId, feedsStore } from '../stores/stores';
+	import { articlesStore, feedsStore } from '../stores/stores';
 	import { theme } from '../stores/night';
 	import { isLoadingArticles } from '$lib/loadingState';
 
@@ -53,14 +53,7 @@
 		document.documentElement.removeEventListener('mouseup', stopDrag, false);
 	}
 
-	let unsubscribe = focusedArticleId.subscribe((id) => {
-		if (id) {
-			pointArticleFromNode(id);
-		}
-	});
-
 	onDestroy(() => {
-		unsubscribe(); // Clean up the subscription
 		isLoadingArticles.set(false); // Ensure loading state is reset when component is destroyed
 	});
 
@@ -71,31 +64,6 @@
 		const resizer = articlesPanelWrapper.querySelector('.resizer') as HTMLElement;
 		if (resizer) {
 			resizer.style.height = `${articlesPanelWrapper.scrollHeight}px`;
-		}
-	}
-
-	async function pointArticleFromNode(nodeId: string) {
-		const allArticles = get(articlesStore);
-
-		// Use find to directly get the feedId
-		const foundEntry = Object.entries(allArticles).find(([_, articles]) =>
-			articles.some((article) => article.id === nodeId)
-		);
-
-		if (foundEntry) {
-			const [foundFeedId] = foundEntry;
-			latestSelectedFeed = get(feedsStore)[foundFeedId];
-
-			await tick(); // Wait for the DOM to update after displaying the feed
-
-			scrollToArticle(nodeId);
-		}
-	}
-
-	function scrollToArticle(nodeId: string) {
-		const articleElement = document.querySelector(`[data-article-id="${nodeId}"]`);
-		if (articleElement) {
-			articleElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		}
 	}
 </script>

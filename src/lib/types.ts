@@ -118,7 +118,7 @@ interface FeedChange {
 }
 
 interface SelectedFeedsState {
-    feeds: Record<string, ArticleType[]>;
+    feedIds: Set<number>;
     change?: FeedChange;
 }
 

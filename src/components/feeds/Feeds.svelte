@@ -1,7 +1,12 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, tick } from 'svelte';
 	import { get } from 'svelte/store';
-	import { feedsStore, articlesStore, selectedFeedsStore } from '../stores/stores';
+	import {
+		feedsStore,
+		articlesStore,
+		selectedFeedsStore,
+		focusedArticleId
+	} from '../stores/stores';
 	import { fetchFeeds, selectFeed } from '$lib/api';
 	import { startSSE, stopSSE } from '$lib/SSEService';
 	import ArticlesPanel from '../articles/ArticlesPanel.svelte';
@@ -11,7 +16,7 @@
 
 	let feeds: FeedWithUnreadStories[] = [];
 	let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds
-	let latestSelectedFeed: FeedWithUnreadStories | null = null; // Track the latest selected feed
+	let latestSelectedFeed: FeedWithUnreadStories | null = null;
 
 	// Subscribe to feedsStore
 	const unsubscribeFeeds = feedsStore.subscribe((value) => {
@@ -33,25 +38,71 @@
 		window.addEventListener('beforeunload', handleBeforeUnload);
 	});
 
-	// onDestroy(() => {
-	// 	handleBeforeUnload();
-	// });
+	onDestroy(() => {
+		unsubscribe(); // Clean up the subscription
+		isLoadingArticles.set(false); // Ensure loading state is reset when component is destroyed
+		handleBeforeUnload();
+	});
+
+	let unsubscribe = focusedArticleId.subscribe((id) => {
+		if (id) {
+			pointArticleFromNode(id);
+		}
+	});
+
+
+
+
+
+	async function pointArticleFromNode(nodeId: string) {
+		const allArticles = get(articlesStore);
+
+		// Use find to directly get the feedId
+		const foundEntry = Object.entries(allArticles).find(([_, articles]) =>
+			articles.some((article) => article.id === nodeId)
+		);
+
+		if (foundEntry) {
+			const [foundFeedId] = foundEntry;
+			latestSelectedFeed = get(feedsStore)[foundFeedId];
+
+			await tick(); // Wait for the DOM to update after displaying the feed
+
+			scrollToArticle(nodeId);
+		}
+	}
+
+	function scrollToArticle(nodeId: string) {
+		const articleElement = document.querySelector(`[data-article-id="${nodeId}"]`);
+		if (articleElement) {
+			articleElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
+	}
+
+
+
+
+
+
 
 	async function handleFeedClick(feed: FeedWithUnreadStories) {
-		let feedAdded = false;
-		selectedFeedsStore.update(({ feeds }) => {
-			const updatedFeeds = { ...feeds };
+		selectedFeedsStore.update(({ feedIds }) => {
+			const updatedFeedIds = feedIds;
 			let updatedChange: FeedChange;
 
-			if (!feeds[feed.id]) {
+			if (!feedIds.has(feed.id)) {
 				// Feed is being selected
-				updatedFeeds[feed.id] = get(articlesStore)[feed.id];
+				if (!updatedFeedIds.has(feed.id) ) {
+					selectFeed(feed);
+					updatedFeedIds.add(feed.id);
+				}
 				updatedChange = { type: 'add', feedId: feed.id, articles: [] };
-				feedAdded = true;
+				latestSelectedFeed = feed;
+				
 				selectedFeeds = [...selectedFeeds, feed];
 			} else {
 				// Feed is being deselected
-				delete updatedFeeds[feed.id];
+				updatedFeedIds.delete(feed.id);
 				updatedChange = { type: 'remove', feedId: feed.id };
 				if (latestSelectedFeed && latestSelectedFeed.id === feed.id) {
 					latestSelectedFeed = null;
@@ -59,17 +110,8 @@
 				selectedFeeds = selectedFeeds.filter((f) => f.id !== feed.id);
 			}
 
-			return { feeds: updatedFeeds, change: updatedChange };
+			return { feedIds: updatedFeedIds, change: updatedChange };
 		});
-
-		if (feedAdded) {
-			latestSelectedFeed = feed;
-			// Check if the feed is already in the cache before sending the request
-			const cachedArticles = get(articlesStore)[feed.id];
-			if (!cachedArticles || cachedArticles.length === 0) {
-				await selectFeed(feed);
-			}
-		}
 	}
 
 	let selectAll = true; // True means "Select All" is shown, false for "Unselect All"

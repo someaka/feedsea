@@ -1,6 +1,6 @@
-
-point to article
 clean up text
-bug hunt
+speed up article fetching and memory clean up
+force panel code clean up
 
 bug hunt
+    invalid state

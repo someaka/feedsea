@@ -26,18 +26,15 @@ export function startSSE() {
             return articles;
         });
 
-        selectedFeedsStore.update(({ feeds }) => {
-            const updatedFeeds = {
-                ...feeds,
-                [id]: feeds[id] ? [...feeds[id], ...articlesBatch] : articlesBatch
-            };
+        selectedFeedsStore.update(({ feedIds }) => {
+            //const updatedFeeds = feedIds.add(+id);
             const updatedChange: FeedChange = {
                 type: 'new',
                 feedId: +id,
                 articles: articlesBatch
             };
 
-            return { feeds: updatedFeeds, change: updatedChange };
+            return { feedIds: feedIds, change: updatedChange };
         });
 
     });

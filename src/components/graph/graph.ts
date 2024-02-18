@@ -41,7 +41,7 @@ function nodesToLinks(
     for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
             const mix = chroma.mix(nodes[i].color, nodes[j].color, 0.5, 'rgb');
-            const day = mix.brighten(0.07).hex();
+            const day = mix.brighten(0.27).hex();
             const night = mix.darken(0.77).hex();
             const similarity = getSimilarity(nodes[i].id, nodes[j].id, filteredLinks);
             if (similarity) links.push({

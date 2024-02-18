@@ -17,3 +17,17 @@
 	// Subscribe to the theme store and update the theme when it changes
 	$: applyTheme();
 </script>
+
+<div class="layout">
+	<header>
+		<!-- Your header content here -->
+	</header>
+
+	<main>
+		<!-- the ENTIRE APP hinges on this empty slot -->
+		<slot />
+	</main>
+</div>
+
+<style>
+</style>

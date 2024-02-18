@@ -1,27 +1,40 @@
 import { get } from 'svelte/store';
-import { embeddingsStore, pairsStore, selectedFeedsStore } from '../components/stores/stores';
+import { embeddingsStore, pairsStore, articlesStore } from '../components/stores/stores';
+import type { ArticleType as Article } from '$lib/types';
 
 const queue: Record<string, number[]>[] = [];
 let isProcessing = false;
+let worker: Worker;
 
-const Worker = await import('$lib/pairWorker?worker');
-const worker = new Worker.default();
+async function initWorker(): Promise<Worker> {
+    const WorkerModule = await import('$lib/pairWorker?worker');
+    return new WorkerModule.default();
+}
 
-worker.onmessage = (event) => {
-    const { newPairs } = event.data;
-    pairsStore.update(currentPairs => {
-        const updatedPairs = { ...currentPairs.pairs, ...newPairs };
-        return { ...currentPairs, pairs: updatedPairs, newPairs };
-    });
-    isProcessing = false;
-    processQueue();
-};
+async function initListeners() {
 
-worker.onerror = (error) => {
-    console.error('Worker error:', error);
-    isProcessing = false;
-    processQueue();
-};
+    worker = await initWorker();
+
+    worker.onmessage = (event) => {
+        const { newPairs } = event.data;
+        pairsStore.update(currentPairs => {
+            const updatedPairs = { ...currentPairs.pairs, ...newPairs };
+            return { ...currentPairs, pairs: updatedPairs, newPairs };
+        });
+        isProcessing = false;
+        processQueue();
+    };
+
+    worker.onerror = (error) => {
+        console.error('Worker error:', error);
+        isProcessing = false;
+        processQueue();
+    };
+
+}
+
+initListeners();
+
 
 function addToQueue(embeddings: Record<string, number[]>) {
     queue.push(embeddings);
@@ -41,26 +54,20 @@ function processQueue() {
 }
 
 function calculateAllPairs() {
-    const selectedFeeds = get(selectedFeedsStore);
+    const articleCache: Record<string, Article[]> = get(articlesStore);
     const embeddings = get(embeddingsStore);
 
-    if (!selectedFeeds || !selectedFeeds.feeds || !embeddings) {
+    if (!articleCache || !embeddings) {
         console.error('Selected feeds or embeddings are not defined');
         return;
     }
 
-    const allFeedArticleIds = Object.values(selectedFeeds.feeds).flat().map(article => {
-        if (!article) {
-            console.error('Article is undefined');
-            return null;
-        }
-        return article.id;
-    }).filter(id => id !== null);
-
-    const allArticleIds = Object.keys(embeddings).filter(id => allFeedArticleIds.includes(id));
+    const allArticleIds = Object.values(articleCache).flat().map(article => article.id);
 
     const allEmbeddings = allArticleIds.reduce((acc, id) => {
-        acc[id] = embeddings[id];
+        if (embeddings[id]) {
+            acc[id] = embeddings[id];
+        }
         return acc;
     }, {} as Record<string, number[]>);
 

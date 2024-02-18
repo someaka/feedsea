@@ -25,7 +25,7 @@ const articlesStore = writable(articleCache);
 const embeddingsStore = writable(embeddingCache);
 
 const initialState: SelectedFeedsState = {
-   feeds: {},
+   feedIds: new Set(),
    change: undefined
 };
 
@@ -121,9 +121,12 @@ const articlesWithNodesAndLinksStore = derived(
    [selectedFeedsStore, nodesStore, linksStore],
    ([$selectedFeedsStore, $nodesStore, $linksStore], set) => {
 
-      const selectedArticleIds = Object.keys($selectedFeedsStore.feeds).flatMap(feedId => {
+      const selectedArticleIds: string[] = [];
+      $selectedFeedsStore.feedIds.forEach(feedId => {
          const articlesForFeed = articleCache[feedId];
-         return articlesForFeed ? articlesForFeed.map(article => article.id) : [];
+         if (articlesForFeed) {
+            articlesForFeed.forEach(article => selectedArticleIds.push(article.id));
+         }
       });
 
       const nodes = $nodesStore.filter(node => selectedArticleIds.includes(node.id));

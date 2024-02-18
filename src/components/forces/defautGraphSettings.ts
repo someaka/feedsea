@@ -5,7 +5,7 @@ const defaultGraphSettings: GraphSettings = {
     repulsion: 0.2,
     gravity: 0.0001,
     inertia: 0.6,
-    maxMove: 5
+    maxMove: 1
 }
 
 export default defaultGraphSettings

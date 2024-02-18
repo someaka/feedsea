@@ -1,3 +1,4 @@
+import os from 'os';
 import axios from 'axios';
 import { compress } from './compression';
 import { v4 as uuidv4 } from 'uuid';
@@ -40,6 +41,8 @@ class Article implements ArticleType {
 class Articles {
     private static instance: Articles | null = null;
     private requestQueue: queue<ArticleTask, string>;
+    private numCPUs: number;
+    private concurrency: number;
     private userAgent: string;
     private compress: typeof compress;
 
@@ -47,7 +50,9 @@ class Articles {
 
     private constructor() {
         this.userAgent = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
-        this.requestQueue = fastq(this, this.worker, 1);
+        this.numCPUs = os.cpus().length;
+        this.concurrency = this.numCPUs - 1;
+        this.requestQueue = fastq(this, this.worker, this.concurrency);
         this.articleEvents = new EventEmitter();
         this.compress = compress;
     }
@@ -126,14 +131,10 @@ class Articles {
                     story
                 },
                 (err, result) => {
-                    if (!err && result) {
-                        // this.articleEvents.emit('jobComplete', result);
-                    } else {
+                    if (err || !result) {
                         console.error(`Error processing article request for feed ${selectedFeed.id}: ${err}`);
                     }
-                    // if (this.requestQueue.idle()) {
-                    //    // this.articleEvents.emit('jobComplete');
-                    // }
+
                 });
         });
     }
@@ -142,7 +143,7 @@ class Articles {
 
     stopAllRequests(): void {
         this.requestQueue.kill();
-        this.requestQueue = fastq(this, this.worker, 1);
+        this.requestQueue = fastq(this, this.worker, this.concurrency);
         logger.log('All queued article requests have been stopped.');
     }
 }
