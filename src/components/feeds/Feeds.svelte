@@ -50,10 +50,6 @@
 		}
 	});
 
-
-
-
-
 	async function pointArticleFromNode(nodeId: string) {
 		const allArticles = get(articlesStore);
 
@@ -79,12 +75,6 @@
 		}
 	}
 
-
-
-
-
-
-
 	async function handleFeedClick(feed: FeedWithUnreadStories) {
 		selectedFeedsStore.update(({ feedIds }) => {
 			const updatedFeedIds = feedIds;
@@ -92,13 +82,12 @@
 
 			if (!feedIds.has(feed.id)) {
 				// Feed is being selected
-				if (!updatedFeedIds.has(feed.id) ) {
-					selectFeed(feed);
-					updatedFeedIds.add(feed.id);
-				}
+				const allArticles = get(articlesStore);
+				const cachedFeed = Object.keys(allArticles).includes(feed.id.toString());
+				if (!cachedFeed) selectFeed(feed);
+				updatedFeedIds.add(feed.id);
 				updatedChange = { type: 'add', feedId: feed.id, articles: [] };
 				latestSelectedFeed = feed;
-				
 				selectedFeeds = [...selectedFeeds, feed];
 			} else {
 				// Feed is being deselected

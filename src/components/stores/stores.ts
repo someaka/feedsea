@@ -40,14 +40,8 @@ const newArticlesStore = derived(
    ($selectedFeedsStore, set) => {
       if ($selectedFeedsStore.change?.type === 'new') {
          const newArticles = $selectedFeedsStore.change.articles as Article[];
-         queueNewArticles(newArticles)
-            .then(() => {
-               set({ status: 'success', message: 'Embeddings queued successfully.' });
-            })
-            .catch((error) => {
-               console.error('Error queuing embeddings:', error);
-               set({ status: 'error', message: 'Failed to queue embeddings.' });
-            });
+         queueNewArticles(newArticles);
+         set({ status: 'success', message: 'Embeddings queued successfully.' });
       }
    },
    { status: 'idle', message: '' }

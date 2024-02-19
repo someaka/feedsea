@@ -12,16 +12,7 @@ export async function fetchFeeds() {
     feedsStore.set(response.data);
 }
 
-
-// queues the selected feed for articles fetching
 export async function selectFeed(feed: FeedWithUnreadStories): Promise<AxiosResponse> {
-    // Send the selected feed to the server
     return await axios.post("/select-feed", feed, { withCredentials: true });
 }
 
-
-//  NOT HOW THE APP WORKS 
-// export async function fetchArticles(feedId) {
-//     const response = await axios.get(`/articles/${feedId}`);
-//     articlesStore.set(response.data);
-// }

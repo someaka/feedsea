@@ -43,7 +43,7 @@ function addToQueue(embeddings: Record<string, number[]>) {
     }
 }
 
-function processQueue() {
+async function processQueue() {
     if (queue.length > 0 && !isProcessing) {
         isProcessing = true;
         const pairsState = get(pairsStore);
@@ -53,7 +53,7 @@ function processQueue() {
     }
 }
 
-function calculateAllPairs() {
+async function calculateAllPairs() {
     const articleCache: Record<string, Article[]> = get(articlesStore);
     const embeddings = get(embeddingsStore);
 

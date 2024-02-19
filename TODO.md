@@ -1,6 +1,7 @@
+embeding fetching
 clean up text
-speed up article fetching and memory clean up
 force panel code clean up
+speed up article fetching and memory clean up
 
 bug hunt
     invalid state

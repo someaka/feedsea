@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { get } from 'svelte/store';
-	import { articlesStore, feedsStore } from '../stores/stores';
+	import { articlesStore } from '../stores/stores';
 	import { theme } from '../stores/night';
 	import { isLoadingArticles } from '$lib/loadingState';
 
