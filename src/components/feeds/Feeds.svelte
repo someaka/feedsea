@@ -13,6 +13,7 @@
 	import { isLoadingFeeds, isLoadingArticles } from '$lib/loadingState';
 
 	import type { FeedChange, FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
+	import { clearGraph } from '../graph/graphologySigma';
 
 	let feeds: FeedWithUnreadStories[] = [];
 	let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds
@@ -106,20 +107,39 @@
 	let selectAll = true; // True means "Select All" is shown, false for "Unselect All"
 
 	function toggleSelectAll() {
-		if (selectAll) {
-			// Logic to select all feeds
-			feeds.forEach(async (feed) => {
-				if (!selectedFeeds.some((f) => f.id === feed.id)) {
-					await handleFeedClick(feed);
-				}
-			});
-		} else {
-			// Logic to unselect all feeds
-			selectedFeeds.slice().forEach(async (feed) => {
-				await handleFeedClick(feed);
-			});
-		}
+		latestSelectedFeed = null;
+		if (selectAll) selectAllFeeds();
+		else unselectAllFeeds();
 		selectAll = !selectAll;
+	}
+
+	function selectAllFeeds() {
+		const cachedFeeds = Object.keys(get(articlesStore));
+		const fullFeedStore = get(feedsStore);
+		const allFeedIds = Object.keys(fullFeedStore).map((id) => parseInt(id));
+		const allFeeds = Object.values(fullFeedStore);
+		const feedsToSelect = allFeeds.filter((feed) => !cachedFeeds.includes(feed.id.toString()));
+		
+		articlesStore.update((articles) => {
+			feedsToSelect.forEach((feed) => {
+				articles[feed.id] = [];
+			})
+            return articles;
+        });
+		
+		feedsToSelect.forEach((feedId) => selectFeed(feedId));
+		selectedFeedsStore.update(({ feedIds }) => ({ 
+			feedIds: new Set(allFeedIds.filter((id) => !feedIds.has(id))),
+			change: { type: 'all', feedId: -1, articles: [] }
+		}));
+
+		selectedFeeds = allFeeds;
+	}
+
+	function unselectAllFeeds() {
+		selectedFeedsStore.update(() => ({ feedIds: new Set() }));
+		selectedFeeds = [];
+		clearGraph();
 	}
 </script>
 

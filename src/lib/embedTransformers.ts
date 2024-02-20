@@ -1,5 +1,5 @@
 import { embeddingsStore } from '../components/stores/stores';
-import type { ArticleType as Article } from '$lib/types';
+import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 import fastq from 'fastq';
 
 let worker: Worker;
@@ -25,13 +25,16 @@ async function processArticleTask(task: QueueTask): Promise<void> {
     worker.onmessage = (event) => {
       if (event.data.status === 'complete') {
         const embeddingsList: number[][] = event.data.embeddingsList;
-        const embeddingsWithIds = articlesText.reduce((acc, article, index) => {
+        const newEmbeddings = articlesText.reduce((acc, article, index) => {
           acc[article.id] = embeddingsList[index];
           return acc;
-        }, {} as Record<string, number[]>);
+        }, {} as EmbeddingsCache);
 
         embeddingsStore.update(currentEmbeddings => {
-          return { ...currentEmbeddings, ...embeddingsWithIds };
+          return {
+             embeddings: {...currentEmbeddings.embeddings, ...newEmbeddings},
+             newEmbeddings 
+            };
         });
 
         resolve();
@@ -50,7 +53,7 @@ async function processArticleTask(task: QueueTask): Promise<void> {
 
 const queueWorker = fastq.promise(processArticleTask, 1); // Adjust concurrency as needed
 
-function queueNewArticles(articles: Article[]) {
+async function queueNewArticles(articles: Article[]) {
   queueWorker.push({ articles });
 }
 

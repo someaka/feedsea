@@ -9,7 +9,7 @@ import type { Attributes } from 'graphology-types';
 
 import defaultGraphSettings from '../forces/defautGraphSettings';
 
-import type { Node, Link, GraphSettings } from '$lib/types';
+import type { Node, Link, GraphSettings, GraphData } from '$lib/types';
 
 import { focusedArticleId } from '../stores/stores';
 
@@ -191,7 +191,15 @@ class SigmaGrapUpdate {
                 this.graph.dropNode(nodeId);
             }
         })
+    }
 
+    removeNodesById(graphData: GraphData) {
+        this.graph.clearEdges();
+        const nodeIds = new Set(graphData.nodes.map(node => node.id));
+        nodeIds.forEach((nodeId) => {
+            this.graph.dropNode(nodeId);
+        })
+        this.addNewEdges(graphData.links);
     }
 
     addNewNodes(nodes: Node[]) {
@@ -303,6 +311,13 @@ const clearGraph = () => SigmaGrapUpdate.getInstance()?.clearGraph();
 const updateForceSettings = (newSettings: GraphSettings) =>
     SigmaGrapUpdate.getInstance()?.updateForceSettings(newSettings);
 
+const removeNodes = (graphData: GraphData) =>
+    SigmaGrapUpdate.getInstance()?.removeNodesById(graphData);
+const addNewNodes = (nodes: Node[]) =>
+    SigmaGrapUpdate.getInstance()?.addNewNodes(nodes);
+const addNewLinks = (links: Link[]) =>
+    SigmaGrapUpdate.getInstance()?.addNewEdges(links);
+const refreshRenderer = () => SigmaGrapUpdate.getInstance()?.renderer.refresh();
 
 export {
     setContainer,
@@ -310,4 +325,8 @@ export {
     clearGraph,
     updateDayNightMode,
     updateForceSettings,
+    removeNodes,
+    addNewNodes,
+    addNewLinks,
+    refreshRenderer
 };

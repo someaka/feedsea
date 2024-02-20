@@ -1,37 +1,28 @@
 import { cos_sim } from '@xenova/transformers';
-
-import type { Pair } from "./types";
+import type { Pair, EmbeddingsState } from "./types";
 
 self.addEventListener('message', (event) => {
-    const { embeddings, pairsStoreSnapshot } = event.data;
-    const newPairs = calculatePairs(embeddings, pairsStoreSnapshot);
+    const task = event.data;
+    const newPairs = calculatePairs(task);
     self.postMessage({ newPairs });
 });
 
-function calculatePairs(
-    embeddings: Record<string, number[]>,
-    pairsStoreSnapshot: Record<string, Pair>
-): Record<string, Pair> {
+function calculatePairs(task: EmbeddingsState): Record<string, Pair> {
+    const { embeddings, newEmbeddings } = task;
+    const results: Record<string, Pair> = {};
 
-    const newPairs: Record<string, Pair> = {};
-    const ids = Object.keys(embeddings);
+    const newEmbeddingKeys = Object.keys(newEmbeddings);
+    const currentEmbeddingKeys = Object.keys(embeddings).filter(key => !newEmbeddingKeys.includes(key));
 
-    for (let i = 0; i < ids.length; i++) {
-        for (let j = i + 1; j < ids.length; j++) {
-            const id1 = ids[i];
-            const id2 = ids[j];
-            const pairId = `${id1}-${id2}`;
-            const reveId = `${id2}-${id1}`;
-
-            if (!pairsStoreSnapshot[pairId] && !pairsStoreSnapshot[reveId]) {
-                const similarity = cos_sim(embeddings[id1], embeddings[id2]);
-                const normalizedSimilarity = (similarity + 1) / 2;
-                newPairs[pairId] = { id1, id2, similarity: normalizedSimilarity };
-            }
+    for (const newKey of newEmbeddingKeys) {
+        for (const currentKey of currentEmbeddingKeys) {
+            const pairKey = `${newKey}-${currentKey}`;
+            const similarity = cos_sim(embeddings[newKey], embeddings[currentKey]);
+            results[pairKey] = { id1: newKey, id2: currentKey, similarity: (similarity + 1) / 2 };
         }
     }
 
-    return newPairs;
+    return results;
 }
 
-export {}
+export { };

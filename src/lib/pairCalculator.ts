@@ -1,9 +1,8 @@
-import { get } from 'svelte/store';
-import { embeddingsStore, pairsStore, articlesStore } from '../components/stores/stores';
-import type { ArticleType as Article } from '$lib/types';
 
-const queue: Record<string, number[]>[] = [];
-let isProcessing = false;
+import { pairsStore } from '../components/stores/stores';
+import type { EmbeddingsState } from '$lib/types';
+import fastq from 'fastq';
+
 let worker: Worker;
 
 async function initWorker(): Promise<Worker> {
@@ -12,67 +11,34 @@ async function initWorker(): Promise<Worker> {
 }
 
 async function initListeners() {
-
     worker = await initWorker();
 
     worker.onmessage = (event) => {
         const { newPairs } = event.data;
         pairsStore.update(currentPairs => {
-            const updatedPairs = { ...currentPairs.pairs, ...newPairs };
-            return { ...currentPairs, pairs: updatedPairs, newPairs };
+            const pairs = { ...currentPairs.pairs, ...newPairs };
+            return { pairs, newPairs };
         });
-        isProcessing = false;
-        processQueue();
     };
 
     worker.onerror = (error) => {
         console.error('Worker error:', error);
-        isProcessing = false;
-        processQueue();
     };
-
 }
 
 initListeners();
 
+const queueWorker = fastq.promise(processTask, 1); // Adjust concurrency as needed
 
-function addToQueue(embeddings: Record<string, number[]>) {
-    queue.push(embeddings);
-    if (!isProcessing) {
-        processQueue();
-    }
+async function processTask(task: EmbeddingsState): Promise<void> {
+    worker.postMessage(task);
 }
 
-async function processQueue() {
-    if (queue.length > 0 && !isProcessing) {
-        isProcessing = true;
-        const pairsState = get(pairsStore);
-        const pairsStoreSnapshot = pairsState.pairs;
-        const embeddings = queue.shift();
-        worker.postMessage({ embeddings, pairsStoreSnapshot });
-    }
+function calculateAllPairs(currentEmbeddingsState: EmbeddingsState) {
+    const newEmbeddings = currentEmbeddingsState.newEmbeddings;
+    if (!newEmbeddings || Object.keys(newEmbeddings).length === 0) return;
+
+    queueWorker.push(currentEmbeddingsState);
 }
 
-async function calculateAllPairs() {
-    const articleCache: Record<string, Article[]> = get(articlesStore);
-    const embeddings = get(embeddingsStore);
-
-    if (!articleCache || !embeddings) {
-        console.error('Selected feeds or embeddings are not defined');
-        return;
-    }
-
-    const allArticleIds = Object.values(articleCache).flat().map(article => article.id);
-
-    const allEmbeddings = allArticleIds.reduce((acc, id) => {
-        if (embeddings[id]) {
-            acc[id] = embeddings[id];
-        }
-        return acc;
-    }, {} as Record<string, number[]>);
-
-    addToQueue(allEmbeddings);
-}
-
-
-export default calculateAllPairs
+export default calculateAllPairs;

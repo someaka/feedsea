@@ -5,6 +5,8 @@
 		pairsCalculationStore,
 		nodesStore,
 		linksStore,
+		newNodesStore,
+		newLinksStore,
 		articlesWithNodesAndLinksStore
 	} from '../stores/stores';
 	import { theme } from '../stores/night';
@@ -15,7 +17,6 @@
 		setContainer(graphContainer);
 	});
 
-
 	theme.subscribe((value) => {
 		updateDayNightMode();
 	});
@@ -24,6 +25,8 @@
 	let pairsCalculationStatus;
 	let nodes;
 	let links;
+	let newNodes;
+	let newLinks;
 	let articlesWithNodesAndLinks;
 
 	// Subscribe to newArticlesStore
@@ -46,34 +49,43 @@
 		links = value;
 	});
 
+	// Subscribe to newNodesAndLinksStore
+	const unsubscribeNewNodes = newNodesStore.subscribe((value) => {
+		newNodes = value;
+	});
+
+	// Subscribe to newNodesAndLinksStore
+	const unsubscribeNewLinks = newLinksStore.subscribe((value) => {
+		newLinks = value;
+	});
+
 	// Subscribe to articlesWithNodesAndLinksStore
 	const unsubscribeArticlesWithNodesAndLinks = articlesWithNodesAndLinksStore.subscribe((value) => {
 		articlesWithNodesAndLinks = value;
 	});
-
 
 	onDestroy(() => {
 		unsubscribeNewArticles();
 		unsubscribePairsCalculation();
 		unsubscribeNodes();
 		unsubscribeLinks();
+		unsubscribeNewNodes();
+		unsubscribeNewLinks();
 		unsubscribeArticlesWithNodesAndLinks();
 	});
 </script>
 
 <div bind:this={graphContainer} id="graph-container" style="width:  100%; height:  100%;"></div>
 
-<div bind:this={graphContainer} id="graph-container" style="width:  100%; height:  100%;"></div>
-
 <style>
-    #graph-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100%;
-        height: 100%;
-        z-index: -1; /* Ensures it's below other content */
-    }
+	#graph-container {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		width: 100%;
+		height: 100%;
+		z-index: -1; /* Ensures it's below other content */
+	}
 </style>

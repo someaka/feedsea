@@ -1,13 +1,16 @@
-import type { ArticleType as Article } from '$lib/types';
+import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 
 import axios, { AxiosError } from 'axios';
 import { HUGGINGFACE_API_URL, HUGGINGFACE_TOKEN } from './similarityConfig';
-import { similLogger as logger } from '../../logger';
+import { similLogger as logger } from '../logger';
+import { embeddingsStore } from '../components/stores/stores';
 
 const MAX_RETRIES = 5;
 const DEFAULT_WAIT_TIME = 30; // in seconds
+const DEFAULT_QUEUE_TIME = 5; // in seconds
 
-
+let articlesQueue: Article[] = [];
+let isCooldownActive = false;
 
 async function sleep(seconds: number) {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
@@ -49,7 +52,7 @@ async function retryRequest(articlesWithIds: Article[], retries: number, waitTim
 
 
 
-async function fetchEmbeddingsForArticles(articles: Article[]): Promise<Record<string, number[]>> {
+async function fetchEmbeddingsForArticles(articles: Article[]): Promise<EmbeddingsCache> {
 
     // async function getEmbeddings(articlesWithIds) {
     if (articles.some(article => article.text == null)) {
@@ -57,7 +60,7 @@ async function fetchEmbeddingsForArticles(articles: Article[]): Promise<Record<s
     }
 
     const responses = await retryRequest(articles, MAX_RETRIES, DEFAULT_WAIT_TIME);
-    const embeddings: Record<string, number[]> = {};
+    const embeddings: EmbeddingsCache = {};
     const errors = [];
 
     for (let i = 0; i < responses.length; i++) {
@@ -66,7 +69,7 @@ async function fetchEmbeddingsForArticles(articles: Article[]): Promise<Record<s
             errors.push({ id: articles[i].id, error: response });
             console.warn(`Warning: Failed to retrieve embeddings for article ${articles[i].id}: ${response.message}`);
         } else {
-            embeddings[articles[i].id] = response as  number[];
+            embeddings[articles[i].id] = response as number[];
         }
     }
 
@@ -83,4 +86,44 @@ function truncateDataForLogging(data: unknown, maxLength = 100) {
 
 
 
-export default fetchEmbeddingsForArticles
+async function processQueue() {
+    isCooldownActive = true;
+
+    if (articlesQueue.length > 0) {
+        try {
+            const currentQueue = articlesQueue;
+            articlesQueue = [];
+            const newEmbeddings = await fetchEmbeddingsForArticles(currentQueue);
+            // Update the embeddingsStore with the new embeddings
+            embeddingsStore.update((currentEmbeddings) => {
+                return {
+                    embeddings: { ...currentEmbeddings.embeddings, ...newEmbeddings },
+                    newEmbeddings
+                };
+            });
+        } catch (error) {
+            console.error('Error processing embeddings:', error);
+            // Handle error appropriately
+        } finally {
+            setTimeout(() => {
+                isCooldownActive = false;
+                if (articlesQueue.length > 0) {
+                    processQueue();
+                }
+            }, DEFAULT_QUEUE_TIME * 1000);
+
+        }
+    }
+}
+
+
+async function queueNewArticles(articles: Article[]) {
+    articlesQueue.push(...articles);
+
+    if (!isCooldownActive) {
+        processQueue();
+    }
+}
+
+
+export default queueNewArticles

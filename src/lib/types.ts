@@ -112,7 +112,7 @@ interface ArticleType {
 }
 
 interface FeedChange {
-    type: 'add' | 'remove' | 'new';
+    type: 'add' | 'remove' | 'new' | 'all';
     feedId: number;
     articles?: ArticleType[];
 }
@@ -172,6 +172,20 @@ interface GraphSettings {
 }
 
 
+
+interface EmbeddingsCache {
+    [key: string]: number[];
+ }
+ 
+ 
+ interface EmbeddingsState {
+    embeddings: EmbeddingsCache
+    newEmbeddings: EmbeddingsCache
+ }
+ 
+ 
+
+
 export type {
     Story,
     StoryWithColor,
@@ -189,5 +203,7 @@ export type {
     GraphData,
     PendingPair,
     Pair,
-    GraphSettings
+    GraphSettings,
+    EmbeddingsCache,
+    EmbeddingsState
 }
