@@ -226,13 +226,6 @@ const articlesWithNodesAndLinksStore = derived(
          enqueueGraphOperation({ type: 'removeNodes', data: { nodes: removeNodes, links: newLinks } });
          queueRefreshRenderer();
       }
-      // if ($selectedFeedsStore.change.type === 'remove') {
-      //    const articlesToRemove = articles[$selectedFeedsStore.change.feedId];
-      //    if (!articlesToRemove) return;
-      //    const nodeIds = new Set(articlesToRemove.map(article => article.id));
-      //    enqueueGraphOperation({ type: 'removeNodes', data: nodeIds });
-      //    queueRefreshRenderer();
-      // }
 
       if ($selectedFeedsStore.change.type === 'all') {
          const feedsToGet = $selectedFeedsStore.feedIds;

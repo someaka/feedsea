@@ -1,24 +1,20 @@
-import os from 'os';
 import axios from 'axios';
 import { compress } from './compression';
 import { v4 as uuidv4 } from 'uuid';
 import { extract } from '@extractus/article-extractor';
 import sanitizeHtml from 'sanitize-html';
-import fastq from 'fastq';
-import type { queue, done } from 'fastq';
 import type { FeedWithUnreadStories, ArticleType } from './types';
-
-// import { getSubscriber } from './subscribers';
-
-import { articlesLogger as logger } from '../logger';
 import { EventEmitter } from 'events';
+import fastq from 'fastq';
+import type { done, queue } from 'fastq';
+
+const BATCH_INTERVAL = 5000;
 
 interface ArticleTask {
     feedId: string;
     feedColor: string;
     story: string;
 }
-
 
 class Article implements ArticleType {
     id: string;
@@ -39,23 +35,19 @@ class Article implements ArticleType {
 }
 
 class Articles {
-    private static instance: Articles | null = null;
-    private requestQueue: queue<ArticleTask, string>;
-    private numCPUs: number;
-    private concurrency: number;
     private userAgent: string;
     private compress: typeof compress;
-
     public articleEvents: EventEmitter;
+    private activeQueues: queue<ArticleTask>[];
 
-    private constructor() {
+    constructor() {
         this.userAgent = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
-        this.numCPUs = os.cpus().length;
-        this.concurrency = 1;//this.numCPUs - 1;
-        this.requestQueue = fastq(this, this.worker, this.concurrency);
-        this.articleEvents = new EventEmitter();
         this.compress = compress;
+        this.articleEvents = new EventEmitter();
+        this.activeQueues = [];
     }
+
+    private static instance: Articles | null = null;
 
     static getInstance(): Articles {
         if (!this.instance) {
@@ -64,27 +56,11 @@ class Articles {
         return this.instance;
     }
 
-    private async worker(task: ArticleTask, callback: done<string>): Promise<void> {
-        try {
-            if (task.story === "fetchStarting") {
-                this.articleEvents.emit('fetchStarting');
-                callback(null);
-            } else {
-                const article = await this.fetchArticle(task);
-                const compressedArticles = this.compress([article]);
-                this.articleEvents.emit('articleFetched', task.feedId, compressedArticles,);
-                console.log(`Article processed for feed ${task.feedId}: ${task.story}`);
-                callback(null, compressedArticles);
-            }
-        } catch (error) {
-            callback(error as Error);
-        }
-    }
-
     private async fetchArticle(task: ArticleTask): Promise<Article> {
+
         const response = await axios.get(task.story, {
             headers: { 'User-Agent': this.userAgent },
-            timeout: 5000,
+            timeout: BATCH_INTERVAL,
         });
 
         const articleData = await extract(response.data);
@@ -101,6 +77,7 @@ class Articles {
         article.url = articleData.url;
 
         return article;
+
     }
 
     private cleanArticleContent(content: string): string {
@@ -114,37 +91,58 @@ class Articles {
         });
     }
 
-    queueFeedRequest(selectedFeed: FeedWithUnreadStories): void {
-        this.requestQueue.push({
-            feedId: selectedFeed.id.toString(),
-            feedColor: selectedFeed.color,
-            story: "fetchStarting"
-        }, () => {
+    private batch: Article[] = [];
 
-        });
+    async worker(task: ArticleTask, done: done) {
+        try {
+            const article = await this.fetchArticle(task);
+            this.batch.push(article);
+        } catch (error) {
+            if (error instanceof AggregateError)
+                for (const err of error.errors)
+                    console.error(`Sub-error for feed ${task.feedId}:`, err);
+            else console.error(`Error processing task for feed ${task.feedId}:`, error);
+        }
+        done(null);
+    }
+
+    queueFeedRequest(selectedFeed: FeedWithUnreadStories): void {
+        const concurrency = 1;
+        const requestQueue = fastq(this, this.worker, concurrency);
+
+        const sendBatch = () => {
+            if (this.batch.length > 0) {
+                const currentBatch = this.batch.splice(0, this.batch.length); 
+                const compressedBatch = this.compress(currentBatch);
+                this.articleEvents.emit('articleFetched', compressedBatch);
+            }
+        };
+        const batchTimer = setInterval(sendBatch, BATCH_INTERVAL);
 
         selectedFeed.unreadStories.forEach(story => {
-            this.requestQueue.push(
+            requestQueue.push(
                 {
                     feedId: selectedFeed.id.toString(),
                     feedColor: selectedFeed.color,
                     story
-                },
-                (err, result) => {
-                    if (err || !result) {
-                        console.error(`Error processing article request for feed ${selectedFeed.id}: ${err}`);
-                    }
-
-                });
+                }
+            );
         });
+
+        requestQueue.drain = () => {
+            clearInterval(batchTimer);
+            sendBatch();
+            this.activeQueues = this.activeQueues.filter(q => q !== requestQueue);
+        };
+
+        this.activeQueues.push(requestQueue);
     }
 
-
-
     stopAllRequests(): void {
-        this.requestQueue.kill();
-        this.requestQueue = fastq(this, this.worker, this.concurrency);
-        logger.log('All queued article requests have been stopped.');
+        this.activeQueues.forEach(queue => {
+            queue.kill();
+        });
+        this.activeQueues = [];
     }
 }
 
@@ -160,4 +158,3 @@ export {
     queueFeedRequest,
     stopAllRequests
 };
-

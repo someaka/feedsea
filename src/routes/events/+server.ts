@@ -20,8 +20,8 @@ export async function GET({ request }) {
                 controller.enqueue(`event: fetchStarting\ndata: ${JSON.stringify("")}\n\n`);
             };
 
-            const articleFetchedListener = (feedId: string, compressedArticles: string) => {
-                const eventData = { feedId, compressedArticles };
+            const articleFetchedListener = (compressedArticles: string) => {
+                const eventData = { compressedArticles };
                 controller.enqueue(`event: articleFetched\ndata: ${JSON.stringify(eventData)}\n\n`);
             };
 
@@ -34,7 +34,7 @@ export async function GET({ request }) {
                 controller.terminate();
             };
 
-            articleEvents.on('fetchStarting', fetchingStartedListener);
+            // articleEvents.on('fetchStarting', fetchingStartedListener);
             articleEvents.on('articleFetched', articleFetchedListener);
             articleEvents.on('jobComplete', jobCompleteListener);
         },

@@ -14,22 +14,23 @@ export function startSSE() {
     if (eventSource) eventSource.close();
     eventSource = new EventSource('/events');
     eventSource.addEventListener('articleFetched', (event) => {
-        const { feedId: id, compressedArticles } = JSON.parse(event.data) as articleFetchedResponse;
+        const { compressedArticles } = JSON.parse(event.data) as articleFetchedResponse;
         const articlesBatch = decompress(compressedArticles);
 
-        articlesStore.update((articles) => {
-            if (!articles[id]) {
-                articles[id] = [];
-            }
-            articles[id] = [...articles[id], ...articlesBatch];
-            return articles;
+        articlesStore.update((currentArticles) => {
+            articlesBatch.forEach(article => {
+                if (!currentArticles[article.feedId]) {
+                    currentArticles[article.feedId] = [];
+                }
+                currentArticles[article.feedId].push(article);
+            });
+            return currentArticles;
         });
 
         selectedFeedsStore.update(({ feedIds }) => {
-            //const updatedFeeds = feedIds.add(+id);
             const updatedChange: FeedChange = {
                 type: 'new',
-                feedId: +id,
+                feedId: -1,
                 articles: articlesBatch
             };
             return { feedIds: feedIds, change: updatedChange };
