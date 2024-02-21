@@ -1,4 +1,4 @@
-import { serverLogger as logger } from '../logger.js';
+import { serverLogger as logger } from '../../logger.js';
 import axios from 'axios';
 import { CookieJar } from 'tough-cookie';
 import { wrapper } from 'axios-cookiejar-support';
