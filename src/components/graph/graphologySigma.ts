@@ -1,4 +1,4 @@
-import { graphLogger as logger } from '../logger';
+import { graphLogger as logger } from '../../logger';
 
 import Graph from "graphology";
 import Sigma from "sigma";

@@ -1,4 +1,4 @@
-
+import { serverLogger as logger } from '../../logger';
 import { fetchFeeds, fetchStories } from './feedFetcher';
 import { generateColors } from '../../lib/colors';
 import type { RequestHandler } from '@sveltejs/kit';
@@ -7,9 +7,9 @@ import type { FeedsWithUnreadStories, FeedsWithColor } from '../../lib/types';
 
 export const GET: RequestHandler = async ({ request }) => {
   const cookie = request.headers.get('cookie');
-  console.log("cookie", cookie)
+  logger.log("cookie", cookie)
   const sessionCookie = cookie?.split('sessionid=')[2];
-  console.log("sessionCookie", sessionCookie)
+  logger.log("sessionCookie", sessionCookie)
   if (!sessionCookie
     //|| !hasSubscriber(sessionCookie)
   ) {

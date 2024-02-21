@@ -1,12 +1,12 @@
 import { hasSubscriber, removeSubscriber } from '$lib/subscribers';
 import { articleEvents } from '$lib/articles';
-
+import { serverLogger as logger } from '../../logger.js';
 
 export async function GET({ request }) {
     const cookie = request.headers.get('cookie');
-    console.log("cookie", cookie)
+    logger.log("cookie", cookie)
     const clientId = cookie?.split('sessionid=')[2];
-    console.log("clientId", clientId)
+    logger.log("clientId", clientId)
     if (!clientId || !hasSubscriber(clientId)) {
         return new Response(null, { status: 401 });
     }

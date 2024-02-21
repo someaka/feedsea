@@ -4,6 +4,8 @@ import calculateAllPairs from '$lib/pairCalculator';
 import { articlesToNodes, nodesToLinks } from '../graph/graph';
 import { addNewLinks, addNewNodes, refreshRenderer, removeNodes } from '../graph/graphologySigma';
 
+import { storesLogger as logger } from '../../logger';
+
 import type {
    FeedWithUnreadStories,
    ArticleType as Article,
@@ -150,7 +152,7 @@ const newNodesStore = derived(
       enqueueGraphOperation({ type: 'addNodes', data: nodes });
       queueRefreshRenderer();
 
-      console.log("Nodes Added");
+      logger.log("Nodes Added");
 
       set(nodes);
    },
@@ -180,7 +182,7 @@ const newLinksStore = derived(
       enqueueGraphOperation({ type: 'addLinks', data: links });
       queueRefreshRenderer();
 
-      console.log("Links Added");
+      logger.log("Links Added");
 
       set(links);
    },
@@ -321,7 +323,7 @@ function enqueueGraphOperation(operation: GraphOperation) {
       if (err) {
          console.error('Operation failed', err);
       } else {
-         console.log('Operation completed successfully');
+         logger.log('Operation completed successfully');
       }
    });
 }
