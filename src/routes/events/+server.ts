@@ -3,7 +3,10 @@ import { articleEvents } from '$lib/articles';
 
 
 export async function GET({ request }) {
-    const clientId = request.headers.get('cookie')?.split('=')[2];
+    const cookie = request.headers.get('cookie');
+    console.log("cookie", cookie)
+    const clientId = cookie?.split('sessionid=')[2];
+    console.log("clientId", clientId)
     if (!clientId || !hasSubscriber(clientId)) {
         return new Response(null, { status: 401 });
     }

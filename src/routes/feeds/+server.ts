@@ -6,9 +6,13 @@ import type { FeedsWithUnreadStories, FeedsWithColor } from '../../lib/types';
 
 
 export const GET: RequestHandler = async ({ request }) => {
-  const headers = request.headers;
-  const sessionCookie = headers.get('cookie');
-  if (!sessionCookie) {
+  const cookie = request.headers.get('cookie');
+  console.log("cookie", cookie)
+  const sessionCookie = cookie?.split('sessionid=')[2];
+  console.log("sessionCookie", sessionCookie)
+  if (!sessionCookie
+    //|| !hasSubscriber(sessionCookie)
+  ) {
     return new Response(null, { status: 401 });
   }
 

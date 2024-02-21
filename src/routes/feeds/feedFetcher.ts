@@ -33,8 +33,7 @@ class FeedsFetcher {
 
     async fetchWithSessionCookie(url: string, sessionCookie: string, options = {}) {
         try {
-            const parts = sessionCookie.split('=');
-            const cookie = parts.slice(1).join('=').trim()
+            const cookie = `newsblur_sessionid=${sessionCookie}`;
             const response: AxiosResponse = await axios.get(url, {
                 headers: {
                     'Content-Type': 'application/json',
