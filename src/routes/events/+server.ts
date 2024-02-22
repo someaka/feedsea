@@ -19,30 +19,23 @@ export async function GET({ request }) {
 
     const stream = new TransformStream({
         start(controller) {
-            const fetchingStartedListener = () => {
-                controller.enqueue(`event: fetchStarting\ndata: ${JSON.stringify("")}\n\n`);
-            };
-
             const articleFetchedListener = (compressedArticles: string) => {
                 const eventData = { compressedArticles };
                 controller.enqueue(`event: articleFetched\ndata: ${JSON.stringify(eventData)}\n\n`);
             };
 
             const jobCompleteListener = () => {
-                articleEvents.off('fetchStarting', fetchingStartedListener);
                 articleEvents.off('articleFetched', articleFetchedListener);
                 articleEvents.off('jobComplete', jobCompleteListener);
                 removeSubscriber(clientId);
-                //controller.enqueue(`event: jobComplete\n\n`);
                 controller.terminate();
             };
-
-            // articleEvents.on('fetchStarting', fetchingStartedListener);
+            
             articleEvents.on('articleFetched', articleFetchedListener);
             articleEvents.on('jobComplete', jobCompleteListener);
         },
         flush() {
-            // removeSubscriber(clientId);
+            removeSubscriber(clientId);
         }
     });
 

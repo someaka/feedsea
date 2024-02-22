@@ -9,7 +9,7 @@ const MAX_RETRIES = 5;
 const DEFAULT_WAIT_TIME = 30; // in seconds
 const DEFAULT_QUEUE_TIME = 5; // in seconds
 
-let articlesQueue: Article[] = [];
+const articlesQueue: Article[] = [];
 let isCooldownActive = false;
 
 async function sleep(seconds: number) {
@@ -91,8 +91,7 @@ async function processQueue() {
 
     if (articlesQueue.length > 0) {
         try {
-            const currentQueue = articlesQueue;
-            articlesQueue = [];
+            const currentQueue = articlesQueue.splice(0, articlesQueue.length);
             const newEmbeddings = await fetchEmbeddingsForArticles(currentQueue);
             // Update the embeddingsStore with the new embeddings
             embeddingsStore.update((currentEmbeddings) => {

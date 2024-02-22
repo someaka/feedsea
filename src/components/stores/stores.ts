@@ -2,7 +2,7 @@ import { derived, writable, get } from 'svelte/store';
 import queueNewArticles from '$lib/embedFetch'; //'$lib/embedTransformers';
 import calculateAllPairs from '$lib/pairCalculator';
 import { articlesToNodes, nodesToLinks } from '../graph/graph';
-import { addNewLinks, addNewNodes, refreshRenderer, removeNodes } from '../graph/graphologySigma';
+import { addAll, addNewLinks, addNewNodes, refreshRenderer, removeNodes } from '../graph/graphologySigma';
 
 import { storesLogger as logger } from '../../logger';
 
@@ -199,16 +199,33 @@ const articlesWithNodesAndLinksStore = derived(
       ;
 
       if ($selectedFeedsStore.change.type === 'add') {
-         const articlesToAdd = articles[$selectedFeedsStore.change.feedId];
-         if (!articlesToAdd) return;
-         const articleIdsSet = new Set(articlesToAdd.map(article => article.id));
-         const newNodes = nodes.filter(node => articleIdsSet.has(node.id));
-         const nodeIds = new Set(newNodes.map(node => node.id));
-         const newLinks = links.filter(link =>
-            nodeIds.has(link.source.id) || nodeIds.has(link.target.id)
+         // Museum piece
+         // const selectedFeedIds = new Set(
+         //    Object.values($selectedFeedsStore.feedIds)
+         //       .map(feedId => feedId.toString())
+         //       .map(feedId => articles[feedId])
+         //       .flat()
+         //       .map(article => article.id)
+         // );
+         const selectedFeedIds = $selectedFeedsStore.feedIds;
+
+         const selectedArticleIdsSet = new Set<string>();
+         selectedFeedIds.forEach(feedId =>
+            articles[feedId]?.forEach(article => selectedArticleIdsSet.add(article.id))
          );
-         enqueueGraphOperation({ type: 'addBoth', data: { nodes: newNodes, links: newLinks } });
-         queueRefreshRenderer();
+         const articlesToAdd = articles[$selectedFeedsStore.change.feedId];
+         if (articlesToAdd) {
+            const articleIdsSet = new Set(articlesToAdd.map(article => article.id));
+            const newNodes = nodes.filter(node => articleIdsSet.has(node.id));
+            const newLinks = links
+               .filter(link =>
+                  selectedArticleIdsSet.has(link.source.id) &&
+                  selectedArticleIdsSet.has(link.target.id)
+               );
+
+            enqueueGraphOperation({ type: 'addBoth', data: { nodes: newNodes, links: newLinks } });
+            queueRefreshRenderer();
+         }
       }
 
       if ($selectedFeedsStore.change.type === 'remove') {
@@ -235,11 +252,7 @@ const articlesWithNodesAndLinksStore = derived(
          if (!articlesToAdd) return;
          const articleIdsSet = new Set(articlesToAdd.map(article => article.id));
          const newNodes = nodes.filter(node => articleIdsSet.has(node.id));
-         const nodeIds = new Set(newNodes.map(node => node.id));
-         const newLinks = links.filter(link =>
-            nodeIds.has(link.source.id) || nodeIds.has(link.target.id)
-         );
-         enqueueGraphOperation({ type: 'addBoth', data: { nodes: newNodes, links: newLinks } });
+         enqueueGraphOperation({ type: 'addAll', data: { nodes: newNodes, links } });
          queueRefreshRenderer();
       }
 
@@ -287,25 +300,40 @@ import fastq from 'fastq';
 import type { done } from 'fastq';
 
 interface GraphOperation {
-   type: 'addNodes' | 'addLinks' | 'addBoth' | 'removeNodes';
+   type: 'addNodes' | 'addLinks' | 'addBoth' | 'addAll' | 'removeNodes';
    data: Node[] | Link[] | GraphData
 }
+
+
+function asyncify<T extends Node[] | Link[] | GraphData>(fn: (arg: T) => void, thisArg: T) {
+   return new Promise((resolve, reject) => {
+      try {
+         if (fn) resolve(fn(thisArg));
+      } catch (error) {
+         reject(error);
+      }
+   });
+}
+
+
 
 function graphOperationWorker(task: GraphOperation, done: done) {
    switch (task.type) {
       case 'addNodes':
-         addNewNodes(task.data as Node[]);
+         asyncify(addNewNodes, task.data as Node[]);
          break;
       case 'addLinks':
-         addNewLinks(task.data as Link[]);
+         asyncify(addNewLinks, task.data as Link[]);
          break;
       case 'removeNodes':
-         removeNodes(task.data as GraphData);
+         asyncify(removeNodes, task.data as GraphData);
          break;
       case 'addBoth': {
-         const { nodes, links } = task.data as GraphData;
-         addNewNodes(nodes);
-         addNewLinks(links);
+         asyncify(addAll, task.data as GraphData);
+         break;
+      }
+      case 'addAll': {
+         asyncify(addAll, task.data as GraphData);
          break;
       }
       default:
@@ -313,8 +341,6 @@ function graphOperationWorker(task: GraphOperation, done: done) {
    }
    done(null);
 }
-
-
 const graphOperationQueue = fastq(graphOperationWorker, 1);
 
 

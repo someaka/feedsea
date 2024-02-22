@@ -234,6 +234,17 @@ class SigmaGrapUpdate {
         }
     }
 
+    addBoth(graphData: GraphData) {
+        this.addNewNodes(graphData.nodes);
+        this.addNewEdges(graphData.links);
+    }
+
+    addAll(graphData: GraphData) {
+        this.addNewNodes(graphData.nodes);
+        this.graph.clearEdges();
+        this.addNewEdges(graphData.links);
+    }
+
 
 
     clearGraph() {
@@ -317,6 +328,11 @@ const addNewNodes = (nodes: Node[]) =>
     SigmaGrapUpdate.getInstance()?.addNewNodes(nodes);
 const addNewLinks = (links: Link[]) =>
     SigmaGrapUpdate.getInstance()?.addNewEdges(links);
+const addBoth = (graphData: GraphData) =>
+    SigmaGrapUpdate.getInstance()?.addBoth(graphData);
+const addAll = (graphData: GraphData) =>
+    SigmaGrapUpdate.getInstance()?.addAll(graphData);
+
 const refreshRenderer = () => SigmaGrapUpdate.getInstance()?.renderer.refresh();
 
 export {
@@ -328,5 +344,7 @@ export {
     removeNodes,
     addNewNodes,
     addNewLinks,
+    addBoth,
+    addAll,
     refreshRenderer
 };
