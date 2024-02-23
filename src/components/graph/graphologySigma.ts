@@ -88,23 +88,18 @@ class SigmaGrapUpdate {
             this.graph.setNodeAttribute(this.draggedNode, "highlighted", true);
         });
 
-        // On mouse move, if the drag mode is enabled, we change the position of the draggedNode
         this.renderer.getMouseCaptor().on("mousemovebody", (e) => {
             if (!this.isDragging || !this.draggedNode) return;
-
-            // Get new position of node
             const pos = this.renderer.viewportToGraph(e);
 
             this.graph.setNodeAttribute(this.draggedNode, "x", pos.x);
             this.graph.setNodeAttribute(this.draggedNode, "y", pos.y);
 
-            // Prevent sigma to move camera:
             e.preventSigmaDefault();
             e.original.preventDefault();
             e.original.stopPropagation();
         });
 
-        // On mouse up, we reset the autoscale and the dragging mode
         this.renderer.getMouseCaptor().on("mouseup", () => {
             if (this.draggedNode) {
                 this.graph.removeNodeAttribute(this.draggedNode, "highlighted");
@@ -117,7 +112,6 @@ class SigmaGrapUpdate {
         this.renderer.getMouseCaptor().on("mousedown", () => {
             if (!this.renderer.getCustomBBox()) this.renderer.setCustomBBox(this.renderer.getBBox());
         });
-
 
         this.renderer.on('clickNode', (e) => {
             logger.log('Node clicked:', e.node);
@@ -133,8 +127,6 @@ class SigmaGrapUpdate {
     }
 
 
-
-    // Update the getNodeAttributes method to use the new color conversion
     getNodeAttributes(node: Node) {
         return {
             x: node.x,
@@ -149,19 +141,6 @@ class SigmaGrapUpdate {
             title: node.title,
         };
     }
-
-
-
-    // Add methods to add nodes, edges, update the graph, etc.
-    // addNode(attributes: Attributes) {
-    //     const id = uuid();
-    //     this.graph.addNode(id, attributes);
-    //     return id;
-    // }
-
-    // addEdge(sourceId, targetId) {
-    //     this.graph.addEdge(sourceId, targetId);
-    // }
 
 
 

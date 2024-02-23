@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { get } from 'svelte/store';
+	import { writable } from 'svelte/store';
 	import { articlesStore } from '../stores/stores';
 	import { theme } from '../stores/night';
 	import { isLoadingArticles } from '$lib/loadingState';
@@ -25,7 +25,6 @@
 	// When selectedFeed changes, automatically show the panel
 	$: if (latestSelectedFeed) {
 		isVisible = true;
-		// Optionally, reset articles array or perform other actions here
 	}
 
 	// Reactive subscription to articlesStore
@@ -40,6 +39,9 @@
 		startWidth = htmlElement.offsetWidth;
 		document.documentElement.addEventListener('mousemove', doDrag, false);
 		document.documentElement.addEventListener('mouseup', stopDrag, false);
+
+		// Disable text selection during drag
+		document.body.style.userSelect = 'none';
 	}
 
 	function doDrag(e: MouseEvent) {
@@ -51,34 +53,20 @@
 	function stopDrag() {
 		document.documentElement.removeEventListener('mousemove', doDrag, false);
 		document.documentElement.removeEventListener('mouseup', stopDrag, false);
+
+		// Re-enable text selection after drag
+		document.body.style.userSelect = '';
 	}
 
 	onDestroy(() => {
 		isLoadingArticles.set(false); // Ensure loading state is reset when component is destroyed
 	});
-
-	let articlesPanelWrapper: HTMLElement;
-
-	// Reactive statement to update the height of the resize bar
-	$: if (articlesPanelWrapper) {
-		const resizer = articlesPanelWrapper.querySelector('.resizer') as HTMLElement;
-		if (resizer) {
-			resizer.style.height = `${articlesPanelWrapper.scrollHeight}px`;
-		}
-	}
 </script>
-
-<!-- <button on:click={toggleVisibility}>Toggle Panel</button> -->
 
 {#if $isLoadingArticles}
 	<div class="spinner" aria-label="Loading articles"></div>
 {:else}
-	<div
-		class:dark={$theme === 'dark'}
-		class="articles-panel-wrapper"
-		class:visible={isVisible}
-		bind:this={articlesPanelWrapper}
-	>
+	<div class:dark={$theme === 'dark'} class="articles-panel-wrapper" class:visible={isVisible}>
 		<div class="resizer" on:mousedown={initDrag} role="button" tabindex="0"></div>
 		<div class="buttons-container">
 			<DayNightModeButton />
@@ -89,15 +77,18 @@
 		{:else if latestSelectedFeed}
 			<h3>{latestSelectedFeed.feed_title}</h3>
 			{#if articles.length > 0}
-				<ul>
-					{#each articles as article (article.id)}
-						<li data-article-id={article.id} style="background-color: {article.feedColor};">
-							<h4>{article.title}</h4>
-							<a href={article.url} target="_blank">{article.url}</a>
-							<p>{article.text}</p>
-						</li>
-					{/each}
-				</ul>
+				<div class="articles-container">
+					<ul>
+						{#each articles as article (article.id)}
+							<li data-article-id={article.id} style="background-color: {article.feedColor};">
+								<h4>{article.title}</h4>
+								<a href={article.url} target="_blank">{article.url}</a>
+								<!-- Render the article text as HTML -->
+								{@html article.text}
+							</li>
+						{/each}
+					</ul>
+				</div>
 			{:else}
 				<p>Loading...</p>
 			{/if}
@@ -109,17 +100,19 @@
 
 <style>
 	.articles-panel-wrapper {
+		width: calc(100vw / 4);
 		position: fixed;
+		overflow-y: hidden;
 		top: 0;
 		right: 0;
-		width: calc(100vw / 4);
-		height: 100%;
-		overflow-y: scroll;
+		height: 100vh;
 		background-color: white;
-		padding: 1rem;
+		padding: 0.4rem;
 		box-shadow: -1px 0 2px rgba(0, 0, 0, 0.1);
 		transition: transform 0.3s ease-in-out;
 		transform: translateX(100%); /* Initially hidden */
+		display: flex;
+		flex-direction: column;
 	}
 	.articles-panel-wrapper.visible {
 		transform: translateX(0); /* Make visible */
@@ -139,12 +132,12 @@
 		}
 	}
 	.resizer {
-		width: 7px;
+		width: 14px;
 		height: 100%;
-		background: #ccc;
+		background: #ffffff00;
 		cursor: ew-resize;
 		position: absolute;
-		left: -5px;
+		left: -7px;
 		top: 0;
 	}
 
@@ -191,5 +184,35 @@
 	}
 	li {
 		margin-bottom: 1rem;
+	}
+	:global(.articles-panel-wrapper img) {
+		max-width: 100%;
+		height: auto;
+	}
+
+	.articles-container {
+		overflow-y: auto;
+		flex: 1;
+	}
+
+	/* Apply similar scrollbar styles as in Feeds.svelte */
+	.articles-container::-webkit-scrollbar {
+		width: 4px;
+	}
+
+	.articles-container::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.articles-container::-webkit-scrollbar-thumb {
+		background: transparent;
+	}
+
+	.articles-container:hover::-webkit-scrollbar-thumb {
+		background: rgba(136, 136, 136, 0.5);
+	}
+
+	.articles-container::-webkit-scrollbar-thumb:hover {
+		background: rgba(85, 85, 85, 0.5);
 	}
 </style>

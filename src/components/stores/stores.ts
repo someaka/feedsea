@@ -2,7 +2,7 @@ import { derived, writable, get } from 'svelte/store';
 import queueNewArticles from '$lib/embedFetch'; //'$lib/embedTransformers';
 import calculateAllPairs from '$lib/pairCalculator';
 import { articlesToNodes, nodesToLinks } from '../graph/graph';
-import { addAll, addNewLinks, addNewNodes, refreshRenderer, removeNodes } from '../graph/graphologySigma';
+import { addAll, addBoth, addNewLinks, addNewNodes, refreshRenderer, removeNodes } from '../graph/graphologySigma';
 
 import { storesLogger as logger } from '../../logger';
 
@@ -18,8 +18,6 @@ import type {
 
 const feedCache: Record<string, FeedWithUnreadStories> = {};
 const articleCache: Record<string, Article[]> = {};
-
-const graphData: GraphData = { nodes: [], links: [] };
 
 const feedsStore = writable(feedCache);
 const articlesStore = writable(articleCache);
@@ -115,16 +113,6 @@ const linksStore = derived(
 );
 
 
-const graphDataStore = derived(
-   [nodesStore, linksStore],
-   ([$nodesStore, $linksStore], set) => {
-      const graphData: GraphData = { nodes: $nodesStore.nodes, links: $linksStore.links };
-      set(graphData);
-   },
-   graphData
-);
-
-
 
 
 
@@ -133,27 +121,18 @@ const graphDataStore = derived(
 const newNodesStore = derived(
    [nodesStore],
    ([$nodesStore], set) => {
-      const selectedFeedIds = get(selectedFeedsStore).feedIds;
-
-      const selectedArticleIds: string[] = [];
-      selectedFeedIds.forEach(feedId => {
+      const selectedArticleIds = new Set<string>();
+      get(selectedFeedsStore).feedIds.forEach(feedId => {
          const articlesForFeed = articleCache[feedId];
-         if (articlesForFeed) {
-            articlesForFeed.forEach(article => selectedArticleIds.push(article.id));
-         }
+         if (articlesForFeed)
+            articlesForFeed.forEach(article => selectedArticleIds.add(article.id));
       });
-
       const nodes = $nodesStore.newNodes.filter(
-         node =>
-            selectedArticleIds.includes(node.id)
+         node => selectedArticleIds.has(node.id)
       );
-
-      //addNewNodes(nodes);
       enqueueGraphOperation({ type: 'addNodes', data: nodes });
       queueRefreshRenderer();
-
       logger.log("Nodes Added");
-
       set(nodes);
    },
    [] as Node[]
@@ -162,32 +141,102 @@ const newNodesStore = derived(
 const newLinksStore = derived(
    [linksStore],
    ([$linksStore], set) => {
-      const selectedFeedIds = get(selectedFeedsStore).feedIds;
-
-      const selectedArticleIds: string[] = [];
-      selectedFeedIds.forEach(feedId => {
+      const selectedArticleIds = new Set<string>();
+      get(selectedFeedsStore).feedIds.forEach(feedId => {
          const articlesForFeed = articleCache[feedId];
          if (articlesForFeed) {
-            articlesForFeed.forEach(article => selectedArticleIds.push(article.id));
+            articlesForFeed.forEach(article => selectedArticleIds.add(article.id));
          }
       });
-
       const links = $linksStore.newLinks.filter(
          link =>
-            selectedArticleIds.includes(link.source.id) &&
-            selectedArticleIds.includes(link.target.id)
+            selectedArticleIds.has(link.source.id) &&
+            selectedArticleIds.has(link.target.id)
       );
-
-      //addNewLinks(links);
       enqueueGraphOperation({ type: 'addLinks', data: links });
       queueRefreshRenderer();
-
       logger.log("Links Added");
-
       set(links);
    },
    [] as Link[]
 );
+
+
+
+
+
+async function addSelectedNodes(
+   feedIds: Set<number>, newFeedId: number, articles: Record<string, Article[]>, nodes: Node[], links: Link[]
+) {
+   // Museum piece
+   // const selectedFeedIds = new Set(
+   //    Object.values($selectedFeedsStore.feedIds)
+   //       .map(feedId => feedId.toString())
+   //       .map(feedId => articles[feedId])
+   //       .flat()
+   //       .map(article => article.id)
+   // );
+   return new Promise(resolve => {
+      const selectedFeedIds = feedIds;
+
+      const selectedArticleIdsSet = new Set<string>();
+      selectedFeedIds.forEach((feedId: string | number) =>
+         articles[feedId]?.forEach((article: { id: string; }) => selectedArticleIdsSet.add(article.id))
+      );
+      const articlesToAdd = articles[newFeedId];
+      if (articlesToAdd) {
+         const articleIdsSet = new Set(articlesToAdd.map((article) => article.id));
+         const newNodes = nodes.filter((node) => articleIdsSet.has(node.id));
+         const newLinks = links.filter((link) =>
+            (articleIdsSet.has(link.source.id) && selectedArticleIdsSet.has(link.target.id))
+            ||
+            (selectedArticleIdsSet.has(link.source.id) && articleIdsSet.has(link.target.id))
+         );
+         enqueueGraphOperation({ type: 'addBoth', data: { nodes: newNodes, links: newLinks } });
+         queueRefreshRenderer();
+         resolve(undefined);
+      }
+   })
+}
+
+async function removeSelectedNodes(
+   feedIds: Set<number>, newFeedId: number, articles: Record<string, Article[]>, nodes: Node[], links: Link[]
+) {
+   return new Promise(resolve => {
+      const feedsToGet = feedIds;
+      const articlesToRemove = articles[newFeedId];
+      const articlesToAdd = Array.from(feedsToGet).flatMap(feedId => articles[feedId] || []);
+      if (!articlesToAdd || !articlesToRemove) return;
+      const articleIdsSet = new Set(articlesToAdd.map(article => article.id));
+      const newNodes = nodes.filter(node => articleIdsSet.has(node.id));
+      const nodeIds = new Set(newNodes.map(node => node.id));
+      const newLinks = links.filter(link =>
+         nodeIds.has(link.source.id) && nodeIds.has(link.target.id)
+      );
+      const removeIdsSet = new Set(articlesToRemove.map(article => article.id));
+      const removeNodes = nodes.filter(node => removeIdsSet.has(node.id));
+
+      enqueueGraphOperation({ type: 'removeNodes', data: { nodes: removeNodes, links: newLinks } });
+      queueRefreshRenderer();
+      resolve(undefined);
+   });
+}
+
+async function allSelectedNodes(
+   feedIds: Set<number>, articles: Record<string, Article[]>, nodes: Node[], links: Link[]
+) {
+   return new Promise(resolve => {
+      const feedsToGet = feedIds;
+      const articlesToAdd = Array.from(feedsToGet).flatMap(feedId => articles[feedId] || []);
+      if (!articlesToAdd) return;
+      const articleIdsSet = new Set(articlesToAdd.map(article => article.id));
+      const newNodes = nodes.filter(node => articleIdsSet.has(node.id));
+      enqueueGraphOperation({ type: 'addAll', data: { nodes: newNodes, links } });
+      queueRefreshRenderer();
+      resolve(undefined);
+   })
+}
+
 
 const articlesWithNodesAndLinksStore = derived(
    [selectedFeedsStore],
@@ -196,96 +245,64 @@ const articlesWithNodesAndLinksStore = derived(
       const articles = get(articlesStore);
       const nodes = get(nodesStore).nodes;
       const links = get(linksStore).links;
-      ;
 
-      if ($selectedFeedsStore.change.type === 'add') {
-         // Museum piece
-         // const selectedFeedIds = new Set(
-         //    Object.values($selectedFeedsStore.feedIds)
-         //       .map(feedId => feedId.toString())
-         //       .map(feedId => articles[feedId])
-         //       .flat()
-         //       .map(article => article.id)
-         // );
-         const selectedFeedIds = $selectedFeedsStore.feedIds;
-
-         const selectedArticleIdsSet = new Set<string>();
-         selectedFeedIds.forEach(feedId =>
-            articles[feedId]?.forEach(article => selectedArticleIdsSet.add(article.id))
-         );
-         const articlesToAdd = articles[$selectedFeedsStore.change.feedId];
-         if (articlesToAdd) {
-            const articleIdsSet = new Set(articlesToAdd.map(article => article.id));
-            const newNodes = nodes.filter(node => articleIdsSet.has(node.id));
-            const newLinks = links
-               .filter(link =>
-                  selectedArticleIdsSet.has(link.source.id) &&
-                  selectedArticleIdsSet.has(link.target.id)
-               );
-
-            enqueueGraphOperation({ type: 'addBoth', data: { nodes: newNodes, links: newLinks } });
-            queueRefreshRenderer();
+      switch ($selectedFeedsStore.change.type) {
+         case 'add': {
+            addSelectedNodes(
+               $selectedFeedsStore.feedIds,
+               $selectedFeedsStore.change.feedId,
+               articles,
+               nodes,
+               links
+            );
+            break;
+         }
+         case 'remove': {
+            removeSelectedNodes(
+               $selectedFeedsStore.feedIds,
+               $selectedFeedsStore.change.feedId,
+               articles,
+               nodes,
+               links
+            );
+            break;
+         }
+         case 'all': {
+            allSelectedNodes(
+               $selectedFeedsStore.feedIds,
+               articles,
+               nodes,
+               links
+            );
+            break;
          }
       }
-
-      if ($selectedFeedsStore.change.type === 'remove') {
-         const feedsToGet = $selectedFeedsStore.feedIds;
-         const articlesToRemove = articles[$selectedFeedsStore.change.feedId];
-         const articlesToAdd = Array.from(feedsToGet).flatMap(feedId => articles[feedId] || []);
-         if (!articlesToAdd || !articlesToRemove) return;
-         const articleIdsSet = new Set(articlesToAdd.map(article => article.id));
-         const newNodes = nodes.filter(node => articleIdsSet.has(node.id));
-         const nodeIds = new Set(newNodes.map(node => node.id));
-         const newLinks = links.filter(link =>
-            nodeIds.has(link.source.id) && nodeIds.has(link.target.id)
-         );
-         const removeIdsSet = new Set(articlesToRemove.map(article => article.id));
-         const removeNodes = nodes.filter(node => removeIdsSet.has(node.id));
-
-         enqueueGraphOperation({ type: 'removeNodes', data: { nodes: removeNodes, links: newLinks } });
-         queueRefreshRenderer();
-      }
-
-      if ($selectedFeedsStore.change.type === 'all') {
-         const feedsToGet = $selectedFeedsStore.feedIds;
-         const articlesToAdd = Array.from(feedsToGet).flatMap(feedId => articles[feedId] || []);
-         if (!articlesToAdd) return;
-         const articleIdsSet = new Set(articlesToAdd.map(article => article.id));
-         const newNodes = nodes.filter(node => articleIdsSet.has(node.id));
-         enqueueGraphOperation({ type: 'addAll', data: { nodes: newNodes, links } });
-         queueRefreshRenderer();
-      }
-
       set({ nodes, links });
    },
    { nodes: [], links: [] } as GraphData
 );
 
 
-let lastScheduledCall = 0;
-const minimumInterval = 5000;
+let refreshTimeoutId: number | null = null;
+const minimumInterval = 1000;
 
-function queueRefreshRenderer() {
-   const now = performance.now();
-   const timeUntilNextAllowedCall = lastScheduledCall + minimumInterval - now;
+function queueRefreshRenderer(numNodes: number = 1) {
+   const adjustment = Math.min(20, Math.sqrt(numNodes));
+   const adjustedInterval = minimumInterval * adjustment;
 
-   if (timeUntilNextAllowedCall <= 0) {
-      scheduleRefresh(now);
-   } else {
-      if (!lastScheduledCall || now > lastScheduledCall) {
-         setTimeout(() => scheduleRefresh(performance.now()), timeUntilNextAllowedCall);
-      }
+   // Clear the existing timeout if it exists to debounce the refresh calls
+   if (refreshTimeoutId !== null) {
+      clearTimeout(refreshTimeoutId);
    }
+
+   // Set a new timeout to delay the refresh operation
+   refreshTimeoutId = setTimeout(() => {
+      requestAnimationFrame(() => {
+         refreshRenderer();
+         refreshTimeoutId = null; // Reset the timeout ID after the refresh is scheduled
+      });
+   }, adjustedInterval) as unknown as number; // Type assertion here
 }
-
-function scheduleRefresh(timestamp: number) {
-   lastScheduledCall = timestamp;
-   requestAnimationFrame(() => {
-      refreshRenderer();
-   });
-}
-
-
 
 
 
@@ -329,7 +346,7 @@ function graphOperationWorker(task: GraphOperation, done: done) {
          asyncify(removeNodes, task.data as GraphData);
          break;
       case 'addBoth': {
-         asyncify(addAll, task.data as GraphData);
+         asyncify(addBoth, task.data as GraphData);
          break;
       }
       case 'addAll': {
@@ -355,10 +372,6 @@ function enqueueGraphOperation(operation: GraphOperation) {
 }
 
 
-
-
-
-
 const focusedArticleId = writable<string | null>(null);
 
 
@@ -372,7 +385,6 @@ export {
    pairsCalculationStore,
    nodesStore,
    linksStore,
-   graphDataStore,
    newNodesStore,
    newLinksStore,
    articlesWithNodesAndLinksStore,

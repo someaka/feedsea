@@ -1,6 +1,6 @@
 import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, type AxiosResponse } from 'axios';
 import { HUGGINGFACE_API_URL, HUGGINGFACE_TOKEN } from './similarityConfig';
 import { similLogger as logger } from '../logger';
 import { embeddingsStore } from '../components/stores/stores';
@@ -9,15 +9,19 @@ const MAX_RETRIES = 5;
 const DEFAULT_WAIT_TIME = 30; // in seconds
 const DEFAULT_QUEUE_TIME = 5; // in seconds
 
-const articlesQueue: Article[] = [];
+let articlesQueue: Article[] | null = null;
 let isCooldownActive = false;
 
 async function sleep(seconds: number) {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
 
-async function retryRequest(articlesWithIds: Article[], retries: number, waitTime: number) {
-    const responses: unknown[] = [];
+type ResponseOrError = AxiosResponse | Error;
+
+async function retryRequest(
+    articlesWithIds: Article[], retries: number, waitTime: number
+): Promise<ResponseOrError[]> {
+    const responses: ResponseOrError[] = [];
     for (let i = 0; i < retries; i++) {
         try {
             const response = await axios.post(
@@ -53,29 +57,25 @@ async function retryRequest(articlesWithIds: Article[], retries: number, waitTim
 
 
 async function fetchEmbeddingsForArticles(articles: Article[]): Promise<EmbeddingsCache> {
-
-    // async function getEmbeddings(articlesWithIds) {
     if (articles.some(article => article.text == null)) {
         throw new Error('Texts array contains null or undefined values.');
     }
 
-    const responses = await retryRequest(articles, MAX_RETRIES, DEFAULT_WAIT_TIME);
+    let responses = null;
+    responses = await retryRequest(articles, MAX_RETRIES, DEFAULT_WAIT_TIME);
     const embeddings: EmbeddingsCache = {};
-    const errors = [];
 
     for (let i = 0; i < responses.length; i++) {
         const response = responses[i];
         if (response instanceof Error) {
-            errors.push({ id: articles[i].id, error: response });
             console.warn(`Warning: Failed to retrieve embeddings for article ${articles[i].id}: ${response.message}`);
         } else {
-            embeddings[articles[i].id] = response as number[];
+            embeddings[articles[i].id] = response as unknown as number[];
         }
     }
+    responses = null;
 
-    const truncatedData = truncateDataForLogging(embeddings);
-    logger.log('Embeddings retrieved (truncated):', truncatedData);
-
+    logger.log('Embeddings retrieved (truncated):', truncateDataForLogging(embeddings));
     return embeddings;
 }
 
@@ -87,13 +87,12 @@ function truncateDataForLogging(data: unknown, maxLength = 100) {
 
 
 async function processQueue() {
-    isCooldownActive = true;
-
-    if (articlesQueue.length > 0) {
+    if (articlesQueue && articlesQueue.length > 0) {
+        isCooldownActive = true;
         try {
             const currentQueue = articlesQueue.splice(0, articlesQueue.length);
             const newEmbeddings = await fetchEmbeddingsForArticles(currentQueue);
-            // Update the embeddingsStore with the new embeddings
+
             embeddingsStore.update((currentEmbeddings) => {
                 return {
                     embeddings: { ...currentEmbeddings.embeddings, ...newEmbeddings },
@@ -102,21 +101,23 @@ async function processQueue() {
             });
         } catch (error) {
             console.error('Error processing embeddings:', error);
-            // Handle error appropriately
         } finally {
             setTimeout(() => {
                 isCooldownActive = false;
-                if (articlesQueue.length > 0) {
-                    processQueue();
+                if (articlesQueue) {
+                    if (articlesQueue.length > 0) processQueue();
+                    else articlesQueue = null;
                 }
             }, DEFAULT_QUEUE_TIME * 1000);
-
         }
     }
 }
 
 
 async function queueNewArticles(articles: Article[]) {
+    if (!articlesQueue) {
+        articlesQueue = [];
+    }
     articlesQueue.push(...articles);
 
     if (!isCooldownActive) {
