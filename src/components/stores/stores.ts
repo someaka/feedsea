@@ -223,11 +223,9 @@ async function removeSelectedNodes(
 }
 
 async function allSelectedNodes(
-   feedIds: Set<number>, articles: Record<string, Article[]>, nodes: Node[], links: Link[]
+   articlesToAdd: Article[], nodes: Node[], links: Link[]
 ) {
    return new Promise(resolve => {
-      const feedsToGet = feedIds;
-      const articlesToAdd = Array.from(feedsToGet).flatMap(feedId => articles[feedId] || []);
       if (!articlesToAdd) return;
       const articleIdsSet = new Set(articlesToAdd.map(article => article.id));
       const newNodes = nodes.filter(node => articleIdsSet.has(node.id));
@@ -269,8 +267,7 @@ const articlesWithNodesAndLinksStore = derived(
          }
          case 'all': {
             allSelectedNodes(
-               $selectedFeedsStore.feedIds,
-               articles,
+               $selectedFeedsStore.change.articles || [],
                nodes,
                links
             );

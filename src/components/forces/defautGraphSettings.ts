@@ -2,7 +2,7 @@ import type { GraphSettings } from '$lib/types';
 
 const defaultGraphSettings: GraphSettings = {
     attraction: 0.00001,
-    repulsion: 0.1,
+    repulsion: 0.01,
     gravity: 0.0001,
     inertia: 0.6,
     maxMove: 1

@@ -1,257 +1,189 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { forcePanelSettings } from './forceSettingsStore';
 	import { updateForceSettings } from '../graph/graphologySigma';
 	import defaultGraphSettings from './defautGraphSettings';
 
-	let gravitySlider;
-	let repulsionSlider;
-	let attractionSlider;
-	let inertiaSlider;
-	let maxMoveSlider;
+	import type { GraphSettings } from '$lib/types';
+
+	type ScaleType = 'log' | 'linear';
+	type SliderId = keyof GraphSettings;
+
+	interface SliderConfig {
+		min: number;
+		max: number;
+		precision: number;
+		scaleType: ScaleType;
+	}
+
+	interface SliderType {
+		id: SliderId;
+		label: string;
+		description: string;
+		value: number;
+		config: SliderConfig;
+	}
+
+	class Slider implements SliderType {
+		id: SliderId;
+		label: string;
+		description: string;
+		value: number;
+		config: SliderConfig;
+
+		constructor(
+			id: SliderId,
+			label: string,
+			description: string,
+			defaultValue: number,
+			config: SliderConfig
+		) {
+			this.id = id;
+			this.label = label;
+			this.description = description;
+			this.config = config;
+			this.value = Slider.calculateScaledValue(defaultValue, config);
+		}
+
+		static calculateScaledValue(value: number, config: SliderConfig): number {
+			return config.scaleType === 'log'
+				? (Math.log(value) - Math.log(config.min)) /
+						((Math.log(config.max) - Math.log(config.min)) / 100)
+				: value;
+		}
+
+		static calculateOriginalValue(scaledValue: number, config: SliderConfig): number {
+			let originalValue;
+			if (config.scaleType === 'log') {
+				originalValue = Math.exp(
+					Math.log(config.min) + scaledValue * ((Math.log(config.max) - Math.log(config.min)) / 100)
+				);
+			} else {
+				originalValue = scaledValue;
+			}
+			return Number(originalValue.toFixed(config.precision));
+		}
+	}
+
+	let sliders: Slider[] = [
+		new Slider(
+			'gravity',
+			'Gravity',
+			'Higher gravity pulls nodes closer to center, lower lets them drift apart.',
+			defaultGraphSettings.gravity,
+			{
+				min: 0.00001,
+				max: 10,
+				precision: 5,
+				scaleType: 'log'
+			}
+		),
+		new Slider(
+			'repulsion',
+			'Repulsion',
+			'Higher repulsion spreads nodes further apart, lower brings them closer.',
+			defaultGraphSettings.repulsion,
+			{
+				min: 0.0001,
+				max: 10,
+				precision: 5,
+				scaleType: 'log'
+			}
+		),
+		new Slider(
+			'attraction',
+			'Attraction',
+			'Higher attraction increases the force pulling connected nodes together.',
+			defaultGraphSettings.attraction,
+			{
+				min: 0.000001,
+				max: 0.1,
+				precision: 8,
+				scaleType: 'log'
+			}
+		),
+		new Slider(
+			'inertia',
+			'Inertia',
+			'Higher inertia maintains node velocity, lower inertia slows nodes down faster.',
+			defaultGraphSettings.inertia,
+			{
+				min: 0,
+				max: 5,
+				precision: 1,
+				scaleType: 'linear'
+			}
+		),
+		new Slider(
+			'maxMove',
+			'Max Move',
+			'Higher max move allows nodes to move further in each iteration.',
+			defaultGraphSettings.maxMove,
+			{
+				min: 0,
+				max: 5,
+				precision: 1,
+				scaleType: 'linear'
+			}
+		)
+	];
+
 
 
 	onMount(() => {
-		gravitySlider = document.getElementById('gravitySlider');
-		repulsionSlider = document.getElementById('repulsionSlider');
-		attractionSlider = document.getElementById('attractionSlider');
-		inertiaSlider = document.getElementById('inertiaSlider');
-		maxMoveSlider = document.getElementById('maxMoveSlider');
+		const unsubscribe = forcePanelSettings.subscribe((settings) => {
+			sliders = sliders.map((slider) => {
+				const storedValue = settings[slider.id];
+				return new Slider(slider.id, slider.label, slider.description, storedValue, slider.config);
+			});
+		});
 
-		initializeSliders();
+		return () => {
+			unsubscribe();
+		};
 	});
 
-	function updateOutput(
-		slider: HTMLInputElement,
-		output: HTMLElement | null,
-		scale: { min: any; max: any; factor?: number },
-		precision: number,
-		scaleType: string | null
-	) {
-		const value = parseFloat(slider.value);
-		let scaledValue;
-
-		if (scaleType === 'log') {
-			const minLog = Math.log(scale.min);
-			const maxLog = Math.log(scale.max);
-			const sliderMax = parseFloat(slider.getAttribute('max') || '0');
-			const sliderMin = parseFloat(slider.getAttribute('min') || '0');
-			const scaleLog = (maxLog - minLog) / (sliderMax - sliderMin);
-			scaledValue = Math.exp(minLog + scaleLog * (value - sliderMin));
-		} else {
-			scaledValue = scale.min + (value / 100) * (scale.max - scale.min);
-		}
-
-		if (output) {
-			output.textContent = scaledValue.toFixed(precision);
-		}
+	function updateSettings() {
+		const settings: GraphSettings = sliders.reduce((acc, slider) => {
+			acc[slider.id] = Slider.calculateOriginalValue(slider.value, slider.config);
+			return acc;
+		}, {} as GraphSettings);
+		updateForceSettings(settings);
+		forcePanelSettings.set(settings);
 	}
-
-	function initializeSliders() {
-		const sliders = document.querySelectorAll('.slider');
-
-		sliders.forEach((slider) => {
-			const outputId = slider.getAttribute('data-output') as string;
-			const output = document.getElementById(outputId);
-			const scale = {
-				min: parseFloat(slider.getAttribute('data-scale-min') || '0'),
-				max: parseFloat(slider.getAttribute('data-scale-max') || '0'),
-				factor: parseFloat(slider.getAttribute('data-scale-factor') || '1')
-			};
-			const precision = parseInt(slider.getAttribute('data-precision') || '2', 10);
-			const scaleType = slider.getAttribute('data-scale-type');
-
-			let defaultPosition;
-			if (scaleType === 'log') {
-				const minLog = Math.log(scale.min);
-				const maxLog = Math.log(scale.max);
-				const sliderMax = parseFloat(slider.getAttribute('max') || '0');
-				const sliderMin = parseFloat(slider.getAttribute('min') || '0');
-				const scaleLog = (maxLog - minLog) / (sliderMax - sliderMin);
-				const defaultValue = parseFloat(output?.textContent || '0');
-				defaultPosition =
-					(Math.log(defaultValue) - minLog) / scaleLog +
-					parseFloat((slider as HTMLInputElement).min);
-			} else {
-				const defaultValue = parseFloat(output?.textContent || '0');
-				defaultPosition = ((defaultValue - scale.min) / (scale.max - scale.min)) * 100;
-			}
-			(slider as HTMLInputElement).value = defaultPosition.toString();
-
-			slider.addEventListener('input', () => {
-				updateOutput(slider as HTMLInputElement, output, scale, precision, scaleType);
-				updateForceSettings({
-					gravity: parseFloat(document.getElementById('gravityOutput')?.textContent || '0'),
-					repulsion: parseFloat(document.getElementById('repulsionOutput')?.textContent 	|| '0'),
-					attraction: parseFloat(document.getElementById('attractionOutput')?.textContent || '0'),
-					inertia: parseFloat(document.getElementById('inertiaOutput')?.textContent || '0'),
-					maxMove: parseFloat(document.getElementById('maxMoveOutput')?.textContent || '0')
-				});
-			});
-
-			updateOutput(slider as HTMLInputElement, output, scale, precision, scaleType);
-		});
-	}
-
 
 </script>
 
 <div id="forceSettings">
 	<h3>Force Settings</h3>
-	<!-- Gravity Slider -->
-	<div class="slider-container">
-		<div class="slider-header">
-			<label for="gravitySlider" class="slider-title">Gravity:</label>
-			<small class="slider-explanation"
-				>Higher gravity pulls nodes closer to center, lower lets them drift apart.</small
-			>
-		</div>
-		<div class="range-slider">
-			<input
-				type="range"
-				id="gravitySlider"
-				min="0"
-				max="100"
-				value="1"
-				class="slider"
-				data-output="gravityOutput"
-				data-scale-min="0.00001"
-				data-scale-max="10"
-				data-scale-factor="1"
-				data-precision="5"
-				data-scale-type="log"
-			/>
-			<div class="slider-min-max">
-				<span class="slider-min">0.00001</span>
-				<output id="gravityOutput" class="slider-output">{defaultGraphSettings.gravity}</output>
-				<span class="slider-max">10</span>
+	{#each sliders as slider}
+		<div class="slider-container">
+			<div class="slider-header">
+				<label for="{slider.id}Slider" class="slider-title">{slider.label}:</label>
+				<small class="slider-explanation">{slider.description}</small>
 			</div>
-		</div>
-	</div>
 
-	<!-- Repulsion Slider -->
-	<div class="slider-container">
-		<div class="slider-header">
-			<label for="repulsionSlider" class="slider-title">Repulsion:</label>
-			<small class="slider-explanation"
-				>Higher repulsion spreads nodes further apart, lower brings them closer.</small
-			>
-		</div>
-		<div class="range-slider">
-			<input
-				type="range"
-				id="repulsionSlider"
-				min="0"
-				max="100"
-				value="70"
-				class="slider"
-				data-output="repulsionOutput"
-				data-scale-min="0.0001"
-				data-scale-max="10"
-				data-scale-factor="1"
-				data-precision="5"
-				data-scale-type="log"
-			/>
-			<div class="slider-min-max">
-				<span class="slider-min">0.0001</span>
-				<output id="repulsionOutput" class="slider-output">{defaultGraphSettings.repulsion}</output>
-				<span class="slider-max">10</span>
+			<div class="range-slider">
+				<input
+					type="range"
+					id="{slider.id}Slider"
+					bind:value={slider.value}
+					min={slider.config.scaleType === 'log' ? 0 : slider.config.min}
+					max={slider.config.scaleType === 'log' ? 100 : slider.config.max}
+					step="any"
+					class="slider"
+					on:input={updateSettings}
+				/>
+				<div class="slider-min-max">
+					<span class="slider-min">{slider.config.min}</span>
+					<output for="{slider.id}Slider" id="{slider.id}Output" class="slider-output">
+						{Slider.calculateOriginalValue(slider.value, slider.config)}
+					</output>
+					<span class="slider-max">{slider.config.max}</span>
+				</div>
 			</div>
 		</div>
-	</div>
-
-	<!-- Attraction Slider -->
-	<div class="slider-container">
-		<div class="slider-header">
-			<label for="attractionSlider" class="slider-title">Attraction:</label>
-			<small class="slider-explanation"
-				>Higher attraction increases the force pulling connected nodes together.</small
-			>
-		</div>
-		<div class="range-slider">
-			<input
-				type="range"
-				id="attractionSlider"
-				min="0"
-				max="10000"
-				value="10"
-				class="slider"
-				data-output="attractionOutput"
-				data-scale-min="0.000001"
-				data-scale-max="0.01"
-				data-scale-factor="0.0001"
-				data-precision="8"
-				data-scale-type="log"
-			/>
-			<div class="slider-min-max">
-				<span class="slider-min">0.000001</span>
-				<output id="attractionOutput" class="slider-output">{defaultGraphSettings.attraction}</output>
-				<span class="slider-max">0.01</span>
-			</div>
-		</div>
-	</div>
-
-	<!-- Inertia Slider -->
-	<div class="slider-container">
-		<div class="slider-header">
-			<label for="inertiaSlider" class="slider-title">Inertia:</label>
-			<small class="slider-explanation"
-				>Higher inertia maintains node velocity, lower inertia slows nodes down faster.</small
-			>
-		</div>
-		<div class="range-slider">
-			<input
-				type="range"
-				id="inertiaSlider"
-				min="0"
-				max="100"
-				value="60"
-				class="slider"
-				data-output="inertiaOutput"
-				data-scale-min="0"
-				data-scale-max="5"
-				data-scale-factor="1"
-				data-precision="1"
-				data-scale-type="linear"
-				step="0.1"
-			/>
-			<div class="slider-min-max">
-				<span class="slider-min">0</span>
-				<output id="inertiaOutput" class="slider-output">{defaultGraphSettings.inertia}</output>
-				<span class="slider-max">5</span>
-			</div>
-		</div>
-	</div>
-
-	<!-- Max Move Slider -->
-	<div class="slider-container">
-		<div class="slider-header">
-			<label for="maxMoveSlider" class="slider-title">Max Move:</label>
-			<small class="slider-explanation"
-				>Higher max move allows nodes to move further in each iteration.</small
-			>
-		</div>
-		<div class="range-slider">
-			<input
-				type="range"
-				id="maxMoveSlider"
-				min="0"
-				max="100"
-				value="1"
-				class="slider"
-				data-output="maxMoveOutput"
-				data-scale-min="0"
-				data-scale-max="10"
-				data-scale-factor="1"
-				data-precision="0"
-				data-scale-type="linear"
-			/>
-			<div class="slider-min-max">
-				<span class="slider-min">0</span>
-				<output id="maxMoveOutput" class="slider-output">{defaultGraphSettings.maxMove}</output>
-				<span class="slider-max">10</span>
-			</div>
-		</div>
-	</div>
+	{/each}
 </div>
 
 <style>
@@ -278,7 +210,8 @@
 		flex-grow: 1; /* Allows the description to take up remaining space */
 	}
 
-	.slider-min-max {
+    .slider-min-max, .slider-output {
+        user-select: none;
 		display: flex;
 		justify-content: space-between;
 		font-size: 0.8rem;
