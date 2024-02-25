@@ -16,7 +16,7 @@ import type {
    NodeUpdate, LinkUpdate
 } from '$lib/types';
 import queueArticlesToNodes from '$lib/articlesToNodes';
-import queueNodesToLinks from '$lib/linksToNodes';
+import queueNodesToLinks from '$lib/nodesToLinks';
 
 
 

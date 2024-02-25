@@ -71,7 +71,7 @@ class SigmaGrapUpdate {
         this.isDragging = false;
         // TODO set up forceatlas2 and different settings for each layout
         this.settings = {
-            isNodeFixed: (attr: Attributes) => attr.highlighted,
+            isNodeFixed: (_: any, attr: Attributes) => attr.highlighted,
             settings: defaultGraphSettings
         };
         this.layout = new ForceSupervisor(this.graph, this.settings);
