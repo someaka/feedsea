@@ -183,6 +183,8 @@ interface EmbeddingsCache {
     newEmbeddings: EmbeddingsCache
  }
  
+ type NodeUpdate = { nodes: Node[], newNodes: Node[] }
+ type LinkUpdate = { links: Link[], newLinks: Link[] }
  
 
 
@@ -205,5 +207,7 @@ export type {
     Pair,
     GraphSettings,
     EmbeddingsCache,
-    EmbeddingsState
+    EmbeddingsState,
+    NodeUpdate,
+    LinkUpdate
 }

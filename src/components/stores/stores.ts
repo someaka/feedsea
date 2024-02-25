@@ -1,18 +1,22 @@
 import { derived, writable, get } from 'svelte/store';
+import fastq from 'fastq';
+import { storesLogger as logger } from '../../logger';
 import queueNewArticles from '$lib/embedFetch'; //'$lib/embedTransformers';
 import calculateAllPairs from '$lib/pairCalculator';
-import { articlesToNodes, nodesToLinks } from '../graph/graph';
-import { addAll, addBoth, addNewLinks, addNewNodes, refreshRenderer, removeNodes } from '../graph/graphologySigma';
-
-import { storesLogger as logger } from '../../logger';
+import {
+   addAll, addBoth, addNewLinks, addNewNodes, refreshRenderer, removeNodes
+} from '../graph/graphologySigma';
 
 import type {
    FeedWithUnreadStories,
    ArticleType as Article,
    SelectedFeedsState,
    GraphData, Node, Link,
-   Pair, EmbeddingsState
+   Pair, EmbeddingsState,
+   NodeUpdate, LinkUpdate
 } from '$lib/types';
+import queueArticlesToNodes from '$lib/articlesToNodes';
+import queueNodesToLinks from '$lib/linksToNodes';
 
 
 
@@ -68,51 +72,52 @@ const pairsCalculationStore = derived(
 );
 
 
-const initialNodes = { nodes: [] as Node[], newNodes: [] as Node[] };
-
-const nodesStore = derived(
+const nodesStoreUpdate = derived(
    selectedFeedsStore,
    ($selectedFeedsStore, set) => {
       if ($selectedFeedsStore.change?.type === 'new') {
          const newArticles = $selectedFeedsStore.change.articles as Article[];
-         const newNodes = articlesToNodes(newArticles);
-         const currentNodes = get(nodesStore).nodes;
-         const updatedNodes = [...currentNodes, ...newNodes];
-         set({ nodes: updatedNodes, newNodes });
+         queueArticlesToNodes(newArticles);
+         set({ status: 'success', message: 'Articles turned into nodes successfully.' });
       }
    },
-   initialNodes
+   { status: 'idle', message: '' }
 );
 
+const initialNodeUpdate: NodeUpdate = {
+   nodes: [],
+   newNodes: []
+};
+
+const nodesStore = writable<NodeUpdate>(initialNodeUpdate);
 
 
 interface PairsState {
    pairs: Record<string, Pair>;
    newPairs: Record<string, Pair>;
 }
-
 const initialPairsState: PairsState = {
    pairs: {},
    newPairs: {}
 };
-
 const pairsStore = writable<PairsState>(initialPairsState);
 
-const initialLinks = { links: [] as Link[], newLinks: [] as Link[] };
 
-const linksStore = derived(
+const initialLinksUpdate: LinkUpdate = {
+   links: [],
+   newLinks: []
+};
+
+const linksStoreUpdate = derived(
    pairsStore,
    ($pairsStore, set) => {
-      const currentLinks = get(linksStore).links;
-      const nodes = get(nodesStore).nodes;
-      const newLinks = nodesToLinks(nodes, $pairsStore.newPairs);
-      const updatedLinks = [...currentLinks, ...newLinks];
-      set({ links: updatedLinks, newLinks });
+      queueNodesToLinks(get(nodesStore).nodes, $pairsStore.newPairs);
+      set({ status: 'success', message: 'Pairs turned into Links successfully.' });
    },
-   initialLinks
+   { status: 'idle', message: '' }
 );
 
-
+const linksStore = writable<LinkUpdate>(initialLinksUpdate);
 
 
 
@@ -133,9 +138,9 @@ const newNodesStore = derived(
       enqueueGraphOperation({ type: 'addNodes', data: nodes });
       queueRefreshRenderer();
       logger.log("Nodes Added");
-      set(nodes);
+      set({ status: 'success', message: 'Nodes added successfully.' });
    },
-   [] as Node[]
+   { status: 'idle', message: '' }
 );
 
 const newLinksStore = derived(
@@ -156,9 +161,9 @@ const newLinksStore = derived(
       enqueueGraphOperation({ type: 'addLinks', data: links });
       queueRefreshRenderer();
       logger.log("Links Added");
-      set(links);
+      set({ status: 'success', message: 'Links added successfully.' });
    },
-   [] as Link[]
+   { status: 'idle', message: '' }
 );
 
 
@@ -166,22 +171,19 @@ const newLinksStore = derived(
 
 
 async function addSelectedNodes(
-   feedIds: Set<number>, newFeedId: number, articles: Record<string, Article[]>, nodes: Node[], links: Link[]
+   feedIds: Set<number>,
+   newFeedId: number,
+   articles: Record<string, Article[]>,
+   nodes: Node[],
+   links: Link[]
 ) {
-   // Museum piece
-   // const selectedFeedIds = new Set(
-   //    Object.values($selectedFeedsStore.feedIds)
-   //       .map(feedId => feedId.toString())
-   //       .map(feedId => articles[feedId])
-   //       .flat()
-   //       .map(article => article.id)
-   // );
    return new Promise(resolve => {
       const selectedFeedIds = feedIds;
 
       const selectedArticleIdsSet = new Set<string>();
       selectedFeedIds.forEach((feedId: string | number) =>
-         articles[feedId]?.forEach((article: { id: string; }) => selectedArticleIdsSet.add(article.id))
+         articles[feedId]?.forEach((article: { id: string; }) =>
+            selectedArticleIdsSet.add(article.id))
       );
       const articlesToAdd = articles[newFeedId];
       if (articlesToAdd) {
@@ -200,7 +202,11 @@ async function addSelectedNodes(
 }
 
 async function removeSelectedNodes(
-   feedIds: Set<number>, newFeedId: number, articles: Record<string, Article[]>, nodes: Node[], links: Link[]
+   feedIds: Set<number>,
+   newFeedId: number,
+   articles: Record<string, Article[]>,
+   nodes: Node[],
+   links: Link[]
 ) {
    return new Promise(resolve => {
       const feedsToGet = feedIds;
@@ -274,9 +280,9 @@ const articlesWithNodesAndLinksStore = derived(
             break;
          }
       }
-      set({ nodes, links });
+      set({ status: 'success', message: 'Graph updated successfully.' });
    },
-   { nodes: [], links: [] } as GraphData
+   { status: 'idle', message: '' }
 );
 
 
@@ -310,62 +316,40 @@ function queueRefreshRenderer(numNodes: number = 1) {
 
 
 
-import fastq from 'fastq';
-import type { done } from 'fastq';
 
 interface GraphOperation {
    type: 'addNodes' | 'addLinks' | 'addBoth' | 'addAll' | 'removeNodes';
    data: Node[] | Link[] | GraphData
 }
 
-
-function asyncify<T extends Node[] | Link[] | GraphData>(fn: (arg: T) => void, thisArg: T) {
-   return new Promise((resolve, reject) => {
-      try {
-         if (fn) resolve(fn(thisArg));
-      } catch (error) {
-         reject(error);
-      }
-   });
-}
-
-
-
-function graphOperationWorker(task: GraphOperation, done: done) {
+async function graphOperationWorker(task: GraphOperation) {
    switch (task.type) {
       case 'addNodes':
-         asyncify(addNewNodes, task.data as Node[]);
+         addNewNodes(task.data as Node[]);
          break;
       case 'addLinks':
-         asyncify(addNewLinks, task.data as Link[]);
+         addNewLinks(task.data as Link[]);
          break;
       case 'removeNodes':
-         asyncify(removeNodes, task.data as GraphData);
+         removeNodes(task.data as GraphData);
          break;
       case 'addBoth': {
-         asyncify(addBoth, task.data as GraphData);
+         addBoth(task.data as GraphData);
          break;
       }
       case 'addAll': {
-         asyncify(addAll, task.data as GraphData);
+         addAll(task.data as GraphData);
          break;
       }
       default:
          console.error('Unsupported operation');
    }
-   done(null);
 }
-const graphOperationQueue = fastq(graphOperationWorker, 1);
 
+const graphOperationQueue = fastq.promise(graphOperationWorker, 1);
 
 function enqueueGraphOperation(operation: GraphOperation) {
-   graphOperationQueue.push(operation, (err) => {
-      if (err) {
-         console.error('Operation failed', err);
-      } else {
-         logger.log('Operation completed successfully');
-      }
-   });
+   graphOperationQueue.push(operation);
 }
 
 
@@ -381,7 +365,9 @@ export {
    newArticlesStore,
    pairsCalculationStore,
    nodesStore,
+   nodesStoreUpdate,
    linksStore,
+   linksStoreUpdate,
    newNodesStore,
    newLinksStore,
    articlesWithNodesAndLinksStore,

@@ -3,8 +3,8 @@
 	import {
 		newArticlesStore,
 		pairsCalculationStore,
-		nodesStore,
-		linksStore,
+		nodesStoreUpdate,
+		linksStoreUpdate,
 		newNodesStore,
 		newLinksStore,
 		articlesWithNodesAndLinksStore
@@ -40,12 +40,12 @@
 	});
 
 	// Subscribe to nodesStore
-	const unsubscribeNodes = nodesStore.subscribe((value) => {
+	const unsubscribeNodes = nodesStoreUpdate.subscribe((value) => {
 		nodes = value;
 	});
 
 	// Subscribe to linksStore
-	const unsubscribeLinks = linksStore.subscribe((value) => {
+	const unsubscribeLinks = linksStoreUpdate.subscribe((value) => {
 		links = value;
 	});
 
