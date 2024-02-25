@@ -121,14 +121,12 @@
 			defaultGraphSettings.maxMove,
 			{
 				min: 0,
-				max: 5,
+				max: 10,
 				precision: 1,
 				scaleType: 'linear'
 			}
 		)
 	];
-
-
 
 	onMount(() => {
 		const unsubscribe = forcePanelSettings.subscribe((settings) => {
@@ -152,6 +150,7 @@
 		forcePanelSettings.set(settings);
 	}
 
+	let easterEggActive = Math.random() < 0.5;
 </script>
 
 <div id="forceSettings">
@@ -163,7 +162,7 @@
 				<small class="slider-explanation">{slider.description}</small>
 			</div>
 
-			<div class="range-slider">
+			<div class="range-slider"  class:easter-egg={easterEggActive}>
 				<input
 					type="range"
 					id="{slider.id}Slider"
@@ -210,12 +209,22 @@
 		flex-grow: 1; /* Allows the description to take up remaining space */
 	}
 
-    .slider-min-max, .slider-output {
-        user-select: none;
+	.slider-min-max{
+		user-select: none;
 		display: flex;
 		justify-content: space-between;
 		font-size: 0.8rem;
 		margin-top: -0.5rem;
+		position: relative;
+		z-index: -1;
+	}
+	.slider-output {
+		user-select: none;
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.8rem;
+		margin-top: -0.5rem;
+		z-index: -1;
 	}
 
 	.slider {
@@ -234,5 +243,91 @@
 		margin-left: auto; /* Center the box */
 		margin-right: auto;
 		margin-bottom: 5px;
+		z-index: -1;
+	}
+
+	:root {
+		--slider-track-width: 100%;
+		--slider-track-height: 4px;
+		--slider-track-background-default: linear-gradient(to right, #0080ca34, #417ff169);
+		--slider-track-border-radius: 4px;
+		--slider-thumb-width: 15px;
+		--slider-thumb-height: 15px;
+		--slider-thumb-background: #fff;
+		--slider-thumb-border: 2px solid #007bff;
+		--slider-thumb-border-radius: 50%;
+		--slider-thumb-box-shadow: 0 0 4px #007bff;
+		--easter-slider-track-background: linear-gradient(to right, #ffd9007a, #007bff85);
+	}
+
+	/* Default slider track styling */
+	.slider::-webkit-slider-runnable-track {
+		width: var(--slider-track-width);
+		height: var(--slider-track-height);
+		background: var(--slider-track-background-default);
+		border-radius: var(--slider-track-border-radius);
+	}
+
+	.slider::-moz-range-track {
+		width: var(--slider-track-width);
+		height: var(--slider-track-height);
+		background: var(--slider-track-background-default);
+		border-radius: var(--slider-track-border-radius);
+	}
+
+	.slider::-ms-track {
+		width: var(--slider-track-width);
+		height: var(--slider-track-height);
+		background: var(--slider-track-background-default);
+		border-radius: var(--slider-track-border-radius);
+		border-color: transparent;
+		color: transparent;
+	}
+
+	/* Easter egg styling */
+	.easter-egg .slider::-webkit-slider-runnable-track{
+		background: var(--easter-slider-track-background) !important;
+	}
+	.easter-egg .slider::-moz-range-track{
+		background: var(--easter-slider-track-background) !important;
+	}
+	.easter-egg .slider::-ms-track {
+		background: var(--easter-slider-track-background) !important;
+	}
+
+	/* Slider thumb styling */
+	.slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		margin-top: -6px; /* Adjust based on the slider height to align properly */
+		width: var(--slider-thumb-width);
+		height: var(--slider-thumb-height);
+		background: var(--slider-thumb-background);
+		border: var(--slider-thumb-border);
+		border-radius: var(--slider-thumb-border-radius);
+		box-shadow: var(--slider-thumb-box-shadow);
+		z-index: 2;
+		cursor: pointer;
+	}
+
+	.slider::-moz-range-thumb {
+		width: var(--slider-thumb-width);
+		height: var(--slider-thumb-height);
+		background: var(--slider-thumb-background);
+		border: var(--slider-thumb-border);
+		border-radius: var(--slider-thumb-border-radius);
+		box-shadow: var(--slider-thumb-box-shadow);
+		z-index: 2;
+		cursor: pointer;
+	}
+
+	.slider::-ms-thumb {
+		width: var(--slider-thumb-width);
+		height: var(--slider-thumb-height);
+		background: var(--slider-thumb-background);
+		border: var(--slider-thumb-border);
+		border-radius: var(--slider-thumb-border-radius);
+		box-shadow: var(--slider-thumb-box-shadow);
+		z-index: 2;
+		cursor: pointer;
 	}
 </style>
