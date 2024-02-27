@@ -1,23 +1,23 @@
 <script>
 	import { onMount, onDestroy } from 'svelte';
-	import isLoggedIn from './stores/auth';
+	import isLoggedIn from '../lib/stores/auth';
 	import { callServerCleanUp } from '$lib/api';
 	import Feeds from './feeds/Feeds.svelte';
 	import Graph from './graph/Graph.svelte';
-	import { theme } from './stores/night'; // Import the theme store
+	import { theme } from '../lib/stores/night'; // Import the theme store
 
-	function cleanup() {
-		callServerCleanUp();
-		window.removeEventListener('beforeunload', cleanup);
-	}
+    async function cleanup() {
+        await callServerCleanUp();
+    }
 
-	onMount(() => {
-		window.addEventListener('beforeunload', cleanup);
-	});
+    onMount(() => {
+        window.addEventListener('beforeunload', cleanup);
+    });
 
-	// onDestroy(() => {
-	// 	cleanup();
-	// });
+    onDestroy(() => {
+        cleanup();
+        window.removeEventListener('beforeunload', cleanup);
+    });
 
 	// Reactive statement to watch the isLoggedIn store
 	$: mainWrapperClass = $isLoggedIn ? 'slide-in' : '';

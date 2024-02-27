@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { isNightMode } from '../stores/night';
-	import { theme, applyTheme } from '../stores/night';
+	import { isNightMode } from '../../lib/stores/night';
+	import { theme, applyTheme } from '../../lib/stores/night';
 
 	const cloudList = ['gridicons:cloud', 'oi:cloud', 'foundation:cloud', 'ion:cloud'];
 

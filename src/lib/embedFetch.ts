@@ -3,7 +3,7 @@ import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 import axios, { AxiosError, type AxiosResponse } from 'axios';
 import { HUGGINGFACE_API_URL, HUGGINGFACE_TOKEN } from './similarityConfig';
 import { similLogger as logger } from '../logger';
-import { embeddingsStore } from '../components/stores/stores';
+import { embeddingsStore } from './stores/stores';
 
 const MAX_RETRIES = 5;
 const DEFAULT_WAIT_TIME = 30; // in seconds

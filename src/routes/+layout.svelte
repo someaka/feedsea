@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { theme, applyTheme } from '../components/stores/night';
+	import { theme, applyTheme } from '../lib/stores/night';
 
 	// On mount, set theme based on local storage or system preference
 	onMount(() => {

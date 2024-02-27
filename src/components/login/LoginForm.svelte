@@ -2,7 +2,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import axios from 'axios';
-	import isLoggedIn from '../stores/auth';
+	import isLoggedIn from '../../lib/stores/auth';
+	import { theme } from '$lib/stores/night';
 
 	let formLogin: HTMLFormElement;
 	let submitButton: HTMLButtonElement;
@@ -62,11 +63,12 @@
 	});
 </script>
 
-<div class="container">
+<!-- Add dark mode classes to the labels and error message -->
+<div class="container" class:dark={$theme === 'dark'}>
 	<h1>Login to NewsBlur</h1>
 	<form class="login-form" bind:this={formLogin}>
 		<div class="form-group">
-			<label for="inputUsername" class="form-label">Username</label>
+			<label for="inputUsername" class="form-label dark-label">Username</label>
 			<input
 				type="text"
 				class="form-control"
@@ -76,7 +78,7 @@
 			/>
 		</div>
 		<div class="form-group">
-			<label for="inputPassword" class="form-label">Password</label>
+			<label for="inputPassword" class="form-label dark-label">Password</label>
 			<input
 				type="password"
 				class="form-control"
@@ -88,13 +90,29 @@
 		<div class="form-group">
 			<div class="action-group">
 				<button type="submit" class="btn btn-primary" bind:this={submitButton}>Submit</button>
-				<div id="loginStatusMessage" class="status-message" bind:this={loginStatusMessage}></div>
+				<div
+					id="loginStatusMessage"
+					class="status-message dark-error"
+					bind:this={loginStatusMessage}
+				></div>
 			</div>
 		</div>
 	</form>
 </div>
 
 <style>
+	.dark h1 {
+		color: white;
+	}
+
+	.dark .dark-label {
+		color: #ccc; /* Lighter color for dark mode */
+	}
+
+	.dark .dark-error {
+		color: #ff6b6b; /* Lighter red for dark mode */
+	}
+
 	.status-message {
 		margin-left: 15px; /* Add a small margin to the left */
 		margin-bottom: 10px; /* Remove any top margin */

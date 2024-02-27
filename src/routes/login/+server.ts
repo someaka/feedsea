@@ -9,7 +9,8 @@ export async function POST(event) {
     const loginResult = await loginUser(username, password);
     if (loginResult.authenticated && loginResult.sessionCookie) {
 
-      const clientId = loginResult.sessionCookie?.split('=')[1];
+      const clientId = loginResult.sessionCookie?.split('sessionid=')[1];
+    
       addSubscriber(clientId);
   
       const newCookie = `sessionid=${loginResult.sessionCookie}; HttpOnly; Secure; SameSite=None; Max-Age=3600`;

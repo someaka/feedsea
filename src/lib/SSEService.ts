@@ -1,5 +1,5 @@
 
-import { articlesStore, selectedFeedsStore } from '../components/stores/stores';
+import { articlesStore, selectedFeedsStore } from './stores/stores';
 import { decompress } from './compression';
 import type { ArticleType, FeedChange } from './types';
 

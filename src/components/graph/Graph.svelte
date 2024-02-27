@@ -8,8 +8,8 @@
 		newNodesStore,
 		newLinksStore,
 		articlesWithNodesAndLinksStore
-	} from '../stores/stores';
-	import { theme } from '../stores/night';
+	} from '../../lib/stores/stores';
+	import { theme } from '../../lib/stores/night';
 	import { setContainer, updateDayNightMode } from './graphologySigma';
 
 	let graphContainer: HTMLElement;

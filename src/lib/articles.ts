@@ -1,12 +1,14 @@
 import axios, { type AxiosResponse } from 'axios';
-import { compress } from './compression';
 import { v4 as uuidv4 } from 'uuid';
 import { extract } from '@extractus/article-extractor';
 import sanitizeHtml from 'sanitize-html';
-import type { FeedWithUnreadStories, ArticleType } from './types';
 import { EventEmitter } from 'events';
+import { compress } from './compression';
+import { hasSubscriber, removeSubscriber } from './subscribers';
+
 import fastq from 'fastq';
 import type { done, queue } from 'fastq';
+import type { FeedWithUnreadStories, ArticleType } from './types';
 
 import { articlesLogger as logger } from '../logger';
 
@@ -49,13 +51,23 @@ class Articles {
         this.activeQueues = null;
     }
 
-    private static instance: Articles | null = null;
+    private static instances: Map<string, Articles> = new Map();
 
-    static getInstance(): Articles {
-        if (!this.instance) {
-            this.instance = new Articles();
+    static getInstance(clientToken: string): Articles {
+        if (!hasSubscriber(clientToken)) {
+            throw new Error("Client not subscribed");
         }
-        return this.instance;
+        if (!this.instances.has(clientToken)) {
+            this.instances.set(clientToken, new Articles());
+        }
+        return this.instances.get(clientToken)!;
+    }
+
+    static destroyInstance(clientToken: string): void {
+        if (this.instances.has(clientToken)) {
+            this.instances.delete(clientToken);
+            removeSubscriber(clientToken); 
+        }
     }
 
     private async fetchArticle(task: ArticleTask): Promise<Article> {
@@ -166,15 +178,16 @@ class Articles {
     }
 }
 
-const articleEvents = Articles.getInstance().articleEvents;
+const getArticleEvents = (clientToken : string) => Articles.getInstance(clientToken).articleEvents;
 
-const queueFeedRequest = (selectedFeed: FeedWithUnreadStories) =>
-    Articles.getInstance().queueFeedRequest(selectedFeed);
+const queueFeedRequest = (selectedFeed: FeedWithUnreadStories , clientToken: string) =>
+    Articles.getInstance(clientToken).queueFeedRequest(selectedFeed);
 
-const stopAllRequests = () => Articles.getInstance().stopAllRequests();
+const stopAllRequests = (clientToken: string) => Articles.getInstance(clientToken).stopAllRequests();
 
 export {
-    articleEvents,
+    Articles,
+    getArticleEvents,
     queueFeedRequest,
     stopAllRequests
 };

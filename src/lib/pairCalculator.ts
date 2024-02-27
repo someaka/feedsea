@@ -1,5 +1,5 @@
 
-import { pairsStore } from '../components/stores/stores';
+import { pairsStore } from './stores/stores';
 import type { EmbeddingsState } from '$lib/types';
 import fastq from 'fastq';
 

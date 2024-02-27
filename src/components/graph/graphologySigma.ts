@@ -3,17 +3,23 @@ import { graphLogger as logger } from '../../logger';
 import Graph from "graphology";
 import Sigma from "sigma";
 
-import ForceSupervisor from "graphology-layout-force/worker";
 import type { Settings } from 'sigma/settings';
 import type { Attributes } from 'graphology-types';
 
-import defaultGraphSettings from '../forces/defautGraphSettings';
+import type { ForceLayoutSettings } from 'graphology-layout-force';
+import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
 
-import type { Node, Link, GraphSettings, GraphData } from '$lib/types';
+//mport { defaultForceAtlasSettings, defaultForceAtlas2Settings } from '../forces/defaultGraphSettings';
+import type { Node, Link, GraphData } from '$lib/types';
 
-import { focusedArticleId } from '../stores/stores';
+import { focusedArticleId } from '../../lib/stores/stores';
 
-// import ForceSupervisor from 'graphology-layout-forceatlas2/worker';
+import ForceSupervisor from "graphology-layout-force/worker";
+import ForceAtlasSupervisor from 'graphology-layout-forceatlas2/worker';
+import { defaultForceAtlasSettings, defaultForceAtlas2Settings } from '../forces/defaultGraphSettings';
+import { isForceAtlas } from '$lib/stores/forces';
+import { isNightMode } from '$lib/stores/night';
+import { get } from 'svelte/store';
 
 //const CHUNK_SIZE = 1000;
 
@@ -22,6 +28,8 @@ let graphContainer: HTMLElement | null;
 function setContainer(container: HTMLElement) {
     graphContainer = container;
 }
+
+
 
 class SigmaGrapUpdate {
 
@@ -37,13 +45,15 @@ class SigmaGrapUpdate {
 
     container: HTMLElement | null;
     graph: Graph;
+    layoutType: string;
+    layoutSettings: ForceLayoutSettings | ForceAtlas2Settings;
     renderer: Sigma;
     defaultDrawHover: Settings["defaultDrawNodeHover"] | undefined;
     draggedNode: string | null;
     isDragging: boolean;
     settings: Attributes;
-    layout: ForceSupervisor;
-    DayOrNight: number;
+    layout: ForceSupervisor | ForceAtlasSupervisor;
+    DayOrNight: boolean;
 
 
 
@@ -55,8 +65,6 @@ class SigmaGrapUpdate {
 
         this.graph = new Graph();
         this.renderer = new Sigma(this.graph, this.container, {
-
-
             renderLabels: true, // Disable automatic label rendering   
             allowInvalidContainer: true, //shusshes cypress
             labelDensity: 1,
@@ -66,16 +74,22 @@ class SigmaGrapUpdate {
             //     border: NodeProgramBorder,
             // },
         });
+
+        this.DayOrNight = get(isNightMode);
         this.defaultDrawHover = this.renderer.getSetting("defaultDrawNodeHover");
+        this.updateDayNightMode();
+        this.DayOrNight = !this.DayOrNight;
+
         this.draggedNode = null;
         this.isDragging = false;
-        // TODO set up forceatlas2 and different settings for each layout
+
+        this.layoutType = this.getLayoutType();
+        this.layoutSettings = this.getSettings();
         this.settings = {
-            isNodeFixed: (_: any, attr: Attributes) => attr.highlighted,
-            settings: defaultGraphSettings
+            isNodeFixed: (_: unknown, attr: Attributes) => attr.highlighted,
+            settings: this.layoutSettings
         };
-        this.layout = new ForceSupervisor(this.graph, this.settings);
-        this.DayOrNight = 1;
+        this.layout = this.setLayout(this.layoutType === "forceAtlas");
 
         this.startLayout();
         this.initializeInteractions();
@@ -119,6 +133,53 @@ class SigmaGrapUpdate {
         });
 
 
+    }
+
+    getLayoutType() {
+        const layoutType = localStorage.getItem('layoutType');
+        if (layoutType) isForceAtlas.update(() => layoutType === 'forceAtlas');
+        return layoutType || 'forceAtlas';
+    }
+
+    getSettings() {
+        if (this.layoutType === 'forceAtlas') {
+            const settings = localStorage.getItem('layoutForceSettings');
+            return settings ? JSON.parse(settings) : defaultForceAtlasSettings
+        } else {
+            const settings = localStorage.getItem('layoutFA2Settings');
+            return settings ? JSON.parse(settings) : defaultForceAtlas2Settings
+        }
+    }
+
+    saveCurrentSettings() {
+        if (this.layoutType === 'forceAtlas')
+            localStorage.setItem('layoutForceSettings', JSON.stringify(this.layoutSettings));
+        else
+            localStorage.setItem('layoutFA2Settings', JSON.stringify(this.layoutSettings));
+    }
+
+    setLayout(res: boolean) {
+        return res
+            ? new ForceSupervisor(this.graph, this.settings)
+            : new ForceAtlasSupervisor(this.graph, this.settings);
+    }
+
+
+    switchLayout() {
+        this.saveCurrentSettings()
+        const res = 'forceAtlas' !== this.layoutType;
+
+        this.layoutType = !res ? 'forceAtlas2' : 'forceAtlas';
+        localStorage.setItem('layoutType', this.layoutType);
+
+        this.layoutSettings = this.getSettings();
+        this.settings.settings = this.layoutSettings;
+
+        this.stopLayout();
+        this.layout = this.setLayout(res);
+        this.startLayout();
+        isForceAtlas.update(() => res);
+        return res;
     }
 
 
@@ -243,19 +304,22 @@ class SigmaGrapUpdate {
     }
 
 
-    updateForceSettings(newSettings: GraphSettings) {
-        this.stopLayout();
-        this.settings.settings = { ...this.settings.settings, ...newSettings };
-        this.layout = new ForceSupervisor(this.graph, this.settings);
-        this.startLayout();
-        this.renderer.refresh();
-        logger.log('New ForceSupervisor created with settings:', this.settings.settings);
+    updateForceSettings(newSettings: ForceLayoutSettings | ForceAtlas2Settings) {
+        this.layoutSettings = { ...this.layoutSettings, ...newSettings };
+        this.settings.settings = this.layoutSettings;
+        this.saveCurrentSettings();
 
+        this.stopLayout();
+        if (this.layoutType === 'forceAtlas')
+            this.layout = new ForceSupervisor(this.graph, this.settings);
+        else
+            this.layout = new ForceAtlasSupervisor(this.graph, this.settings);
+        this.startLayout();
     }
 
 
     updateDayNightMode() {
-        if (this.DayOrNight === 0) {
+        if (!this.DayOrNight) {
             this.renderer.setSetting("labelColor", {
                 //attribute: 'color'
                 color: '#000000'
@@ -270,8 +334,8 @@ class SigmaGrapUpdate {
                 });
             })
 
-            this.DayOrNight = 1;
-        } else if (this.DayOrNight === 1) {
+            this.DayOrNight = true;
+        } else if (this.DayOrNight) {
             this.renderer.setSetting("labelColor", {
                 //attribute: 'color'
                 color: '#FFFFFF'
@@ -287,7 +351,7 @@ class SigmaGrapUpdate {
                 });
             })
 
-            this.DayOrNight = 0;
+            this.DayOrNight = false;
         }
         this.renderer.refresh();
     }
@@ -298,7 +362,7 @@ const visualizeGraph = (newGraphData: { nodes: Node[], links: Link[] }) =>
     SigmaGrapUpdate.getInstance()?.updateGraph(newGraphData);
 const updateDayNightMode = () => SigmaGrapUpdate.getInstance()?.updateDayNightMode();
 const clearGraph = () => SigmaGrapUpdate.getInstance()?.clearGraph();
-const updateForceSettings = (newSettings: GraphSettings) =>
+const updateForceSettings = (newSettings: ForceLayoutSettings | ForceAtlas2Settings) =>
     SigmaGrapUpdate.getInstance()?.updateForceSettings(newSettings);
 
 const removeNodes = (graphData: GraphData) =>
@@ -311,6 +375,7 @@ const addBoth = (graphData: GraphData) =>
     SigmaGrapUpdate.getInstance()?.addBoth(graphData);
 const addAll = (graphData: GraphData) =>
     SigmaGrapUpdate.getInstance()?.addAll(graphData);
+const switchLayout = () => SigmaGrapUpdate.getInstance()?.switchLayout();
 
 const refreshRenderer = () => SigmaGrapUpdate.getInstance()?.renderer.refresh();
 
@@ -325,5 +390,6 @@ export {
     addNewLinks,
     addBoth,
     addAll,
+    switchLayout,
     refreshRenderer
 };

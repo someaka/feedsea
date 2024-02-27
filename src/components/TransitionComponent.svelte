@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import isLoggedIn from '../components/stores/auth';
+	import isLoggedIn from '../lib/stores/auth';
 	import LoginForm from '../components/login/LoginForm.svelte';
 	import MainComponent from '../components/MainComponent.svelte';
 	import {serverLogger as logger} from '../logger.js';

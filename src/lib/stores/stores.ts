@@ -5,7 +5,7 @@ import queueNewArticles from '$lib/embedFetch'; //'$lib/embedTransformers';
 import calculateAllPairs from '$lib/pairCalculator';
 import {
    addAll, addBoth, addNewLinks, addNewNodes, refreshRenderer, removeNodes
-} from '../graph/graphologySigma';
+} from '../../components/graph/graphologySigma';
 
 import type {
    FeedWithUnreadStories,

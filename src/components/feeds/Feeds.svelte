@@ -6,7 +6,7 @@
 		articlesStore,
 		selectedFeedsStore,
 		focusedArticleId
-	} from '../stores/stores';
+	} from '../../lib/stores/stores';
 	import { fetchFeeds, selectFeed } from '$lib/api';
 	import { startSSE, stopSSE } from '$lib/SSEService';
 	import ArticlesPanel from '../articles/ArticlesPanel.svelte';
@@ -14,6 +14,7 @@
 
 	import type { FeedChange, FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
 	import { clearGraph } from '../graph/graphologySigma';
+	import { theme } from '$lib/stores/night';
 
 	let feeds: FeedWithUnreadStories[] = [];
 	let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds
@@ -136,7 +137,6 @@
 
 		feedsToSelect.forEach((feedId) => selectFeed(feedId));
 		selectedFeedsStore.update(({ feedIds }) => {
-
 			const feedIdsSet = new Set(allFeedIds.filter((id) => !feedIds.has(id)));
 			const articlesToAdd = Array.from(feedIdsSet).flatMap(
 				(feedId) => articleStoreSnapshot[feedId] || []
@@ -159,7 +159,7 @@
 </script>
 
 <div class="feeds-wrapper">
-	<div class="feeds-container {$isLoadingFeeds ? 'loading' : ''}">
+	<div class="feeds-container {$isLoadingFeeds ? 'loading' : ''}" class:dark={$theme === 'dark'}>
 		{#if $isLoadingFeeds}
 			<h1>Feeds</h1>
 			<div class="spinner" aria-label="Loading feeds"></div>
@@ -196,6 +196,10 @@
 {/if}
 
 <style>
+	.dark h1 {
+		color: white;
+	}
+
 	.spinner {
 		border: 4px solid rgba(0, 0, 0, 0.1);
 		width: 36px;

@@ -1,4 +1,4 @@
-import { embeddingsStore } from '../components/stores/stores';
+import { embeddingsStore } from './stores/stores';
 import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 import fastq from 'fastq';
 

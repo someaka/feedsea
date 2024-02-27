@@ -1,12 +1,10 @@
+import { getArticleEvents } from '$lib/articles';
 import { hasSubscriber, removeSubscriber } from '$lib/subscribers';
-import { articleEvents } from '$lib/articles';
-import { serverLogger as logger } from '../../logger.js';
 
 export async function GET({ request }) {
     const cookie = request.headers.get('cookie');
-    logger.log("cookie", cookie)
-    const clientId = cookie?.split('sessionid=')[2];
-    logger.log("clientId", clientId)
+    const clientId = cookie?.split('sessionid=')[2]; 
+
     if (!clientId || !hasSubscriber(clientId)) {
         return new Response(null, { status: 401 });
     }
@@ -19,6 +17,8 @@ export async function GET({ request }) {
 
     const stream = new TransformStream({
         start(controller) {
+            const articleEvents = getArticleEvents(clientId);
+
             const articleFetchedListener = (compressedArticles: string) => {
                 const eventData = { compressedArticles };
                 controller.enqueue(`event: articleFetched\ndata: ${JSON.stringify(eventData)}\n\n`);
@@ -27,10 +27,10 @@ export async function GET({ request }) {
             const jobCompleteListener = () => {
                 articleEvents.off('articleFetched', articleFetchedListener);
                 articleEvents.off('jobComplete', jobCompleteListener);
-                removeSubscriber(clientId);
+                removeSubscriber(clientId); // Ensure the subscriber is removed when the job is complete
                 controller.terminate();
             };
-            
+
             articleEvents.on('articleFetched', articleFetchedListener);
             articleEvents.on('jobComplete', jobCompleteListener);
         },

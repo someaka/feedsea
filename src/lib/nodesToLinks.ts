@@ -1,5 +1,5 @@
 
-import { linksStore } from '../components/stores/stores';
+import { linksStore } from './stores/stores';
 import type { Node, Pair } from '$lib/types';
 
 let linksWorker: Worker;

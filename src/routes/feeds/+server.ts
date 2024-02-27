@@ -1,8 +1,9 @@
 import { serverLogger as logger } from '../../logger';
 import { fetchFeeds, fetchStories } from './feedFetcher';
-import { generateColors } from '../../lib/colors';
+import { generateColors } from '$lib/colors';
+import { hasSubscriber } from '$lib/subscribers';
 import type { RequestHandler } from '@sveltejs/kit';
-import type { FeedsWithUnreadStories, FeedsWithColor } from '../../lib/types';
+import type { FeedsWithUnreadStories, FeedsWithColor } from '$lib/types';
 
 
 export const GET: RequestHandler = async ({ request }) => {
@@ -11,7 +12,7 @@ export const GET: RequestHandler = async ({ request }) => {
   const sessionCookie = cookie?.split('sessionid=')[2];
   logger.log("sessionCookie", sessionCookie)
   if (!sessionCookie
-    //|| !hasSubscriber(sessionCookie)
+    || !hasSubscriber(sessionCookie)
   ) {
     return new Response(null, { status: 401 });
   }

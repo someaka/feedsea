@@ -162,16 +162,6 @@ interface Pair extends PendingPair {
     similarity: number;
 }
 
-interface GraphSettings {
-    attraction: number;
-    repulsion: number;
-    gravity: number;
-    inertia: number;
-    maxMove: number;
-
-}
-
-
 
 interface EmbeddingsCache {
     [key: string]: number[];
@@ -205,7 +195,6 @@ export type {
     GraphData,
     PendingPair,
     Pair,
-    GraphSettings,
     EmbeddingsCache,
     EmbeddingsState,
     NodeUpdate,

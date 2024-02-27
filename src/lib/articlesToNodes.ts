@@ -1,5 +1,5 @@
 
-import { nodesStore } from '../components/stores/stores';
+import { nodesStore } from './stores/stores';
 import type { Node, ArticleType as Article } from '$lib/types';
 
 let nodesWorker: Worker;

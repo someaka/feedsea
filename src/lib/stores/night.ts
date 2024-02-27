@@ -1,8 +1,12 @@
 import { get, writable } from 'svelte/store';
 
-export const isNightMode = writable(false);
+let loadedTheme;
+if (typeof window !== 'undefined') {
+    loadedTheme = localStorage.getItem('user-theme');
+}
+export const isNightMode = writable(loadedTheme === 'dark');
 
-export const theme = writable('light');
+export const theme = writable(loadedTheme || 'light');
 
 export function applyTheme() {
     if (typeof window !== 'undefined') {
