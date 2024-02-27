@@ -1,6 +1,9 @@
-import axios, { type AxiosResponse } from 'axios';
+// import axios, { type AxiosResponse } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
-import { extract } from '@extractus/article-extractor';
+import {
+    extract,
+    // addTransformations
+} from '@extractus/article-extractor';
 import sanitizeHtml from 'sanitize-html';
 import { EventEmitter } from 'events';
 import { compress } from './compression';
@@ -66,18 +69,62 @@ class Articles {
     static destroyInstance(clientToken: string): void {
         if (this.instances.has(clientToken)) {
             this.instances.delete(clientToken);
-            removeSubscriber(clientToken); 
+            removeSubscriber(clientToken);
         }
     }
 
     private async fetchArticle(task: ArticleTask): Promise<Article> {
 
-        let response: AxiosResponse | null = await axios.get(task.story, {
-            headers: { 'User-Agent': this.userAgent },
-            timeout: BATCH_INTERVAL,
-        });
+        // let response: AxiosResponse | null = await axios.get(task.story, {
+        //     headers: { 'User-Agent': this.userAgent },
+        //     timeout: BATCH_INTERVAL,
+        // });
 
-        let articleData = await extract(response?.data);
+        // let articleData = await extract(response?.data);
+
+        // addTransformations(
+        //     [
+        //         {
+        //             patterns: [
+        //                 /.*/
+        //             ],
+        //             pre: (document) => {
+        //                 // Query all img elements with a srcset attribute
+        //                 document.querySelectorAll('img[srcset]').forEach((img) => {
+        //                     try {
+        //                         // Process or validate the srcset attribute
+        //                         // This is a simplification. You might need a more complex logic to validate or fix the srcset values.
+        //                         const srcset = img.getAttribute('srcset');
+        //                         const validSrcset = srcset?.split(',').map(s => {
+        //                             // Example validation/fix: ensure each descriptor has a width (w) or pixel density (x) specifier
+        //                             if (!s.trim().endsWith('w') && !s.trim().endsWith('x')) {
+        //                                 return ''; // Remove invalid descriptors
+        //                             }
+        //                             return s.trim();
+        //                         }).filter(Boolean).join(', ');
+
+        //                         // Update the srcset attribute with the validated/fixed value
+        //                         if (validSrcset) img.setAttribute('srcset', validSrcset);
+        //                     } catch (error) {
+        //                         console.error('Error processing srcset:', error);
+        //                         // Optionally remove the srcset attribute if it's invalid and can't be fixed
+        //                         img.removeAttribute('srcset');
+        //                     }
+        //                 });
+        //                 return document;
+        //             },
+        //             post: (document) => {
+        //                 // Any post-processing can be done here
+        //                 return document;
+        //             }
+        //         }
+        //     ]
+        // );
+
+        let articleData = await extract(task.story, {}, {
+            signal: AbortSignal.timeout(BATCH_INTERVAL),
+        })
+
         if (!articleData || !articleData.content || !articleData.title || !articleData.url) {
             throw new Error('Failed to extract article content. No article data returned.');
         }
@@ -86,10 +133,10 @@ class Articles {
         article.feedColor = task.feedColor;
         article.feedId = task.feedId;
         article.title = articleData.title;
-        article.text = this.cleanArticleContent(articleData.content);
+        article.text = articleData.content; // this.cleanArticleContent(articleData.content);
         article.url = articleData.url;
 
-        response = null;
+        // response = null;
         articleData = null;
 
         return article;
@@ -123,7 +170,7 @@ class Articles {
     }
 
     async queueFeedRequest(selectedFeed: FeedWithUnreadStories): Promise<void> {
-        const concurrency = 1; // Adjust based on your needs
+        const concurrency = 1;
         let requestQueue: queue<ArticleTask> | null = fastq(this, this.worker, concurrency);
         if (!requestQueue) return;
 
@@ -136,7 +183,6 @@ class Articles {
         };
         const batchTimer = setInterval(sendBatch, BATCH_INTERVAL);
 
-        // New function to process stories in batches
         const processStoriesInBatches = async () => {
             for (let i = 0; i < selectedFeed.unreadStories.length; i++) {
                 if (requestQueue) {
@@ -178,9 +224,9 @@ class Articles {
     }
 }
 
-const getArticleEvents = (clientToken : string) => Articles.getInstance(clientToken).articleEvents;
+const getArticleEvents = (clientToken: string) => Articles.getInstance(clientToken).articleEvents;
 
-const queueFeedRequest = (selectedFeed: FeedWithUnreadStories , clientToken: string) =>
+const queueFeedRequest = (selectedFeed: FeedWithUnreadStories, clientToken: string) =>
     Articles.getInstance(clientToken).queueFeedRequest(selectedFeed);
 
 const stopAllRequests = (clientToken: string) => Articles.getInstance(clientToken).stopAllRequests();
