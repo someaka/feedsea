@@ -1,7 +1,7 @@
-// import axios, { type AxiosResponse } from 'axios';
+import axios, { type AxiosResponse } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import {
-    extract,
+    extractFromHtml ,
     // addTransformations
 } from '@extractus/article-extractor';
 import sanitizeHtml from 'sanitize-html';
@@ -75,10 +75,10 @@ class Articles {
 
     private async fetchArticle(task: ArticleTask): Promise<Article> {
 
-        // let response: AxiosResponse | null = await axios.get(task.story, {
-        //     headers: { 'User-Agent': this.userAgent },
-        //     timeout: BATCH_INTERVAL,
-        // });
+        let response: AxiosResponse | null = await axios.get(task.story, {
+            headers: { 'User-Agent': this.userAgent },
+            timeout: BATCH_INTERVAL,
+        });
 
         // let articleData = await extract(response?.data);
 
@@ -121,9 +121,7 @@ class Articles {
         //     ]
         // );
 
-        let articleData = await extract(task.story, {}, {
-            signal: AbortSignal.timeout(BATCH_INTERVAL),
-        })
+        let articleData = await extractFromHtml(response?.data, task.story)
 
         if (!articleData || !articleData.content || !articleData.title || !articleData.url) {
             throw new Error('Failed to extract article content. No article data returned.');
@@ -136,7 +134,7 @@ class Articles {
         article.text = articleData.content; // this.cleanArticleContent(articleData.content);
         article.url = articleData.url;
 
-        // response = null;
+        response = null;
         articleData = null;
 
         return article;
