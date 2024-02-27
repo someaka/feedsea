@@ -8,11 +8,12 @@
 <div class="force-panel">
 	<h3>Force Settings</h3>
 
-	<button on:click={switchLayout}>
+	<!-- <button on:click={switchLayout}>
 		Switch to {$isForceAtlas ? 'ForceAtlas2' : 'ForceAtlas'}
-	</button>
+	</button> -->
 
-	{#if $isForceAtlas}
+	<!-- {#if $isForceAtlas} -->
+	{#if true}
 		<ForceLayoutSettings />
 	{:else}
 		<ForceAtlas2Settings />

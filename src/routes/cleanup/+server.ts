@@ -9,8 +9,8 @@ export async function POST({ request }) {
   if (!clientId || !hasSubscriber(clientId))
     return new Response(null, { status: 401 });
 
-  stopAllRequests(clientId);
   const articleEvents = getArticleEvents(clientId);
+  stopAllRequests(clientId);
   articleEvents.emit('jobComplete');
   return new Response(null, { status: 200 });
 }

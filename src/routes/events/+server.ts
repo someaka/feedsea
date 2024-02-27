@@ -1,4 +1,4 @@
-import { getArticleEvents } from '$lib/articles';
+import { Articles, getArticleEvents } from '$lib/articles';
 import { hasSubscriber, removeSubscriber } from '$lib/subscribers';
 
 export async function GET({ request }) {
@@ -20,14 +20,18 @@ export async function GET({ request }) {
             const articleEvents = getArticleEvents(clientId);
 
             const articleFetchedListener = (compressedArticles: string) => {
-                const eventData = { compressedArticles };
-                controller.enqueue(`event: articleFetched\ndata: ${JSON.stringify(eventData)}\n\n`);
+                try {
+                    controller.enqueue(`event: articleFetched\ndata: ${JSON.stringify({ compressedArticles })}\n\n`);
+                } catch (error) {
+                    // maybe some logging ?
+                }
             };
 
             const jobCompleteListener = () => {
                 articleEvents.off('articleFetched', articleFetchedListener);
                 articleEvents.off('jobComplete', jobCompleteListener);
-                removeSubscriber(clientId); // Ensure the subscriber is removed when the job is complete
+                Articles.destroyInstance(clientId);
+                removeSubscriber(clientId);
                 controller.terminate();
             };
 

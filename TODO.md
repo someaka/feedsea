@@ -1,7 +1,6 @@
-FA2
+FA2 panel
 
-cluster articles ?
-size is degree ?
 brigther is more recent ?
+cluster articles ?
 
-more invalid states
+performance
