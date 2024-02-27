@@ -10,7 +10,7 @@ wrapper(axios);
 const cookieJar = new CookieJar();
 
 // Function to perform login and store the session cookie
-async function loginUser(username: string , password: string ) {
+async function loginUser(username: string, password: string) {
     logger.log(`Attempting login with username: ${username}`);
 
     try {
@@ -36,7 +36,7 @@ async function loginUser(username: string , password: string ) {
             return { authenticated: false, error: errorMessage };
         }
     } catch (error) {
-        logger.error('Error during login request:', error);
+        if (error instanceof Error) logger.error('Error during login request:', error.message);
         return { authenticated: false, error: 'Login request failed. Please try again later.' };
     }
 }

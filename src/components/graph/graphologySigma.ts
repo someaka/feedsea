@@ -78,7 +78,7 @@ class SigmaGrapUpdate {
         this.DayOrNight = get(isNightMode);
         this.defaultDrawHover = this.renderer.getSetting("defaultDrawNodeHover");
         this.updateDayNightMode();
-        this.DayOrNight = !this.DayOrNight;
+        //this.DayOrNight = !this.DayOrNight;
 
         this.draggedNode = null;
         this.isDragging = false;
