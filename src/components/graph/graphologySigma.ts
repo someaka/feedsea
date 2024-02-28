@@ -1,34 +1,29 @@
 import { graphLogger as logger } from '../../logger';
 
-import Graph from "graphology";
-import Sigma from "sigma";
-
-import type { Settings } from 'sigma/settings';
-import type { Attributes } from 'graphology-types';
-
-import type { ForceLayoutSettings } from 'graphology-layout-force';
-import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
-
-//mport { defaultForceAtlasSettings, defaultForceAtlas2Settings } from '../forces/defaultGraphSettings';
-import type { Node, Link, GraphData } from '$lib/types';
-
-import { focusedArticleId } from '../../lib/stores/stores';
-
-import ForceSupervisor from "graphology-layout-force/worker";
-import ForceAtlasSupervisor from 'graphology-layout-forceatlas2/worker';
-import { defaultForceAtlasSettings, defaultForceAtlas2Settings } from '../forces/defaultGraphSettings';
-import { isForceAtlas } from '$lib/stores/forces';
-import { isNightMode } from '$lib/stores/night';
 import { get } from 'svelte/store';
 
-//const CHUNK_SIZE = 1000;
+import { focusedArticleId } from '$lib/stores/stores';
+import { isNightMode } from '$lib/stores/night';
+import { isForceAtlas } from '$lib/stores/forces';
+import { lightDrawDiscNodeHover, darkDrawDiscNodeHover } from './customHover';
+import { defaultForceAtlasSettings, defaultForceAtlas2Settings } from '../forces/defaultGraphSettings';
+
+import Graph from "graphology";
+import Sigma from "sigma";
+import ForceSupervisor from "graphology-layout-force/worker";
+import ForceAtlasSupervisor from 'graphology-layout-forceatlas2/worker';
+
+import type { Attributes } from 'graphology-types';
+import type { ForceLayoutSettings } from 'graphology-layout-force';
+import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
+import type { Node, Link, GraphData } from '$lib/types';
+
 
 let graphContainer: HTMLElement | null;
 
 function setContainer(container: HTMLElement) {
     graphContainer = container;
 }
-
 
 
 class SigmaGrapUpdate {
@@ -48,13 +43,11 @@ class SigmaGrapUpdate {
     layoutType: string;
     layoutSettings: ForceLayoutSettings | ForceAtlas2Settings;
     renderer: Sigma;
-    defaultDrawHover: Settings["defaultDrawNodeHover"] | undefined;
     draggedNode: string | null;
     isDragging: boolean;
     settings: Attributes;
     layout: ForceSupervisor | ForceAtlasSupervisor;
     DayOrNight: boolean;
-
 
 
     constructor() {
@@ -76,9 +69,7 @@ class SigmaGrapUpdate {
         });
 
         this.DayOrNight = get(isNightMode);
-        this.defaultDrawHover = this.renderer.getSetting("defaultDrawNodeHover");
         this.updateDayNightMode();
-        //this.DayOrNight = !this.DayOrNight;
 
         this.draggedNode = null;
         this.isDragging = false;
@@ -131,9 +122,8 @@ class SigmaGrapUpdate {
             logger.log('Node clicked:', e.node);
             this.updateRightPanelWithFeed(e.node);
         });
-
-
     }
+
 
     getLayoutType() {
         const layoutType = localStorage.getItem('layoutType');
@@ -158,12 +148,12 @@ class SigmaGrapUpdate {
             localStorage.setItem('layoutFA2Settings', JSON.stringify(this.layoutSettings));
     }
 
+
     setLayout(res: boolean) {
         return res
             ? new ForceSupervisor(this.graph, this.settings)
             : new ForceAtlasSupervisor(this.graph, this.settings);
     }
-
 
     switchLayout() {
         this.saveCurrentSettings()
@@ -176,7 +166,11 @@ class SigmaGrapUpdate {
         this.settings.settings = this.layoutSettings;
 
         this.stopLayout();
-        this.layout = this.setLayout(res);
+        // this.layout = this.setLayout(res);
+        if (this.layoutType === 'forceAtlas')
+            this.layout = new ForceSupervisor(this.graph, this.settings);
+        else
+            this.layout = new ForceAtlasSupervisor(this.graph, this.settings);
         this.startLayout();
         isForceAtlas.update(() => res);
         return res;
@@ -205,27 +199,24 @@ class SigmaGrapUpdate {
 
 
 
+    // Museum Piece
+    // updateGraph(newGraphData: { nodes: Node[], links: Link[] }) {
+    //     const newNodesSet = new Set(newGraphData.nodes.map(node => node.id));
+    //     try {
+    //         this.graph.clearEdges();
+    //         this.removeNodes(newNodesSet);
 
+    //         this.addNewNodes(newGraphData.nodes);
+    //         this.addNewEdges(newGraphData.links);
 
-    updateGraph(newGraphData: { nodes: Node[], links: Link[] }) {
+    //         this.renderer.refresh();
+    //     } catch {
+    //         logger.warn("Failed to update graph")
+    //     }
+    // }
 
-        const newNodesSet = new Set(newGraphData.nodes.map(node => node.id));
-
-        try {
-            this.graph.clearEdges();
-            this.removeNodes(newNodesSet);
-
-            this.addNewNodes(newGraphData.nodes);
-            this.addNewEdges(newGraphData.links);
-
-            this.renderer.refresh();
-        } catch {
-            logger.warn("Failed to update graph")
-        }
-    }
 
     removeNodes(newNodesSet: Set<string>) {
-
         this.graph.forEachNode((nodeId) => {
             if (!newNodesSet.has(nodeId)) {
                 this.graph.dropNode(nodeId);
@@ -242,9 +233,9 @@ class SigmaGrapUpdate {
         this.addNewEdges(graphData.links);
     }
 
+
     addNewNodes(nodes: Node[]) {
         const defaultNodeSize = 10;
-
         for (const node of nodes) {
             if (!this.graph.hasNode(node.id)) {
 
@@ -253,11 +244,7 @@ class SigmaGrapUpdate {
                 this.graph.addNode(node.id, attributes);
             }
         }
-
-
     }
-
-
 
     addNewEdges(links: Link[]) {
         for (const link of links) {
@@ -274,6 +261,7 @@ class SigmaGrapUpdate {
         }
     }
 
+
     addBoth(graphData: GraphData) {
         this.addNewNodes(graphData.nodes);
         this.addNewEdges(graphData.links);
@@ -286,21 +274,19 @@ class SigmaGrapUpdate {
     }
 
 
-
     clearGraph() {
-        // Clear the graph and refresh the renderer
         this.graph.clear();
         this.renderer.refresh();
     }
+
 
     startLayout() {
         this.layout.start();
     }
 
     stopLayout() {
-        if (this.layout.isRunning()) {
+        if (this.layout.isRunning())
             this.layout.stop();
-        }
     }
 
 
@@ -310,6 +296,7 @@ class SigmaGrapUpdate {
         this.saveCurrentSettings();
 
         this.stopLayout();
+        this.layout.kill();
         if (this.layoutType === 'forceAtlas')
             this.layout = new ForceSupervisor(this.graph, this.settings);
         else
@@ -325,7 +312,7 @@ class SigmaGrapUpdate {
                 color: '#000000'
             });
             this.renderer.setSetting("defaultDrawNodeHover",
-                this.defaultDrawHover || (() => { })
+                lightDrawDiscNodeHover
             );
             this.graph.forEachEdge((edge) => {
                 this.graph.updateEdgeAttributes(edge, attr => {
@@ -341,8 +328,7 @@ class SigmaGrapUpdate {
                 color: '#FFFFFF'
             });
             this.renderer.setSetting("defaultDrawNodeHover",
-                // function that does nothing
-                () => { }
+                darkDrawDiscNodeHover
             );
             this.graph.forEachEdge((edge) => {
                 this.graph.updateEdgeAttributes(edge, attr => {
@@ -358,10 +344,13 @@ class SigmaGrapUpdate {
 }
 
 
-const visualizeGraph = (newGraphData: { nodes: Node[], links: Link[] }) =>
-    SigmaGrapUpdate.getInstance()?.updateGraph(newGraphData);
-const updateDayNightMode = () => SigmaGrapUpdate.getInstance()?.updateDayNightMode();
-const clearGraph = () => SigmaGrapUpdate.getInstance()?.clearGraph();
+// const visualizeGraph = (newGraphData: { nodes: Node[], links: Link[] }) =>
+//     SigmaGrapUpdate.getInstance()?.updateGraph(newGraphData);
+
+const updateDayNightMode = () =>
+    SigmaGrapUpdate.getInstance()?.updateDayNightMode();
+const clearGraph = () =>
+    SigmaGrapUpdate.getInstance()?.clearGraph();
 const updateForceSettings = (newSettings: ForceLayoutSettings | ForceAtlas2Settings) =>
     SigmaGrapUpdate.getInstance()?.updateForceSettings(newSettings);
 
@@ -375,13 +364,14 @@ const addBoth = (graphData: GraphData) =>
     SigmaGrapUpdate.getInstance()?.addBoth(graphData);
 const addAll = (graphData: GraphData) =>
     SigmaGrapUpdate.getInstance()?.addAll(graphData);
-const switchLayout = () => SigmaGrapUpdate.getInstance()?.switchLayout();
+const switchLayout = () =>
+    SigmaGrapUpdate.getInstance()?.switchLayout();
 
-const refreshRenderer = () => SigmaGrapUpdate.getInstance()?.renderer.refresh();
+const refreshRenderer = () => SigmaGrapUpdate.getInstance()?.renderer.scheduleRefresh();
 
 export {
+    // visualizeGraph,
     setContainer,
-    visualizeGraph,
     clearGraph,
     updateDayNightMode,
     updateForceSettings,

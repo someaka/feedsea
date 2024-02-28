@@ -68,8 +68,8 @@ devDependencies:
     specifier: ^2.4.4
     version: 2.4.4
   '@types/eslint':
-    specifier: 8.56.3
-    version: 8.56.3
+    specifier: 8.56.4
+    version: 8.56.4
   '@types/sanitize-html':
     specifier: ^2.11.0
     version: 2.11.0
@@ -104,8 +104,8 @@ devDependencies:
     specifier: ^3.2.1
     version: 3.2.1(prettier@3.2.5)(svelte@4.2.12)
   svelte-check:
-    specifier: ^3.6.4
-    version: 3.6.4(postcss@8.4.35)(svelte@4.2.12)
+    specifier: ^3.6.5
+    version: 3.6.5(postcss@8.4.35)(svelte@4.2.12)
   tslib:
     specifier: ^2.6.2
     version: 2.6.2
@@ -747,8 +747,8 @@ packages:
   /@types/cookie@0.6.0:
     resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
 
-  /@types/eslint@8.56.3:
-    resolution: {integrity: sha512-PvSf1wfv2wJpVIFUMSb+i4PvqNYkB9Rkp9ZDO3oaWzq4SKhsQk4mrMBr3ZH06I0hKrVGLBacmgl8JM4WVjb9dg==}
+  /@types/eslint@8.56.4:
+    resolution: {integrity: sha512-lG1GLUnL5vuRBGb3MgWUWLdGMH2Hps+pERuyQXCfWozuGKdnhf9Pbg4pkcrVUHjKrU7Rl+GCZ/299ObBXZFAxg==}
     dependencies:
       '@types/estree': 1.0.5
       '@types/json-schema': 7.0.15
@@ -765,8 +765,8 @@ packages:
     resolution: {integrity: sha512-MqTGEo5bj5t157U6fA/BiDynNkn0YknVdh48CMPkTSpFTVmvao5UQmm7uEF6xBEo7qIMAlY/JSleYaE6VOdpaA==}
     dev: false
 
-  /@types/node@20.11.20:
-    resolution: {integrity: sha512-7/rR21OS+fq8IyHTgtLkDK949uzsa6n8BkziAKtPVpugIkO6D+/ooXMvzXxDnZrmtXVfjb1bKQafYpb8s89LOg==}
+  /@types/node@20.11.21:
+    resolution: {integrity: sha512-/ySDLGscFPNasfqStUuWWPfL78jompfIoVzLJPVVAHBh6rpG68+pI2Gk+fNLeI8/f1yPYL4s46EleVIc20F1Ow==}
     dependencies:
       undici-types: 5.26.5
     dev: false
@@ -2627,7 +2627,7 @@ packages:
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
       '@types/long': 4.0.2
-      '@types/node': 20.11.20
+      '@types/node': 20.11.21
       long: 4.0.0
     dev: false
 
@@ -2969,8 +2969,8 @@ packages:
     engines: {node: '>= 0.4'}
     dev: false
 
-  /svelte-check@3.6.4(postcss@8.4.35)(svelte@4.2.12):
-    resolution: {integrity: sha512-mY/dqucqm46p72M8yZmn81WPZx9mN6uuw8UVfR3ZKQeLxQg5HDGO3HHm5AZuWZPYNMLJ+TRMn+TeN53HfQ/vsw==}
+  /svelte-check@3.6.5(postcss@8.4.35)(svelte@4.2.12):
+    resolution: {integrity: sha512-5aLgoQEdadvp8ypvKQ2avhnQ+V9YPQQaWrTFlXFw5g/v8xIQBvo+X/WqxTyD+V/ItDqXg3+abUA53rdDHgUjCA==}
     hasBin: true
     peerDependencies:
       svelte: ^3.55.0 || ^4.0.0-next.0 || ^4.0.0 || ^5.0.0-next.0

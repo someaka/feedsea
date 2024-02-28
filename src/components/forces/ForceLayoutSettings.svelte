@@ -29,9 +29,9 @@
 			'Higher repulsion spreads nodes further apart, lower brings them closer.',
 			initialSettings.repulsion,
 			{
-				min: 0.0001,
+				min: 0.000001,
 				max: 10,
-				precision: 5,
+				precision: 9,
 				scaleType: 'log'
 			}
 		),
@@ -42,7 +42,7 @@
 			initialSettings.attraction,
 			{
 				min: 0.000001,
-				max: 0.1,
+				max: 1,
 				precision: 8,
 				scaleType: 'log'
 			}
@@ -66,7 +66,7 @@
 			initialSettings.maxMove,
 			{
 				min: 0,
-				max: 10,
+				max: 20,
 				precision: 1,
 				scaleType: 'linear'
 			}

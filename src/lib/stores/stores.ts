@@ -300,15 +300,21 @@ function queueRefreshRenderer(numNodes: number = 1) {
 
    // Set a new timeout to delay the refresh operation
    refreshTimeoutId = setTimeout(() => {
-      requestAnimationFrame(() => {
+      // requestAnimationFrame(() => {
          refreshRenderer();
          refreshTimeoutId = null; // Reset the timeout ID after the refresh is scheduled
-      });
+         console.log('Refreshed renderer after ' + adjustedInterval + 'ms');
+      // });
    }, adjustedInterval) as unknown as number; // Type assertion here
 }
 
 
 
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// function queueRefreshRenderer(numNodes: number = 1) {
+//          refreshRenderer();
+// }
 
 
 
