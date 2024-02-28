@@ -6,7 +6,7 @@ import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
 const loadedLayoutSettings = localStorage.getItem('layoutForceSettings');
 const initialLayoutSettings = loadedLayoutSettings ? JSON.parse(loadedLayoutSettings) : defaultForceAtlasSettings;
 
-const loadedAtlas2Settings = localStorage.getItem('atlas2ForceSettings');
+const loadedAtlas2Settings = localStorage.getItem('layoutFA2Settings');
 const initialAtlas2Settings = loadedAtlas2Settings ? JSON.parse(loadedAtlas2Settings) : defaultForceAtlas2Settings;
 
 export const forcePanelSettings = writable<ForceLayoutSettings>(initialLayoutSettings);

@@ -1,20 +1,36 @@
 <script lang="ts">
+	import { switchLayout } from '../graph/graphologySigma';
+	import { isForceAtlas } from '$lib/stores/forces';
+	import { fly } from 'svelte/transition';
 	import ForceLayoutSettings from './ForceLayoutSettings.svelte';
 	import ForceAtlas2Settings from './ForceAtlas2Settings.svelte';
-	// import { switchLayout } from '../graph/graphologySigma';
-	// import { isForceAtlas } from '$lib/stores/forces';
+
+	const toggleForce = () => {
+		switchLayout();
+	};
+	const handleKeydown = (event: KeyboardEvent) => {
+		if (event.key === 'Enter') toggleForce();
+	};
+	const flyParams = { x: -100, duration: 500 };
 </script>
 
 <div class="force-panel">
-	<h3>Force Settings</h3>
-	<br>
+	<h3>
+		<span
+			class="force-clickable"
+			tabindex="0"
+			on:click={toggleForce}
+			on:keydown={handleKeydown}
+			role="button">Force Atlas</span
+		>
+		<div class="slide-container">
+			{#if !$isForceAtlas}
+				<span in:fly={flyParams} out:fly={flyParams}>2</span>
+			{/if}
+		</div>
+	</h3>
 
-	<!-- <button on:click={switchLayout}>
-		Switch to {$isForceAtlas ? 'ForceAtlas2' : 'ForceAtlas'}
-	</button> -->
-
-	<!-- {#if $isForceAtlas} -->
-	{#if true}
+	{#if $isForceAtlas}
 		<ForceLayoutSettings />
 	{:else}
 		<ForceAtlas2Settings />
@@ -24,5 +40,17 @@
 <style>
 	.force-panel {
 		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+	}
+	.force-clickable {
+		cursor: pointer;
+		color: inherit;
+		text-decoration: none;
+		outline: none;
+	}
+	.slide-container {
+		display: inline-flex;
+		align-items: center;
 	}
 </style>

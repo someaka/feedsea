@@ -289,7 +289,7 @@ const articlesWithNodesAndLinksStore = derived(
 let refreshTimeoutId: number | null = null;
 const minimumInterval = 1000;
 
-function queueRefreshRenderer(numNodes: number = 1) {
+function queueRefreshRenderer(numNodes: number = 2) {
    const adjustment = Math.min(20, Math.sqrt(numNodes));
    const adjustedInterval = minimumInterval * adjustment;
 

@@ -166,7 +166,7 @@ class SigmaGrapUpdate {
         this.settings.settings = this.layoutSettings;
 
         this.stopLayout();
-        // this.layout = this.setLayout(res);
+        this.layout.kill();
         if (this.layoutType === 'forceAtlas')
             this.layout = new ForceSupervisor(this.graph, this.settings);
         else

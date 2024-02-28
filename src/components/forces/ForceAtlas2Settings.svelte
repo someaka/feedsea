@@ -2,71 +2,131 @@
 	import { onMount } from 'svelte';
 	import { atlas2PanelSettings } from './forceSettingsStore';
 	import { updateForceSettings } from '../graph/graphologySigma';
-	import Slider, { type ScaleType } from './slider';
+	import Slider from './slider';
+	import Toggle from './toggle';
+	import { defaultForceAtlas2Settings } from './defaultGraphSettings';
 	import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
 
-	const descriptions: Record<string, string> = {
-		linLogMode: 'Toggles the linear logarithmic mode.',
-		outboundAttractionDistribution: 'Controls the distribution of outbound attraction.',
-		adjustSizes: 'Adjusts node sizes.',
-		edgeWeightInfluence: 'Influence of the edge weight.',
-		scalingRatio: 'Ratio for scaling.',
-		strongGravityMode: 'Enables or disables strong gravity mode.',
-		gravity: 'Amount of gravitational pull.',
-		slowDown: 'Controls the slowdown rate.',
-		barnesHutOptimize: 'Toggles the Barnes-Hut optimization.',
-		barnesHutTheta: 'Theta parameter for the Barnes-Hut optimization.'
-	};
+	const loadedSettings = localStorage.getItem('layoutFA2Settings');
+	const initialSettings = loadedSettings ? JSON.parse(loadedSettings) : defaultForceAtlas2Settings;
 
-	let sliders: Slider<ForceAtlas2Settings>[] = [];
-	// Update the type definition here to include the description property
-	let toggles: {
-		id: keyof ForceAtlas2Settings;
-		label: string;
-		value: boolean;
-		description: string;
-	}[] = [];
+	let sliders: Slider<ForceAtlas2Settings>[] = [
+		new Slider<ForceAtlas2Settings>(
+			'gravity',
+			'Gravity',
+			'Amount of gravitational pull.',
+			initialSettings.gravity,
+			{ min: 0, max: 10, precision: 5, scaleType: 'linear' }
+		),
+		new Slider<ForceAtlas2Settings>(
+			'edgeWeightInfluence',
+			'Edge Weight Influence',
+			'Influence of the edge weight.',
+			initialSettings.edgeWeightInfluence,
+			{ min: 0, max: 1, precision: 5, scaleType: 'linear' }
+		),
+		new Slider<ForceAtlas2Settings>(
+			'scalingRatio',
+			'Scaling Ratio',
+			'Ratio for scaling.',
+			initialSettings.scalingRatio,
+			{ min: 0.0001, max: 10, precision: 5, scaleType: 'linear' }
+		),
+
+		new Slider<ForceAtlas2Settings>(
+			'slowDown',
+			'Slow Down',
+			'Controls the slowdown rate.',
+			initialSettings.slowDown,
+			{ min: 0.1, max: 10, precision: 5, scaleType: 'linear' }
+		),
+		new Slider<ForceAtlas2Settings>(
+			'barnesHutTheta',
+			'Barnes Hut Theta',
+			'Theta parameter for the Barnes-Hut optimization.',
+			initialSettings.barnesHutTheta,
+			{ min: 0, max: 2, precision: 5, scaleType: 'linear' }
+		)
+	];
+
+	let toggles: Toggle<ForceAtlas2Settings>[] = [
+		new Toggle<ForceAtlas2Settings>(
+			'linLogMode',
+			'LinLog Mode',
+			false,
+			'Toggles the linear logarithmic mode.'
+		),
+		new Toggle<ForceAtlas2Settings>(
+			'outboundAttractionDistribution',
+			'Outbound Attraction Distribution',
+			false,
+			'Controls the distribution of outbound attraction.'
+		),
+		new Toggle<ForceAtlas2Settings>(
+			'adjustSizes',
+			'Adjust Sizes',
+			false,
+			'Adjusts node sizes to avoid overlap.'
+		),
+		new Toggle<ForceAtlas2Settings>(
+			'strongGravityMode',
+			'Strong Gravity Mode',
+			false,
+			'Enables or disables strong gravity mode.'
+		),
+		new Toggle<ForceAtlas2Settings>(
+			'barnesHutOptimize',
+			'Barnes Hut Optimize',
+			false,
+			'Toggles the Barnes-Hut optimization.'
+		)
+	];
 
 	onMount(() => {
-		const unsubscribe = atlas2PanelSettings.subscribe((settings) => {
-			sliders = [];
-			toggles = [];
-			Object.entries(settings).forEach(([key, value]) => {
-				const label = key;
-				const description = descriptions[key] || ''; // Use the description from the descriptions object or an empty string
-				if (typeof value === 'boolean') {
-					toggles.push({ id: key as keyof ForceAtlas2Settings, label, value, description }); // Now includes the description
-				} else {
-					const sliderConfig = { min: 0, max: 10, precision: 2, scaleType: 'linear' as ScaleType };
-					sliders.push(
-						new Slider<ForceAtlas2Settings>(
-							key as keyof ForceAtlas2Settings,
-							label,
-							description,
-							value as number,
-							sliderConfig
-						)
-					);
+		const unsubscribe = atlas2PanelSettings.subscribe((settings: Partial<ForceAtlas2Settings>) => {
+			sliders = sliders.map((slider) => {
+				const newValue = settings[slider.id];
+				if (typeof newValue === 'number') {
+					return new Slider(slider.id, slider.label, slider.description, newValue, slider.config);
 				}
+				return slider;
+			});
+
+			toggles = toggles.map((toggle) => {
+				const newValue = settings[toggle.id];
+				if (typeof newValue === 'boolean') {
+					return new Toggle(toggle.id, toggle.label, newValue, toggle.description);
+				}
+				return toggle;
 			});
 		});
 
 		return () => {
-			unsubscribe(); // Cleanup function to unsubscribe
+			unsubscribe();
 		};
 	});
 
 	function handleSettingChange(event: Event, id: keyof ForceAtlas2Settings) {
 		const target = event.target as HTMLInputElement;
-		const newValue = target.type === 'checkbox' ? target.checked : parseFloat(target.value);
-		if (typeof newValue === 'boolean') {
+		const isToggle = target.type === 'checkbox';
+		const newValue = isToggle ? target.checked : parseFloat(target.value);
+
+		if (isToggle) {
 			toggles = toggles.map((toggle) =>
-				toggle.id === id ? { ...toggle, value: newValue } : toggle
+				toggle.id === id
+					? new Toggle(toggle.id, toggle.label, newValue as boolean, toggle.description)
+					: toggle
 			);
 		} else {
 			sliders = sliders.map((slider) =>
 				slider.id === id
-					? new Slider(slider.id, slider.label, slider.description, newValue, slider.config)
+					? new Slider(
+							slider.id,
+							slider.label,
+							slider.description,
+							newValue as number,
+							slider.config
+						)
 					: slider
 			);
 		}
@@ -74,16 +134,46 @@
 	}
 
 	function updateSettings() {
-		const updatedSettings: ForceAtlas2Settings = sliders.reduce((acc, slider) => {
-			acc[slider.id] = slider.value as any;
-			return acc;
-		}, {} as ForceAtlas2Settings);
+		const booleanProperties: (keyof ForceAtlas2Settings)[] = [
+			'linLogMode',
+			'outboundAttractionDistribution',
+			'adjustSizes',
+			'strongGravityMode',
+			'barnesHutOptimize'
+		];
+		const numberProperties: (keyof ForceAtlas2Settings)[] = [
+			'gravity',
+			'edgeWeightInfluence',
+			'scalingRatio',
+			'slowDown',
+			'barnesHutTheta'
+		];
+		const booleanSettings: Record<string, boolean> = {};
+		const numberSettings: Record<string, number> = {};
 
+		// Populate booleanSettings
 		toggles.forEach((toggle) => {
-			updatedSettings[toggle.id] = toggle.value as any;
+			if (booleanProperties.includes(toggle.id)) {
+				booleanSettings[toggle.id] = toggle.value;
+			}
 		});
 
+		// Populate numberSettings
+		sliders.forEach((slider) => {
+			if (numberProperties.includes(slider.id)) {
+				numberSettings[slider.id] = slider.value;
+			}
+		});
+
+		// Merge booleanSettings and numberSettings into updatedSettings
+		const updatedSettings: ForceAtlas2Settings = {
+			...booleanSettings,
+			...numberSettings
+		} as ForceAtlas2Settings;
+
+		// Use updatedSettings as needed (e.g., update store, local storage)
 		atlas2PanelSettings.set(updatedSettings);
+		localStorage.setItem('forceAtlas2Settings', JSON.stringify(updatedSettings));
 		updateForceSettings(updatedSettings);
 	}
 
@@ -105,30 +195,35 @@
 					bind:value={slider.value}
 					min={slider.config.min}
 					max={slider.config.max}
-					step={slider.config.precision}
+					step="any"
 					on:input={(event) => handleSettingChange(event, slider.id)}
 				/>
 				<div class="slider-min-max">
 					<span class="slider-min">{slider.config.min}</span>
-					<output for="{slider.id}Slider" class="slider-output">{slider.value}</output>
+					<output for="{slider.id}Slider" class="slider-output">{Slider.calculateOriginalValue(slider.value, slider.config)}</output>
 					<span class="slider-max">{slider.config.max}</span>
 				</div>
 			</div>
 		</div>
 	{/each}
-	{#each toggles as toggle}
-		<div class="toggle-container">
-			<span class="toggle-title">{toggle.label}:</span>
-			<span class="toggle-description">{toggle.description}</span>
-			<input
-				type="checkbox"
-				id="{toggle.id}Toggle"
-				class="toggle"
-				bind:checked={toggle.value}
-				on:change={(event) => handleSettingChange(event, toggle.id)}
-			/>
-		</div>
-	{/each}
+	<div class="toggle-container">
+		{#each toggles as toggle}
+			<div class="toggle-item">
+				<div class="toggle-info">
+					<span class="toggle-title">{toggle.label}:</span>
+					<span class="toggle-description">{toggle.description}</span>
+				</div>
+				<input
+					type="checkbox"
+					id="{toggle.id}Toggle"
+					class="toggle-input"
+					bind:checked={toggle.value}
+					on:change={(event) => handleSettingChange(event, toggle.id)}
+				/>
+				<label for="{toggle.id}Toggle" class="toggle-switch"></label>
+			</div>
+		{/each}
+	</div>
 </div>
 
 <style>
@@ -277,48 +372,74 @@
 		cursor: pointer;
 	}
 
-	/* Additional CSS for styling checkboxes as toggles */
-	.toggle {
-		-webkit-appearance: none;
-		appearance: none;
-		width: 50px;
-		height: 25px;
-		background-color: #ddd;
-		border-radius: 25px;
-		position: relative;
-		outline: none;
-		cursor: pointer;
-		transition: background-color 0.3s;
-	}
-
-	.toggle:checked {
-		background-color: #4cd964;
-	}
-
-	.toggle:before {
-		content: '';
-		position: absolute;
-		top: 2px;
-		left: 2px;
-		width: 21px;
-		height: 21px;
-		border-radius: 50%;
-		background-color: white;
-		transition: transform 0.3s;
-	}
-
-	.toggle:checked:before {
-		transform: translateX(25px);
-	}
-
 	.toggle-container {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.toggle-item {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		margin-bottom: 1rem;
+	}
+
+	.toggle-info {
+		flex: 1;
+		flex-grow: 1;
 	}
 
 	.toggle-title,
 	.toggle-description {
-		margin-right: 10px; /* Adjust spacing as needed */
+		font-size: 1rem; /* Adjust as needed */
+	}
+
+	.toggle-input {
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.toggle-switch {
+		position: relative;
+		display: inline-block;
+		width: 49px; /* Adjust width as needed */
+		height: 20px; /* Adjust height as needed */
+		background-color: #007bff77;
+		border-radius: 20px;
+		cursor: pointer;
+		transition: background-color 0.2s;
+		flex-shrink: 0;
+	}
+
+	.toggle-switch::before {
+		content: '';
+		position: absolute;
+		left: 2px;
+		top: 2px;
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		background-color: white;
+		transition: transform 0.2s;
+	}
+
+	.toggle-input:checked + .toggle-switch {
+		background-color: #7e7d7d42;
+	}
+
+	.toggle-input:checked + .toggle-switch::before {
+		transform: translateX(28px);
+	}
+
+	@media (max-width: 600px) {
+		.toggle-item {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.toggle-switch {
+			margin-top: 0.5rem; /* Adds some space between the description and the toggle */
+		}
 	}
 </style>

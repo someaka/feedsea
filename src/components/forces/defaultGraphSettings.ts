@@ -14,11 +14,11 @@ const defaultForceAtlas2Settings: ForceAtlas2Settings = {
     linLogMode: false,
     outboundAttractionDistribution: false,
     adjustSizes: false,
-    edgeWeightInfluence: 0,
-    scalingRatio: 1,
-    strongGravityMode: false,
-    gravity: 0.05,
-    slowDown: 1,
+    edgeWeightInfluence: 0.1,
+    scalingRatio: 0.01,
+    strongGravityMode: true,
+    gravity: 1,
+    slowDown: 5,
     barnesHutOptimize: false,
     barnesHutTheta: 0.5
 };
