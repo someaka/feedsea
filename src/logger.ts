@@ -15,7 +15,7 @@ class Logger {
   error(...args: unknown[]) { this.conditionalLog(console.error, ...args); }
 }
 
-export const serverLogger = new Logger(true);
+export const serverLogger = new Logger(false);
 export const clientLogger = new Logger(false);
 export const feedsLogger = new Logger(false);
 export const similLogger = new Logger(false);

@@ -1,9 +1,13 @@
 import axios, { type AxiosResponse } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
-import {
-    extractFromHtml ,
-    // addTransformations
-} from '@extractus/article-extractor';
+// import {
+//     extractFromHtml ,
+//     // addTransformations
+// } from '@extractus/article-extractor';
+// import { load, type CheerioAPI } from 'cheerio';
+import { JSDOM } from 'jsdom';
+import { Readability } from '@mozilla/readability';
+
 import sanitizeHtml from 'sanitize-html';
 import { EventEmitter } from 'events';
 import { compress } from './compression';
@@ -82,48 +86,36 @@ class Articles {
 
         // let articleData = await extract(response?.data);
 
-        // addTransformations(
-        //     [
-        //         {
-        //             patterns: [
-        //                 /.*/
-        //             ],
-        //             pre: (document) => {
-        //                 // Query all img elements with a srcset attribute
-        //                 document.querySelectorAll('img[srcset]').forEach((img) => {
-        //                     try {
-        //                         // Process or validate the srcset attribute
-        //                         // This is a simplification. You might need a more complex logic to validate or fix the srcset values.
-        //                         const srcset = img.getAttribute('srcset');
-        //                         const validSrcset = srcset?.split(',').map(s => {
-        //                             // Example validation/fix: ensure each descriptor has a width (w) or pixel density (x) specifier
-        //                             if (!s.trim().endsWith('w') && !s.trim().endsWith('x')) {
-        //                                 return ''; // Remove invalid descriptors
-        //                             }
-        //                             return s.trim();
-        //                         }).filter(Boolean).join(', ');
 
-        //                         // Update the srcset attribute with the validated/fixed value
-        //                         if (validSrcset) img.setAttribute('srcset', validSrcset);
-        //                     } catch (error) {
-        //                         console.error('Error processing srcset:', error);
-        //                         // Optionally remove the srcset attribute if it's invalid and can't be fixed
-        //                         img.removeAttribute('srcset');
-        //                     }
-        //                 });
-        //                 return document;
-        //             },
-        //             post: (document) => {
-        //                 // Any post-processing can be done here
-        //                 return document;
-        //             }
-        //         }
-        //     ]
-        // );
+        // if (response?.data.includes('srcset')) {
+        //     console.log('Found <srcset> in article');
+        //     // console.log(response?.data);
+        // }
 
-        let articleData = await extractFromHtml(response?.data, task.story)
+        // let articleData = await extractFromHtml(response?.data, task.story)
 
-        if (!articleData || !articleData.content || !articleData.title || !articleData.url) {
+        // let cheerioParse: CheerioAPI | null = load(response?.data);
+        // let articleData: {
+        //     title: string;
+        //     content: string;
+        //     url: string;
+        // } | null = { // Declare articleData can be null
+        //     title: cheerioParse('title').text(), // Example of extracting the title
+        //     content: cheerioParse('body').text(), // Example of extracting the body text
+        //     url: task.story
+        // };
+
+        let dom: JSDOM | null = new JSDOM(response?.data, {
+            url: task.story,
+        });
+
+        // Use Readability to parse the document
+        let reader: Readability | null = new Readability(dom.window.document);
+        let articleData = reader.parse();
+
+        if (!articleData || !articleData.content || !articleData.title 
+            // || !articleData.url
+            ) {
             throw new Error('Failed to extract article content. No article data returned.');
         }
 
@@ -132,8 +124,11 @@ class Articles {
         article.feedId = task.feedId;
         article.title = articleData.title;
         article.text = articleData.content; // this.cleanArticleContent(articleData.content);
-        article.url = articleData.url;
+        article.url = task.story; // articleData.url;
 
+        dom = null;
+        reader = null;
+        // cheerioParse = null;
         response = null;
         articleData = null;
 
