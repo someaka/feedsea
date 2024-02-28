@@ -19,7 +19,7 @@ import type { FeedWithUnreadStories, ArticleType } from './types';
 
 import { articlesLogger as logger } from '../logger';
 
-const BATCH_INTERVAL = 5000;
+const BATCH_INTERVAL = 2000;
 
 interface ArticleTask {
     feedId: string;
@@ -77,47 +77,34 @@ class Articles {
         }
     }
 
+    private preprocessHtml(html: string): string {
+        html = html.replace(/<style[^>]*>.*?<\/style>/gs, '').replace(/<link rel="stylesheet"[^>]*>/gs, '');
+        html = html.replace(/<div class="ad-container">.*?<\/div>/gs, '');
+        return html;
+    }
+
     private async fetchArticle(task: ArticleTask): Promise<Article> {
+        let response: AxiosResponse | null = null;
+        let dom: JSDOM | null = null;
+        let reader: Readability | null = null;
+        let articleData = null;
 
-        let response: AxiosResponse | null = await axios.get(task.story, {
-            headers: { 'User-Agent': this.userAgent },
-            timeout: BATCH_INTERVAL,
-        });
+        try {
+            response = await axios.get(task.story, {
+                headers: { 'User-Agent': this.userAgent },
+                timeout: BATCH_INTERVAL,
+            });
 
-        // let articleData = await extract(response?.data);
-
-
-        // if (response?.data.includes('srcset')) {
-        //     console.log('Found <srcset> in article');
-        //     // console.log(response?.data);
-        // }
-
-        // let articleData = await extractFromHtml(response?.data, task.story)
-
-        // let cheerioParse: CheerioAPI | null = load(response?.data);
-        // let articleData: {
-        //     title: string;
-        //     content: string;
-        //     url: string;
-        // } | null = { // Declare articleData can be null
-        //     title: cheerioParse('title').text(), // Example of extracting the title
-        //     content: cheerioParse('body').text(), // Example of extracting the body text
-        //     url: task.story
-        // };
-
-        let dom: JSDOM | null = new JSDOM(response?.data, {
-            url: task.story,
-        });
-
-        // Use Readability to parse the document
-        let reader: Readability | null = new Readability(dom.window.document);
-        let articleData = reader.parse();
-
-        if (!articleData || !articleData.content || !articleData.title 
-            // || !articleData.url
-            ) {
-            throw new Error('Failed to extract article content. No article data returned.');
+            dom = new JSDOM(this.preprocessHtml(response?.data), { url: task.story });
+            reader = new Readability(dom.window.document);
+            articleData = reader.parse();
+        } catch (error) {
+            throw new Error('Error fetching or processing article.');
         }
+
+        if (!articleData || !articleData.content || !articleData.title
+            // || !articleData.url
+        ) throw new Error('Failed to extract article content. No article data returned.');
 
         const article = new Article();
         article.feedColor = task.feedColor;
@@ -126,14 +113,12 @@ class Articles {
         article.text = articleData.content; // this.cleanArticleContent(articleData.content);
         article.url = task.story; // articleData.url;
 
-        dom = null;
-        reader = null;
-        // cheerioParse = null;
-        response = null;
         articleData = null;
+        reader = null;
+        dom = null;
+        response = null;
 
         return article;
-
     }
 
     private cleanArticleContent(content: string): string {

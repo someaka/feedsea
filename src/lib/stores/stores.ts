@@ -303,7 +303,6 @@ function queueRefreshRenderer(numNodes: number = 2) {
       // requestAnimationFrame(() => {
          refreshRenderer();
          refreshTimeoutId = null; // Reset the timeout ID after the refresh is scheduled
-         console.log('Refreshed renderer after ' + adjustedInterval + 'ms');
       // });
    }, adjustedInterval) as unknown as number; // Type assertion here
 }

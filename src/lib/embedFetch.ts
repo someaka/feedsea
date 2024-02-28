@@ -5,7 +5,7 @@ import { HUGGINGFACE_API_URL, HUGGINGFACE_TOKEN } from './similarityConfig';
 import { similLogger as logger } from '../logger';
 import { embeddingsStore } from './stores/stores';
 
-const MAX_RETRIES = 5;
+const MAX_RETRIES = 10;
 const DEFAULT_WAIT_TIME = 30; // in seconds
 const DEFAULT_QUEUE_TIME = 5; // in seconds
 
@@ -36,9 +36,9 @@ async function retryRequest(
                 const statusCode = error.response.status;
                 const errorMessage = error.response.data.message || error.message;
                 logger.log(`API request failed with status code ${statusCode}: ${errorMessage}`);
-                if (statusCode === 503 && i < retries - 1) {
+                if (statusCode === 503 || statusCode === 400 && i < retries - 1) {
                     const retryWaitTime = error.response.data.estimated_time || waitTime;
-                    logger.log(`API is unavailable, retrying in ${retryWaitTime} seconds...`);
+                    logger.log(`API is unavailable, remaining retries are ${retries - i - 1}, retrying in ${retryWaitTime} seconds...`);
                     await sleep(retryWaitTime);
                 } else {
                     responses.push(new Error(`Failed to retrieve embeddings: ${errorMessage}`));
