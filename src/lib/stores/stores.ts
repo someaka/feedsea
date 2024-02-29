@@ -286,23 +286,19 @@ const articlesWithNodesAndLinksStore = derived(
 );
 
 
-let refreshTimeoutId: number | null = null;
-const minimumInterval = 1000;
+let debounceTimeoutId: NodeJS.Timeout | null = null;
+const debounceInterval = 1000; // Adjust this value as needed
 
-function queueRefreshRenderer(numNodes: number = 2) {
-   const adjustment = Math.min(20, Math.sqrt(numNodes));
-   const adjustedInterval = minimumInterval * adjustment;
+function queueRefreshRenderer() {
+    if (debounceTimeoutId !== null) {
+        clearTimeout(debounceTimeoutId);
+    }
 
-   if (refreshTimeoutId !== null) clearTimeout(refreshTimeoutId);
-
-   refreshTimeoutId = setTimeout(() => {
-      refreshRenderer();
-      refreshTimeoutId = null;
-   }, adjustedInterval) as unknown as number;
+    debounceTimeoutId = setTimeout(() => {
+        refreshRenderer();
+        debounceTimeoutId = null;
+    }, debounceInterval);
 }
-
-
-
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 // function queueRefreshRenderer(numNodes: number = 1) {
