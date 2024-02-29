@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 //     // addTransformations
 // } from '@extractus/article-extractor';
 // import { load, type CheerioAPI } from 'cheerio';
+// import sanitizeHtml from 'sanitize-html';
 import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
 
@@ -94,6 +95,10 @@ class Articles {
     private preprocessHtml(html: string): string {
         html = html.replace(/<style[^>]*>.*?<\/style>/gs, '').replace(/<link rel="stylesheet"[^>]*>/gs, '');
         html = html.replace(/<div class="ad-container">.*?<\/div>/gs, '');
+        // Remove script tags and their content
+        html = html.replace(/<script[^>]*>.*?<\/script>/gs, '');
+        // Remove external script references
+        html = html.replace(/<script src="[^"]+"><\/script>/gs, '');
         return html;
     }
 

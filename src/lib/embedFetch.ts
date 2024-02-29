@@ -7,7 +7,7 @@ import { embeddingsStore } from './stores/stores';
 
 const MAX_RETRIES = 10;
 const DEFAULT_WAIT_TIME = 30; // in seconds
-const DEFAULT_QUEUE_TIME = 5; // in seconds
+const DEFAULT_QUEUE_TIME = 2.5; // in seconds
 
 let articlesQueue: Article[] | null = null;
 let isCooldownActive = false;
@@ -58,9 +58,8 @@ async function retryRequest(
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function fetchEmbeddingsForArticles(articles: Article[]): Promise<EmbeddingsCache> {
-    if (articles.some(article => article.text == null)) {
+    if (articles.some(article => article.text == null))
         throw new Error('Texts array contains null or undefined values.');
-    }
 
     let responses = null;
     responses = await retryRequest(articles, MAX_RETRIES, DEFAULT_WAIT_TIME);
@@ -68,11 +67,10 @@ async function fetchEmbeddingsForArticles(articles: Article[]): Promise<Embeddin
 
     for (let i = 0; i < responses.length; i++) {
         const response = responses[i];
-        if (response instanceof Error) {
+        if (response instanceof Error)
             console.warn(`Warning: Failed to retrieve embeddings for article ${articles[i].id}: ${response.message}`);
-        } else {
+        else
             embeddings[articles[i].id] = response as unknown as number[];
-        }
     }
     responses = null;
 
@@ -86,21 +84,12 @@ let dummyWarned = true;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function dummyFetchEmbeddingsForArticlesDummy(articles: Article[]): Promise<EmbeddingsCache> {
     if (dummyWarned) console.log("REMOVE THIS AS SOON AS HUGGINFACE IS BACK")
-    if (articles.some(article => article.text == null)) {
+    if (articles.some(article => article.text == null))
         throw new Error('Texts array contains null or undefined values.');
-    }
-
     const embeddings: EmbeddingsCache = {};
-
-    for (let i = 0; i < articles.length; i++) {
-        // Generate a random vector of size 384 for each article
+    for (let i = 0; i < articles.length; i++)
         embeddings[articles[i].id] = Array.from({ length: 384 }, () => Math.random());
-    }
-
-    if (dummyWarned) {
-        console.log('Dummy embeddings generated (truncated):', truncateDataForLogging(embeddings));
-        dummyWarned = false;
-    }
+    if (dummyWarned) dummyWarned = false;
     return embeddings;
 }
 
@@ -114,8 +103,9 @@ async function processQueue() {
     if (articlesQueue && articlesQueue.length > 0) {
         isCooldownActive = true;
         try {
-            const currentQueue = articlesQueue.splice(0, articlesQueue.length);
-            let newEmbeddings: EmbeddingsCache | null = //await dummyFetchEmbeddingsForArticlesDummy(currentQueue);
+            let currentQueue: Article[] | null = articlesQueue.splice(0, articlesQueue.length);
+            let newEmbeddings: EmbeddingsCache | null =
+                //await dummyFetchEmbeddingsForArticlesDummy(currentQueue);
                 await fetchEmbeddingsForArticles(currentQueue);
 
             embeddingsStore.update((currentEmbeddings) => {
@@ -124,7 +114,8 @@ async function processQueue() {
                     newEmbeddings
                 } as EmbeddingsState;
             });
-
+            
+            currentQueue = null;
             newEmbeddings = null;
         } catch (error) {
             console.error('Error processing embeddings:', error);
@@ -141,16 +132,10 @@ async function processQueue() {
 }
 
 
-async function queueNewArticles(articles: Article[]) {
-    if (!articlesQueue) {
-        articlesQueue = [];
-    }
+function queueNewArticles(articles: Article[]) {
+    if (!articlesQueue) articlesQueue = [];
     articlesQueue.push(...articles);
-
-    if (!isCooldownActive) {
-        processQueue();
-    }
+    if (!isCooldownActive) processQueue();
 }
-
 
 export default queueNewArticles

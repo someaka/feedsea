@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
-	import { writable } from 'svelte/store';
+	import { onMount, onDestroy } from 'svelte';
 	import { articlesStore } from '../../lib/stores/stores';
 	import { theme } from '../../lib/stores/night';
 	import { isLoadingArticles } from '$lib/loadingState';
@@ -57,6 +56,18 @@
 		// Re-enable text selection after drag
 		document.body.style.userSelect = '';
 	}
+	
+	onMount(() => {
+		const articleTextContainers = document.querySelectorAll('.article-text');
+		articleTextContainers.forEach((container) => {
+			const images = container.querySelectorAll('img');
+			images.forEach((img) => {
+				img.addEventListener('error', () => {
+					img.remove(); // Remove the image if it fails to load
+				});
+			});
+		});
+	});
 
 	onDestroy(() => {
 		isLoadingArticles.set(false); // Ensure loading state is reset when component is destroyed
@@ -84,7 +95,9 @@
 								<h4>{article.title}</h4>
 								<a href={article.url} target="_blank">{article.url}</a>
 								<!-- Render the article text as HTML -->
-								{@html article.text}
+								<div class="article-text">
+									{@html article.text}
+								</div>
 							</li>
 						{/each}
 					</ul>

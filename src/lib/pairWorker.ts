@@ -1,31 +1,34 @@
-// import similarity from 'compute-cosine-similarity';
 import { cos_sim } from '@xenova/transformers';
-import type { Pair, EmbeddingsState } from "./types";
+import type { Pair, EmbeddingsState, EmbeddingsCache } from "./types";
 
 self.addEventListener('message', (event) => {
-    const task = event.data;
-    const newPairs = calculatePairs(task);
+    const newPairs = calculatePairs(event.data);
     self.postMessage({ newPairs });
 });
 
 function calculatePairs(task: EmbeddingsState): Record<string, Pair> {
-    const { embeddings, newEmbeddings } = task;
     const results: Record<string, Pair> = {};
 
-    const newEmbeddingKeys = Object.keys(newEmbeddings);
-    const currentEmbeddingKeys = Object.keys(embeddings).filter(key => !newEmbeddingKeys.includes(key));
+    let embeddings: EmbeddingsCache | null = task.embeddings;
+    let newEmbeddings: EmbeddingsCache | null = task.newEmbeddings;
 
-    for (const newKey of newEmbeddingKeys) {
-        for (const currentKey of currentEmbeddingKeys) {
-            const pairKey = `${newKey}-${currentKey}`;
+    let newEmbeddingKeys: string[] | null =
+        Object.keys(newEmbeddings);
+    let currentEmbeddingKeys: string[] | null =
+        Object.keys(embeddings).filter(key => !newEmbeddingKeys?.includes(key));
 
-            const similarity = cos_sim(embeddings[newKey], embeddings[currentKey]);
-            results[pairKey] = { id1: newKey, id2: currentKey, similarity: (similarity + 1) / 2 };
-            
-            // const sim = similarity(embeddings[newKey], embeddings[currentKey]) as number;
-            // results[pairKey] = { id1: newKey, id2: currentKey, similarity: (sim + 1) / 2 };
-        }
-    }
+    for (const newKey of newEmbeddingKeys)
+        for (const currentKey of currentEmbeddingKeys)
+            results[`${newKey}-${currentKey}`] = {
+                id1: newKey, id2: currentKey,
+                similarity: (cos_sim(embeddings[newKey], embeddings[currentKey]) + 1) / 2
+            };
+
+    newEmbeddingKeys = null;
+    currentEmbeddingKeys = null;
+
+    embeddings = null;
+    newEmbeddings = null;
 
     return results;
 }

@@ -61,7 +61,7 @@ async function processArticleTask(task: QueueTask): Promise<void> {
 
 const queueWorker = fastq.promise(processArticleTask, 1); // Adjust concurrency as needed
 
-async function queueNewArticles(articles: Article[]) {
+function queueNewArticles(articles: Article[]) {
   queueWorker.push({ articles });
 }
 

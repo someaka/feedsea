@@ -286,24 +286,24 @@ const articlesWithNodesAndLinksStore = derived(
 );
 
 
-let debounceTimeoutId: NodeJS.Timeout | null = null;
-const debounceInterval = 1000; // Adjust this value as needed
+// let debounceTimeoutId: NodeJS.Timeout | null = null;
+// const debounceInterval = 5000; // Adjust this value as needed
 
-function queueRefreshRenderer() {
-    if (debounceTimeoutId !== null) {
-        clearTimeout(debounceTimeoutId);
-    }
+// function queueRefreshRenderer() {
+//     if (debounceTimeoutId !== null) {
+//         clearTimeout(debounceTimeoutId);
+//     }
 
-    debounceTimeoutId = setTimeout(() => {
-        refreshRenderer();
-        debounceTimeoutId = null;
-    }, debounceInterval);
-}
+//     debounceTimeoutId = setTimeout(() => {
+//         refreshRenderer();
+//         debounceTimeoutId = null;
+//     }, debounceInterval);
+// }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-// function queueRefreshRenderer(numNodes: number = 1) {
-//          refreshRenderer();
-// }
+function queueRefreshRenderer(numNodes: number = 1) {
+         refreshRenderer();
+}
 
 
 
