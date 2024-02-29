@@ -1,20 +1,20 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	// import { onDestroy } from 'svelte';
 	import isLoggedIn from '../lib/stores/auth';
 	import LoginForm from '../components/login/LoginForm.svelte';
 	import MainComponent from '../components/MainComponent.svelte';
-	import {serverLogger as logger} from '../logger.js';
+	// import {serverLogger as logger} from '../logger.js';
 
 	let isLoggedInValue: boolean;
 	$: isLoggedInValue = $isLoggedIn;
 
-	const unsubscribe = isLoggedIn.subscribe((value) => {
-		logger.log('isLoggedIn changed:', value);
-	});
+	// const unsubscribe = isLoggedIn.subscribe((value) => {
+	// 	logger.log('isLoggedIn changed:', value);
+	// });
 
-	onDestroy(() => {
-		unsubscribe();
-	});
+	// onDestroy(() => {
+	// 	unsubscribe();
+	// });
 </script>
 
 {#if isLoggedInValue}
@@ -24,4 +24,5 @@
 {/if}
 
 <style>
+	/* some comment */
 </style>

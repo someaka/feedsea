@@ -1,5 +1,3 @@
-// import dotenv from 'dotenv';
-// dotenv.config();
 
 const models_list = [
     "all-MiniLM-L6-v2",

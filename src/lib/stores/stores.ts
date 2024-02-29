@@ -1,7 +1,7 @@
 import { derived, writable, get } from 'svelte/store';
 import fastq from 'fastq';
 import { storesLogger as logger } from '../../logger';
-import queueNewArticles from '$lib/embedFetch'; //'$lib/embedTransformers';
+import queueNewArticles from '$lib/embedFetch'; //'$lib/embedTransformers'; 
 import calculateAllPairs from '$lib/pairCalculator';
 import {
    addAll, addBoth, addNewLinks, addNewNodes, refreshRenderer, removeNodes
@@ -293,18 +293,12 @@ function queueRefreshRenderer(numNodes: number = 2) {
    const adjustment = Math.min(20, Math.sqrt(numNodes));
    const adjustedInterval = minimumInterval * adjustment;
 
-   // Clear the existing timeout if it exists to debounce the refresh calls
-   if (refreshTimeoutId !== null) {
-      clearTimeout(refreshTimeoutId);
-   }
+   if (refreshTimeoutId !== null) clearTimeout(refreshTimeoutId);
 
-   // Set a new timeout to delay the refresh operation
    refreshTimeoutId = setTimeout(() => {
-      // requestAnimationFrame(() => {
-         refreshRenderer();
-         refreshTimeoutId = null; // Reset the timeout ID after the refresh is scheduled
-      // });
-   }, adjustedInterval) as unknown as number; // Type assertion here
+      refreshRenderer();
+      refreshTimeoutId = null;
+   }, adjustedInterval) as unknown as number;
 }
 
 

@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
 
-import sanitizeHtml from 'sanitize-html';
+// import sanitizeHtml from 'sanitize-html';
 import { EventEmitter } from 'events';
 import { compress } from './compression';
 import { hasSubscriber, removeSubscriber } from './subscribers';
@@ -19,7 +19,7 @@ import type { FeedWithUnreadStories, ArticleType } from './types';
 
 import { articlesLogger as logger } from '../logger';
 
-const BATCH_INTERVAL = 2000;
+const BATCH_INTERVAL = 5000;
 
 interface ArticleTask {
     feedId: string;
@@ -77,6 +77,20 @@ class Articles {
         }
     }
 
+    // private preprocessHtml(html: string): string {
+    //     const cleanHtml = sanitizeHtml(html, {
+    //         allowedTags: sanitizeHtml.defaults.allowedTags.filter(tag => tag !== 'style' && tag !== 'link'),
+    //         allowedAttributes: {
+    //             ...sanitizeHtml.defaults.allowedAttributes,
+    //             // Define other attributes you want to allow here
+    //         },
+    //         exclusiveFilter: (frame) => {
+    //             return frame.tag === 'div' && frame.attribs.class === 'ad-container';
+    //         }
+    //     });
+    //     return cleanHtml;
+    // }
+
     private preprocessHtml(html: string): string {
         html = html.replace(/<style[^>]*>.*?<\/style>/gs, '').replace(/<link rel="stylesheet"[^>]*>/gs, '');
         html = html.replace(/<div class="ad-container">.*?<\/div>/gs, '');
@@ -84,12 +98,13 @@ class Articles {
     }
 
     private async fetchArticle(task: ArticleTask): Promise<Article> {
-        let response: AxiosResponse | null = null;
-        let dom: JSDOM | null = null;
-        let reader: Readability | null = null;
-        let articleData = null;
-
         try {
+            let response: AxiosResponse | null = null;
+            let dom: JSDOM | null = null;
+            let reader: Readability | null = null;
+            let articleData = null;
+
+
             response = await axios.get(task.story, {
                 headers: { 'User-Agent': this.userAgent },
                 timeout: BATCH_INTERVAL,
@@ -98,39 +113,29 @@ class Articles {
             dom = new JSDOM(this.preprocessHtml(response?.data), { url: task.story });
             reader = new Readability(dom.window.document);
             articleData = reader.parse();
+
+
+            if (!articleData || !articleData.content || !articleData.title)
+                throw new Error('Failed to extract article content. No article data returned.');
+
+            const article = new Article();
+            article.feedColor = task.feedColor;
+            article.feedId = task.feedId;
+            article.title = articleData.title;
+            article.text = articleData.content;
+            article.url = task.story;
+
+            articleData = null;
+            reader = null;
+            dom = null;
+            response = null;
+
+            return article;
         } catch (error) {
             throw new Error('Error fetching or processing article.');
         }
-
-        if (!articleData || !articleData.content || !articleData.title
-            // || !articleData.url
-        ) throw new Error('Failed to extract article content. No article data returned.');
-
-        const article = new Article();
-        article.feedColor = task.feedColor;
-        article.feedId = task.feedId;
-        article.title = articleData.title;
-        article.text = articleData.content; // this.cleanArticleContent(articleData.content);
-        article.url = task.story; // articleData.url;
-
-        articleData = null;
-        reader = null;
-        dom = null;
-        response = null;
-
-        return article;
     }
 
-    private cleanArticleContent(content: string): string {
-        return sanitizeHtml(content, {
-            allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'h1', 'h2']),
-            allowedAttributes: {
-                ...sanitizeHtml.defaults.allowedAttributes,
-                'img': ['src', 'alt'],
-            },
-            allowedStyles: {},
-        });
-    }
 
     private batch: Article[] = [];
 

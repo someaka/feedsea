@@ -1,4 +1,4 @@
-import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
+import type { ArticleType as Article, EmbeddingsCache, EmbeddingsState } from '$lib/types';
 
 import axios, { AxiosError, type AxiosResponse } from 'axios';
 import { HUGGINGFACE_API_URL, HUGGINGFACE_TOKEN } from './similarityConfig';
@@ -36,7 +36,7 @@ async function retryRequest(
                 const statusCode = error.response.status;
                 const errorMessage = error.response.data.message || error.message;
                 logger.log(`API request failed with status code ${statusCode}: ${errorMessage}`);
-                if (statusCode === 503 || statusCode === 400 && i < retries - 1) {
+                if (statusCode === 503 || statusCode === 502 || statusCode === 400 && i < retries - 1) {
                     const retryWaitTime = error.response.data.estimated_time || waitTime;
                     logger.log(`API is unavailable, remaining retries are ${retries - i - 1}, retrying in ${retryWaitTime} seconds...`);
                     await sleep(retryWaitTime);
@@ -56,6 +56,7 @@ async function retryRequest(
 
 
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function fetchEmbeddingsForArticles(articles: Article[]): Promise<EmbeddingsCache> {
     if (articles.some(article => article.text == null)) {
         throw new Error('Texts array contains null or undefined values.');
@@ -80,6 +81,29 @@ async function fetchEmbeddingsForArticles(articles: Article[]): Promise<Embeddin
 }
 
 
+let dummyWarned = true;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function dummyFetchEmbeddingsForArticlesDummy(articles: Article[]): Promise<EmbeddingsCache> {
+    if (dummyWarned) console.log("REMOVE THIS AS SOON AS HUGGINFACE IS BACK")
+    if (articles.some(article => article.text == null)) {
+        throw new Error('Texts array contains null or undefined values.');
+    }
+
+    const embeddings: EmbeddingsCache = {};
+
+    for (let i = 0; i < articles.length; i++) {
+        // Generate a random vector of size 384 for each article
+        embeddings[articles[i].id] = Array.from({ length: 384 }, () => Math.random());
+    }
+
+    if (dummyWarned) {
+        console.log('Dummy embeddings generated (truncated):', truncateDataForLogging(embeddings));
+        dummyWarned = false;
+    }
+    return embeddings;
+}
+
 function truncateDataForLogging(data: unknown, maxLength = 100) {
     return JSON.stringify(data).substring(0, maxLength) + '...';
 }
@@ -91,14 +115,17 @@ async function processQueue() {
         isCooldownActive = true;
         try {
             const currentQueue = articlesQueue.splice(0, articlesQueue.length);
-            const newEmbeddings = await fetchEmbeddingsForArticles(currentQueue);
+            let newEmbeddings: EmbeddingsCache | null = //await dummyFetchEmbeddingsForArticlesDummy(currentQueue);
+                await fetchEmbeddingsForArticles(currentQueue);
 
             embeddingsStore.update((currentEmbeddings) => {
                 return {
                     embeddings: { ...currentEmbeddings.embeddings, ...newEmbeddings },
                     newEmbeddings
-                };
+                } as EmbeddingsState;
             });
+
+            newEmbeddings = null;
         } catch (error) {
             console.error('Error processing embeddings:', error);
         } finally {

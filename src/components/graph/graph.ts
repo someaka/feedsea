@@ -4,7 +4,7 @@ import type { Node, Link, Pair, ArticleType as Article } from '$lib/types';
 
 function articlesToNodes(articles: Article[]): Node[] {
     const center = { x: 0, y: 0 };
-    const radius = 0.11;
+    const radius = 0.0011;
 
     return articles.map((article: Article) => ({
         id: article.id,
