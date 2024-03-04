@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { atlas2PanelSettings } from './forceSettingsStore';
-	import { updateForceSettings } from '../graph/graphologySigma';
 	import Slider from './slider';
 	import Toggle from './toggle';
+	import { atlas2PanelSettings } from './forceSettingsStore';
 	import { defaultForceAtlas2Settings } from './defaultGraphSettings';
+
 	import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
+	import { updateForceSettings } from '../graph/SigmaGraphUpdate';
 
 	const loadedSettings = localStorage.getItem('layoutFA2Settings');
 	const initialSettings = loadedSettings ? JSON.parse(loadedSettings) : defaultForceAtlas2Settings;
@@ -14,9 +15,23 @@
 		new Slider<ForceAtlas2Settings>(
 			'gravity',
 			'Gravity',
-			'Amount of gravitational pull.',
+			'Higher gravity pulls nodes closer to center, lower lets them drift apart.',
 			initialSettings.gravity,
-			{ min: 0, max: 10, precision: 5, scaleType: 'linear' }
+			{ min: 0.001, max: 1000, precision: 5, scaleType: 'log' }
+		),
+		new Slider<ForceAtlas2Settings>(
+			'scalingRatio',
+			'Scaling Ratio',
+			'Ratio for scaling.',
+			initialSettings.scalingRatio,
+			{ min: 0.0001, max: 10, precision: 5, scaleType: 'log' }
+		),
+		new Slider<ForceAtlas2Settings>(
+			'slowDown',
+			'Slow Down',
+			'Controls the slowdown rate.',
+			initialSettings.slowDown,
+			{ min: 0.1, max: 100, precision: 5, scaleType: 'log' }
 		),
 		new Slider<ForceAtlas2Settings>(
 			'edgeWeightInfluence',
@@ -24,21 +39,6 @@
 			'Influence of the edge weight.',
 			initialSettings.edgeWeightInfluence,
 			{ min: 0, max: 1, precision: 5, scaleType: 'linear' }
-		),
-		new Slider<ForceAtlas2Settings>(
-			'scalingRatio',
-			'Scaling Ratio',
-			'Ratio for scaling.',
-			initialSettings.scalingRatio,
-			{ min: 0.0001, max: 10, precision: 5, scaleType: 'linear' }
-		),
-
-		new Slider<ForceAtlas2Settings>(
-			'slowDown',
-			'Slow Down',
-			'Controls the slowdown rate.',
-			initialSettings.slowDown,
-			{ min: 0.1, max: 10, precision: 5, scaleType: 'linear' }
 		),
 		new Slider<ForceAtlas2Settings>(
 			'barnesHutTheta',
@@ -85,19 +85,24 @@
 	onMount(() => {
 		const unsubscribe = atlas2PanelSettings.subscribe((settings: Partial<ForceAtlas2Settings>) => {
 			sliders = sliders.map((slider) => {
-				const newValue = settings[slider.id];
-				if (typeof newValue === 'number') {
-					return new Slider(slider.id, slider.label, slider.description, newValue, slider.config);
-				}
-				return slider;
+				const newNumber = settings[slider.id] as number;
+				return new Slider<ForceAtlas2Settings>(
+					slider.id,
+					slider.label,
+					slider.description,
+					newNumber,
+					slider.config
+				);
 			});
 
-			toggles = toggles.map((toggle) => {
-				const newValue = settings[toggle.id];
-				if (typeof newValue === 'boolean') {
-					return new Toggle(toggle.id, toggle.label, newValue, toggle.description);
-				}
-				return toggle;
+			toggles.forEach((toggle) => {
+				const newBoolean = settings[toggle.id] as boolean;
+				return new Toggle<ForceAtlas2Settings>(
+					toggle.id,
+					toggle.label,
+					newBoolean,
+					toggle.description
+				);
 			});
 		});
 
@@ -106,74 +111,24 @@
 		};
 	});
 
-	function handleSettingChange(event: Event, id: keyof ForceAtlas2Settings) {
-		const target = event.target as HTMLInputElement;
-		const isToggle = target.type === 'checkbox';
-		const newValue = isToggle ? target.checked : parseFloat(target.value);
-
-		if (isToggle) {
-			toggles = toggles.map((toggle) =>
-				toggle.id === id
-					? new Toggle(toggle.id, toggle.label, newValue as boolean, toggle.description)
-					: toggle
-			);
-		} else {
-			sliders = sliders.map((slider) =>
-				slider.id === id
-					? new Slider(
-							slider.id,
-							slider.label,
-							slider.description,
-							newValue as number,
-							slider.config
-						)
-					: slider
-			);
-		}
-		updateSettings();
-	}
-
 	function updateSettings() {
-		const booleanProperties: (keyof ForceAtlas2Settings)[] = [
-			'linLogMode',
-			'outboundAttractionDistribution',
-			'adjustSizes',
-			'strongGravityMode',
-			'barnesHutOptimize'
-		];
-		const numberProperties: (keyof ForceAtlas2Settings)[] = [
-			'gravity',
-			'edgeWeightInfluence',
-			'scalingRatio',
-			'slowDown',
-			'barnesHutTheta'
-		];
 		const booleanSettings: Record<string, boolean> = {};
 		const numberSettings: Record<string, number> = {};
 
-		// Populate booleanSettings
-		toggles.forEach((toggle) => {
-			if (booleanProperties.includes(toggle.id)) {
-				booleanSettings[toggle.id] = toggle.value;
-			}
-		});
-
-		// Populate numberSettings
 		sliders.forEach((slider) => {
-			if (numberProperties.includes(slider.id)) {
-				numberSettings[slider.id] = slider.value;
-			}
+			numberSettings[slider.id] = Slider.calculateOriginalValue(slider.value, slider.config);
 		});
 
-		// Merge booleanSettings and numberSettings into updatedSettings
+		toggles.forEach((toggle) => {
+			booleanSettings[toggle.id] = toggle.value;
+		});
+
 		const updatedSettings: ForceAtlas2Settings = {
 			...booleanSettings,
 			...numberSettings
-		} as ForceAtlas2Settings;
+		};
 
-		// Use updatedSettings as needed (e.g., update store, local storage)
 		atlas2PanelSettings.set(updatedSettings);
-		localStorage.setItem('forceAtlas2Settings', JSON.stringify(updatedSettings));
 		updateForceSettings(updatedSettings);
 	}
 
@@ -191,16 +146,18 @@
 				<input
 					type="range"
 					id="{slider.id}Slider"
-					class="slider"
 					bind:value={slider.value}
-					min={slider.config.min}
-					max={slider.config.max}
+					min={slider.config.scaleType === 'log' ? 0 : slider.config.min}
+					max={slider.config.scaleType === 'log' ? 100 : slider.config.max}
 					step="any"
-					on:input={(event) => handleSettingChange(event, slider.id)}
+					class="slider"
+					on:input={updateSettings}
 				/>
 				<div class="slider-min-max">
 					<span class="slider-min">{slider.config.min}</span>
-					<output for="{slider.id}Slider" class="slider-output">{Slider.calculateOriginalValue(slider.value, slider.config)}</output>
+					<output for="{slider.id}Slider" class="slider-output">
+						{Slider.calculateOriginalValue(slider.value, slider.config)}
+					</output>
 					<span class="slider-max">{slider.config.max}</span>
 				</div>
 			</div>
@@ -218,7 +175,7 @@
 					id="{toggle.id}Toggle"
 					class="toggle-input"
 					bind:checked={toggle.value}
-					on:change={(event) => handleSettingChange(event, toggle.id)}
+					on:input={updateSettings}
 				/>
 				<label for="{toggle.id}Toggle" class="toggle-switch"></label>
 			</div>

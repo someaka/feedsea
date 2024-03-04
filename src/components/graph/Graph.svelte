@@ -1,77 +1,21 @@
 <script lang="ts">
+	// import '$lib/stores/updates.ts';
 	import { onMount, onDestroy } from 'svelte';
-	import {
-		newArticlesStore,
-		pairsCalculationStore,
-		nodesStoreUpdate,
-		linksStoreUpdate,
-		newNodesStore,
-		newLinksStore,
-		articlesWithNodesAndLinksStore
-	} from '../../lib/stores/stores';
-	import { theme } from '../../lib/stores/night';
-	import { setContainer, updateDayNightMode } from './graphologySigma';
 
+	import { theme } from '$lib/stores/night';
+	import { setContainer, updateDayNightMode } from './SigmaGraphUpdate';
+	
 	let graphContainer: HTMLElement;
 	onMount(() => {
 		setContainer(graphContainer);
 	});
 
-	theme.subscribe((value) => {
+	const unsubscribeDayNight = theme.subscribe((value) => {
 		updateDayNightMode();
 	});
 
-	let newArticlesStatus;
-	let pairsCalculationStatus;
-	let nodes;
-	let links;
-	let newNodes;
-	let newLinks;
-	let articlesWithNodesAndLinks;
-
-	// Subscribe to newArticlesStore
-	const unsubscribeNewArticles = newArticlesStore.subscribe((value) => {
-		newArticlesStatus = value;
-	});
-
-	// Subscribe to pairsCalculationStore
-	const unsubscribePairsCalculation = pairsCalculationStore.subscribe((value) => {
-		pairsCalculationStatus = value;
-	});
-
-	// Subscribe to nodesStore
-	const unsubscribeNodes = nodesStoreUpdate.subscribe((value) => {
-		nodes = value;
-	});
-
-	// Subscribe to linksStore
-	const unsubscribeLinks = linksStoreUpdate.subscribe((value) => {
-		links = value;
-	});
-
-	// Subscribe to newNodesAndLinksStore
-	const unsubscribeNewNodes = newNodesStore.subscribe((value) => {
-		newNodes = value;
-	});
-
-	// Subscribe to newNodesAndLinksStore
-	const unsubscribeNewLinks = newLinksStore.subscribe((value) => {
-		newLinks = value;
-	});
-
-	// Subscribe to articlesWithNodesAndLinksStore
-	const unsubscribeArticlesWithNodesAndLinks = articlesWithNodesAndLinksStore.subscribe((value) => {
-		articlesWithNodesAndLinks = value;
-	});
-
 	onDestroy(() => {
-		unsubscribeNewArticles();
-		unsubscribePairsCalculation();
-		unsubscribeNodes();
-		unsubscribeLinks();
-		unsubscribeNewNodes();
-		unsubscribeNewLinks();
-		unsubscribeArticlesWithNodesAndLinks();
+		unsubscribeDayNight();
 	});
 </script>
 

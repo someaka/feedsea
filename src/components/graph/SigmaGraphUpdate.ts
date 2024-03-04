@@ -13,10 +13,10 @@ import Sigma from "sigma";
 import ForceSupervisor from "graphology-layout-force/worker";
 import ForceAtlasSupervisor from 'graphology-layout-forceatlas2/worker';
 
-import type { Attributes } from 'graphology-types';
+import type { Attributes, SerializedGraph } from 'graphology-types';
 import type { ForceLayoutSettings } from 'graphology-layout-force';
 import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
-import type { Node, Link, GraphData } from '$lib/types';
+import type { GraphData, Link, Node } from '$lib/types';
 
 
 let graphContainer: HTMLElement | null;
@@ -61,11 +61,7 @@ class SigmaGrapUpdate {
             renderLabels: true, // Disable automatic label rendering   
             allowInvalidContainer: true, //shusshes cypress
             labelDensity: 1,
-            labelGridCellSize: 150,
-            // labelRenderedSizeThreshold: 5, // affects label for node size
-            // nodeProgramClasses: {
-            //     border: NodeProgramBorder,
-            // },
+            labelGridCellSize: 150
         });
 
         this.DayOrNight = get(isNightMode);
@@ -83,6 +79,7 @@ class SigmaGrapUpdate {
         this.layout = this.setLayout(this.layoutType === "forceAtlas");
 
         this.startLayout();
+        this.initializeInteractions();
         this.initializeInteractions();
     }
 
@@ -186,43 +183,13 @@ class SigmaGrapUpdate {
         return {
             x: node.x,
             y: node.y,
-            size: node.size || 10,
+            size: node.size,
             color: node.color,
-            // borderColor: chroma(data.color).darken().hex(),
-            // borderSize: 2,
-            // type: "border",
-            // colorhsl: node.color,
             label: node.title,
             title: node.title,
         };
     }
 
-
-
-    // Museum Piece
-    // updateGraph(newGraphData: { nodes: Node[], links: Link[] }) {
-    //     const newNodesSet = new Set(newGraphData.nodes.map(node => node.id));
-    //     try {
-    //         this.graph.clearEdges();
-    //         this.removeNodes(newNodesSet);
-
-    //         this.addNewNodes(newGraphData.nodes);
-    //         this.addNewEdges(newGraphData.links);
-
-    //         this.renderer.refresh();
-    //     } catch {
-    //         logger.warn("Failed to update graph")
-    //     }
-    // }
-
-
-    removeNodes(newNodesSet: Set<string>) {
-        this.graph.forEachNode((nodeId) => {
-            if (!newNodesSet.has(nodeId)) {
-                this.graph.dropNode(nodeId);
-            }
-        })
-    }
 
     removeNodesById(graphData: GraphData) {
         this.graph.clearEdges();
@@ -230,27 +197,23 @@ class SigmaGrapUpdate {
         nodeIds.forEach((nodeId) => {
             this.graph.dropNode(nodeId);
         })
-        this.addNewEdges(graphData.links);
+        this.addNewLinks(graphData.links);
     }
-
 
     addNewNodes(nodes: Node[]) {
-        for (const node of nodes) {
-            if (!this.graph.hasNode(node.id)) {
-                const attributes = this.getNodeAttributes(node);
-                attributes.size = 10;
-                this.graph.addNode(node.id, attributes);
-            }
-        }
+        for (const node of nodes)
+            this.graph.addNode(
+                node.id,
+                this.getNodeAttributes(node)
+            );
     }
 
-    addNewEdges(links: Link[]) {
+    addNewLinks(links: Link[]) {
         for (const link of links) {
             const sourceId = link.source;
             const targetId = link.target;
             const edgeKey = `${sourceId}_${targetId}`;
             this.graph.addEdgeWithKey(edgeKey, sourceId, targetId, {
-                // size: link.size || 1,
                 weight: link.weight || 1,
                 color: this.DayOrNight ? link.day_color : link.night_color,
                 day_color: link.day_color,
@@ -259,34 +222,20 @@ class SigmaGrapUpdate {
         }
     }
 
-
     addBoth(graphData: GraphData) {
         this.addNewNodes(graphData.nodes);
-        this.addNewEdges(graphData.links);
+        this.addNewLinks(graphData.links);
     }
 
     addAll(graphData: GraphData) {
         this.addNewNodes(graphData.nodes);
-        this.graph.clearEdges();
-        this.addNewEdges(graphData.links);
+        this.clearEdges();
+        this.addNewLinks(graphData.links);
     }
 
-    merge(graph: Graph) {
-        this.graph.import(graph, true);
-    }
 
-    addNode(node: string , attributes : Attributes) {
-        this.graph.addNode(node, attributes);
-    }
 
-    dropNode(nodeId: string) {
-        this.graph.dropNode(nodeId);
-    }
 
-    addEdgeWithKey(edgeKey: string, sourceId: string, targetId: string, attributes: Attributes) {
-        attributes.color = this.DayOrNight ? attributes.day_color : attributes.night_color;
-        this.graph.addEdgeWithKey(edgeKey, sourceId, targetId, attributes);
-    }
 
     clearEdges() {
         this.graph.clearEdges();
@@ -360,62 +309,50 @@ class SigmaGrapUpdate {
         }
         this.renderer.refresh();
     }
+
+    updateGraphFromSerializedData(serializedData: SerializedGraph) {
+        this.graph.import(serializedData, true);
+        this.renderer.refresh();
+    }
 }
 
-
-// const visualizeGraph = (newGraphData: { nodes: Node[], links: Link[] }) =>
-//     SigmaGrapUpdate.getInstance()?.updateGraph(newGraphData);
-
-const GraphInstance: Graph | undefined = SigmaGrapUpdate.getInstance()?.graph;
-
-const updateDayNightMode = () =>
-    SigmaGrapUpdate.getInstance()?.updateDayNightMode();
-const clearGraph = () =>
-    SigmaGrapUpdate.getInstance()?.clearGraph();
 const updateForceSettings = (newSettings: ForceLayoutSettings | ForceAtlas2Settings) =>
     SigmaGrapUpdate.getInstance()?.updateForceSettings(newSettings);
+const updateDayNightMode = () =>
+    SigmaGrapUpdate.getInstance()?.updateDayNightMode();
+const updateGraphFromSerializedData = (graphData: SerializedGraph) =>
+    SigmaGrapUpdate.getInstance()?.updateGraphFromSerializedData(graphData);
 
-const removeNodes = (graphData: GraphData) =>
-    SigmaGrapUpdate.getInstance()?.removeNodesById(graphData);
-const addNewNodes = (nodes: Node[]) =>
-    SigmaGrapUpdate.getInstance()?.addNewNodes(nodes);
-const addNewLinks = (links: Link[]) =>
-    SigmaGrapUpdate.getInstance()?.addNewEdges(links);
 const addBoth = (graphData: GraphData) =>
     SigmaGrapUpdate.getInstance()?.addBoth(graphData);
 const addAll = (graphData: GraphData) =>
     SigmaGrapUpdate.getInstance()?.addAll(graphData);
+const addNewNodes = (nodes: Node[]) =>
+    SigmaGrapUpdate.getInstance()?.addNewNodes(nodes);
+const addNewLinks = (links: Link[]) =>
+    SigmaGrapUpdate.getInstance()?.addNewLinks(links);
+const removeNodesById = (graphData: GraphData) =>
+    SigmaGrapUpdate.getInstance()?.removeNodesById(graphData);
+
 const switchLayout = () =>
     SigmaGrapUpdate.getInstance()?.switchLayout();
-const merge = (graph: Graph) =>
-    SigmaGrapUpdate.getInstance()?.merge(graph);
-const addNode = (node: string , attributes : Attributes) =>
-    SigmaGrapUpdate.getInstance()?.addNode(node, attributes);
-const dropNode = (nodeId: string) =>
-    SigmaGrapUpdate.getInstance()?.dropNode(nodeId);
-const addEdgeWithKey = (edgeKey: string, sourceId: string, targetId: string, attributes: Attributes) =>
-    SigmaGrapUpdate.getInstance()?.addEdgeWithKey(edgeKey, sourceId, targetId, attributes);
-
+const clearGraph = () =>
+    SigmaGrapUpdate.getInstance()?.clearGraph();
 const clearEdges = () => SigmaGrapUpdate.getInstance()?.clearEdges();
 const refreshRenderer = () => SigmaGrapUpdate.getInstance()?.renderer.scheduleRefresh();
 
 export {
-    // visualizeGraph,
-    GraphInstance,
     setContainer,
     clearGraph,
     updateDayNightMode,
     updateForceSettings,
-    removeNodes,
-    addNewNodes,
-    addNewLinks,
-    addBoth,
     addAll,
+    addNewNodes,
+    addBoth,
+    addNewLinks,
+    removeNodesById,
     switchLayout,
-    merge,
     clearEdges,
     refreshRenderer,
-    addNode,
-    dropNode,
-    addEdgeWithKey
+    updateGraphFromSerializedData
 };

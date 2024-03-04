@@ -12,9 +12,10 @@ async function initLinksWorker(): Promise<Worker> {
 
     linksWorker.onmessage = (event) => {
         const newLinks = event.data;
-        linksStore.update(currentLinks =>
-            ({ links: [...currentLinks.links, ...newLinks], newLinks })
-        );
+        linksStore.update(currentLinks => {
+            const links = currentLinks.links.concat(newLinks);
+            return { links, newLinks };
+        });
     };
 
     linksWorker.onerror = (error) => {
@@ -24,9 +25,9 @@ async function initLinksWorker(): Promise<Worker> {
     return linksWorker;
 }
 
-initLinksWorker();
 
-function queueNodesToLinks(nodes: Node[], newPairs: Record<string, Pair>) {
+async function queueNodesToLinks(nodes: Node[], newPairs: Record<string, Pair>) {
+    linksWorker = await initLinksWorker();
     linksWorker.postMessage({nodes, newPairs});
 }
 

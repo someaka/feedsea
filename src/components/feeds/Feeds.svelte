@@ -13,8 +13,8 @@
 	import { isLoadingFeeds, isLoadingArticles } from '$lib/loadingState';
 
 	import type { FeedChange, FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
-	import { clearGraph } from '../graph/graphologySigma';
 	import { theme } from '$lib/stores/night';
+	import enqueueGraphOperation from '$lib/stores/updates';
 
 	let feeds: FeedWithUnreadStories[] = [];
 	let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds
@@ -154,7 +154,9 @@
 	function unselectAllFeeds() {
 		selectedFeedsStore.update(() => ({ feedIds: new Set() }));
 		selectedFeeds = [];
-		clearGraph();
+		enqueueGraphOperation({
+			type: 'clearGraph'
+		});
 	}
 </script>
 

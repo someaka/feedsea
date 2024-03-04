@@ -1,3 +1,4 @@
+import Graph from "graphology";
 
 interface Story {
     story_hash: string;
@@ -144,8 +145,8 @@ interface GraphData {
  }
 
 interface Link {
-    source: Node;
-    target: Node;
+    source: string;
+    target: string;
     weight: number;
     color: string,
     day_color: string,
@@ -176,7 +177,17 @@ interface EmbeddingsCache {
  type NodeUpdate = { nodes: Node[], newNodes: Node[] }
  type LinkUpdate = { links: Link[], newLinks: Link[] }
  
+ interface PairsState {
+    pairs: Record<string, Pair>;
+    newPairs: Record<string, Pair>;
+ }
 
+ interface GraphState {
+    graph: Graph,
+    newGraph: Graph
+    task: string
+    newLinks: Set<string>
+ }
 
 export type {
     Story,
@@ -198,5 +209,7 @@ export type {
     EmbeddingsCache,
     EmbeddingsState,
     NodeUpdate,
-    LinkUpdate
+    LinkUpdate,
+    PairsState,
+    GraphState
 }

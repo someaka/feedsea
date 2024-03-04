@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { forcePanelSettings } from './forceSettingsStore';
-	import { updateForceSettings } from '../graph/graphologySigma';
-	import { defaultForceAtlasSettings } from './defaultGraphSettings';
 	import Slider from './slider';
-
+	import { forcePanelSettings } from './forceSettingsStore';
+	import { defaultForceAtlasSettings } from './defaultGraphSettings';
+	import { updateForceSettings } from '../graph/SigmaGraphUpdate';
 	import type { ForceLayoutSettings } from 'graphology-layout-force';
 
 	const loadedSettings = localStorage.getItem('layoutForceSettings');
@@ -97,8 +96,8 @@
 			acc[slider.id] = Slider.calculateOriginalValue(slider.value, slider.config);
 			return acc;
 		}, {} as ForceLayoutSettings);
-		updateForceSettings(settings);
 		forcePanelSettings.set(settings);
+		updateForceSettings(settings);
 	}
 
 	let easterEggActive = Math.random() < 0.1;

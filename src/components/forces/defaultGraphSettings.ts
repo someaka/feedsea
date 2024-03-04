@@ -3,11 +3,11 @@ import type { ForceLayoutSettings } from 'graphology-layout-force';
 import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
 
 const defaultForceAtlasSettings: ForceLayoutSettings = {
-    attraction: 0.0001,
-    repulsion: 0.00001,
-    gravity: 0.01,
+    attraction: 0.00001,
+    repulsion: 0.00004,
+    gravity: 0.001,
     inertia: 0.6,
-    maxMove: 10
+    maxMove: 1
 };
 
 const defaultForceAtlas2Settings: ForceAtlas2Settings = {

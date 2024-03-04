@@ -32,7 +32,7 @@ export async function GET({ request }) {
                 articleEvents.off('jobComplete', jobCompleteListener);
                 Articles.destroyInstance(clientId);
                 removeSubscriber(clientId);
-                controller.terminate();
+                //controller.terminate();
             };
 
             articleEvents.on('articleFetched', articleFetchedListener);

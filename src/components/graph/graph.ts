@@ -20,12 +20,16 @@ function articlesToNodes(articles: Article[]): Node[] {
     }));
 }
 
-
 function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.5): Record<string, Pair> {
-    const similarities = Object.values(links).map(link => link.similarity).filter(weight => weight > 0);
-    const sortedSimilarities = similarities.sort((a, b) => b - a);
+    let similarities: number[] | null =
+        Object.values(links).map(link => link.similarity).filter(weight => weight > 0);
+    let sortedSimilarities: number[] | null =
+        similarities.sort((a, b) => b - a);
     const thresholdIndex = Math.floor(sortedSimilarities.length * percentile);
     const threshold = sortedSimilarities[thresholdIndex];
+    similarities = null;
+    sortedSimilarities = null;
+
     const filteredLinksEntries = Object.entries(links).filter(([, link]) => link.similarity >= threshold);
     return Object.fromEntries(filteredLinksEntries);
 }
@@ -33,38 +37,58 @@ function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.5):
 function nodesToLinks(
     nodes: Node[],
     pairsStore: Record<string, Pair>
-): Link[] {
+): Promise<Link[]> {
+    return new Promise((resolve) => {
+        const links: Link[] = [];
+        let filteredLinks: Record<string, Pair> | null = filterLinksByPercentile(pairsStore);
+        let i = 0;
+        let j = i + 1;
+        const batchSize = 100;
+        const delayMs = 1; // Math.log(Object.keys(filteredLinks).length + 1); // Delay in milliseconds 
 
-    const links = [];
-    const filteredLinks = filterLinksByPercentile(pairsStore);
+        const processLink = () => {
+            let processed = 0;
+            while (i < nodes.length && processed < batchSize) {
+                if (j < nodes.length) {
+                    const mix = chroma.mix(nodes[i].color, nodes[j].color, 0.5, 'rgb');
+                    const day = mix.brighten(0.27).hex();
+                    const night = mix.darken(0.77).hex();
+                    const similarity = getSimilarity(nodes[i].id, nodes[j].id, filteredLinks as Record<string, Pair>);
+                    if (similarity) links.push({
+                        source: nodes[i].id,
+                        target: nodes[j].id,
+                        weight: similarity,
+                        color: day,
+                        day_color: day,
+                        night_color: night
+                    });
+                    j++;
+                    processed++;
+                } else {
+                    i++;
+                    j = i + 1;
+                }
+            }
 
-    for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-            const mix = chroma.mix(nodes[i].color, nodes[j].color, 0.5, 'rgb');
-            const day = mix.brighten(0.27).hex();
-            const night = mix.darken(0.77).hex();
-            const similarity = getSimilarity(nodes[i].id, nodes[j].id, filteredLinks);
-            if (similarity) links.push({
-                source: nodes[i],
-                target: nodes[j],
-                weight: similarity,
-                color: day,
-                day_color: day,
-                night_color: night
-            });
-        }
-    }
-    return links;
+            if (i < nodes.length) {
+                setTimeout(processLink, delayMs);
+            } else {
+                filteredLinks = null;
+                resolve(links);
+            }
+        };
+
+        processLink();
+    });
 }
 
 function getSimilarity(
-    id1: string,
-    id2: string,
+    id1: string, id2: string,
     pairsStore: Record<string, { similarity: number }>
-): number {
+): number | undefined {
     const pairKey = `${id1}-${id2}`;
-    const reverseKey = `${id2}-${id1}`;
-    const pair = pairsStore[pairKey] || pairsStore[reverseKey];
+    const reveKey = `${id2}-${id1}`;
+    const pair = pairsStore[pairKey] || pairsStore[reveKey];
     return pair?.similarity;
 }
 

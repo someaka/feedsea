@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { switchLayout } from '../graph/graphologySigma';
-	import { isForceAtlas } from '$lib/stores/forces';
 	import { fly } from 'svelte/transition';
+	import { isForceAtlas } from '$lib/stores/forces';
+	import { switchLayout } from '../graph/SigmaGraphUpdate';
 	import ForceLayoutSettings from './ForceLayoutSettings.svelte';
 	import ForceAtlas2Settings from './ForceAtlas2Settings.svelte';
 

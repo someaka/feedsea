@@ -93,12 +93,25 @@ class Articles {
     // }
 
     private preprocessHtml(html: string): string {
-        html = html.replace(/<style[^>]*>.*?<\/style>/gs, '').replace(/<link rel="stylesheet"[^>]*>/gs, '');
-        html = html.replace(/<div class="ad-container">.*?<\/div>/gs, '');
+        // Remove style tags and their content
+        html = html.replace(/<style[^>]*>.*?<\/style>/gs, '');
+        // Remove link tags for stylesheets
+        html = html.replace(/<link rel="stylesheet"[^>]*>/gs, '');
         // Remove script tags and their content
         html = html.replace(/<script[^>]*>.*?<\/script>/gs, '');
         // Remove external script references
         html = html.replace(/<script src="[^"]+"><\/script>/gs, '');
+        // Remove iframes
+        html = html.replace(/<iframe[^>]*>.*?<\/iframe>/gs, '');
+        // Remove embeds
+        html = html.replace(/<embed[^>]*>/gs, '');
+        // Remove objects
+        html = html.replace(/<object[^>]*>.*?<\/object>/gs, '');
+        // Remove all event handlers from all tags
+        html = html.replace(/ on\w+="[^"]*"/g, '');
+        // Optional: Remove all attributes from img and video tags except for src (and potentially alt for img)
+        html = html.replace(/<img [^>]*src="([^"]*)"[^>]*>/gi, '<img src="$1">');
+        html = html.replace(/<video [^>]*src="([^"]*)"[^>]*>.*?<\/video>/gs, '<video src="$1"></video>');
         return html;
     }
 
