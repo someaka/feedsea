@@ -229,8 +229,17 @@ class SigmaGrapUpdate {
 
     addAll(graphData: GraphData) {
         this.addNewNodes(graphData.nodes);
-        this.clearEdges();
-        this.addNewLinks(graphData.links);
+        for (const link of graphData.links) {
+            const sourceId = link.source;
+            const targetId = link.target;
+            const edgeKey = `${sourceId}_${targetId}`;
+            this.graph.mergeEdgeWithKey(edgeKey, sourceId, targetId, {
+                weight: link.weight || 1,
+                color: this.DayOrNight ? link.day_color : link.night_color,
+                day_color: link.day_color,
+                night_color: link.night_color
+            });
+        }
     }
 
 

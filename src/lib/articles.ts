@@ -50,7 +50,7 @@ class Articles {
     private userAgent: string;
     private compress: typeof compress;
     public articleEvents: EventEmitter;
-    private activeQueues: queue<ArticleTask>[] | null;
+    public activeQueues: queue<ArticleTask>[] | null;
 
     constructor() {
         this.userAgent = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
@@ -231,11 +231,12 @@ const queueFeedRequest = (selectedFeed: FeedWithUnreadStories, clientToken: stri
     Articles.getInstance(clientToken).queueFeedRequest(selectedFeed);
 
 const stopAllRequests = (clientToken: string) => Articles.getInstance(clientToken).stopAllRequests();
-
+const isActive = (clientToken: string) => Articles.getInstance(clientToken).activeQueues !== null;
 
 export {
     Articles,
     getArticleEvents,
     queueFeedRequest,
-    stopAllRequests
+    stopAllRequests,
+    isActive
 };

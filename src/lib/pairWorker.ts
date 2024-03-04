@@ -16,8 +16,8 @@ function calculatePairs(task: EmbeddingsState | null): Promise<Record<string, Pa
 
         let i = 0;
         let j = 0; // Introduce a new variable to track the current position in currentEmbeddingKeys
-        const batchSize = 100; // Number of pairs to process before yielding
-        const delayMs = 1; // Delay in milliseconds before processing the next batch
+        const batchSize = 1000; // Number of pairs to process before yielding
+        const delayMs = 0; // Delay in milliseconds before processing the next batch
 
         const processPair = () => {
             let processed = 0;

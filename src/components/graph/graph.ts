@@ -43,8 +43,8 @@ function nodesToLinks(
         let filteredLinks: Record<string, Pair> | null = filterLinksByPercentile(pairsStore);
         let i = 0;
         let j = i + 1;
-        const batchSize = 100;
-        const delayMs = 1; // Math.log(Object.keys(filteredLinks).length + 1); // Delay in milliseconds 
+        const batchSize = 1000;
+        const delayMs = 0; // Math.log(Object.keys(filteredLinks).length + 1); // Delay in milliseconds 
 
         const processLink = () => {
             let processed = 0;

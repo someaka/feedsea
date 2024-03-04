@@ -2,7 +2,7 @@ import { pairsStore } from './stores/stores';
 import type { EmbeddingsState } from '$lib/types';
 
 let pairWorker: Worker;
-async function initPairWorker(): Promise<Worker> {
+export async function initPairWorker(): Promise<Worker> {
     if (!pairWorker) {
         const PairWorkerModule = await import('$lib/pairWorker?worker');
         pairWorker = new PairWorkerModule.default();

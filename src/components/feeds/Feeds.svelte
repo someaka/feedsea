@@ -15,10 +15,13 @@
 	import type { FeedChange, FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
 	import { theme } from '$lib/stores/night';
 	import enqueueGraphOperation from '$lib/stores/updates';
+	import axios from 'axios';
 
 	let feeds: FeedWithUnreadStories[] = [];
 	let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds
 	let latestSelectedFeed: FeedWithUnreadStories | null = null;
+
+	const PING_INTERVAL = 10 * 60 * 1000; // 10 minutes
 
 	// Subscribe to feedsStore
 	const unsubscribeFeeds = feedsStore.subscribe((value) => {
@@ -32,12 +35,29 @@
 		window.removeEventListener('beforeunload', handleBeforeUnload);
 	}
 
-	onMount(async () => {
-		isLoadingFeeds.set(true);
-		await fetchFeeds();
-		isLoadingFeeds.set(false);
-		startSSE();
-		window.addEventListener('beforeunload', handleBeforeUnload);
+	async function checkAndKeepAlive() {
+		const feeds = get(feedsStore);
+		const articlesCacheKeys = new Set(Object.keys(get(articlesStore)));
+		const allFeedsCached = Object.keys(feeds).every((feedId) => articlesCacheKeys.has(feedId));
+
+		if (!allFeedsCached) {
+			axios.get('/keep-alive', { withCredentials: true });
+		}
+	}
+	onMount(() => {
+		(async () => {
+			isLoadingFeeds.set(true);
+			await fetchFeeds();
+			isLoadingFeeds.set(false);
+			startSSE();
+			window.addEventListener('beforeunload', handleBeforeUnload);
+
+			const keepAliveInterval = setInterval(checkAndKeepAlive, PING_INTERVAL);
+
+			return () => {
+				clearInterval(keepAliveInterval);
+			};
+		})();
 	});
 
 	onDestroy(() => {

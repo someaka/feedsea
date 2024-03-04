@@ -5,6 +5,7 @@ import type {
     AllSelectedOperationData,
     OperationData
 } from '$lib/graphTypes';
+import { articlesToNodes, nodesToLinks } from "../components/graph/graph";
 
 
 self.addEventListener('message', (event) => {
@@ -12,9 +13,7 @@ self.addEventListener('message', (event) => {
 
     switch (task.type) {
         case 'clearGraph':
-            self.postMessage({
-                type: 'GRAPH_CLEAR'
-            });
+            queueClear();
             break;
         case 'addNodes':
             queueAddNewNodes(task.data);
@@ -36,6 +35,11 @@ self.addEventListener('message', (event) => {
     }
 });
 
+function queueClear() {
+    self.postMessage({
+        type: 'GRAPH_CLEAR'
+    });
+}
 
 
 function queueAddBoth(data: OperationData) {
@@ -92,28 +96,44 @@ function queueAllSelectedNodes(data: AllSelectedOperationData) {
     });
 }
 
-function queueAddNewLinks(data: AddLinkOperationData) {
+async function queueAddNewLinks(data: AddLinkOperationData) {
+    const newLinks = await nodesToLinks(data.nodes, data.newPairs);
+
     const selectedArticleIds = new Set<string>();
     data.feedIds.forEach(feedId => {
         const articlesForFeed = data.articles[feedId];
         if (articlesForFeed) articlesForFeed.forEach(article =>
             selectedArticleIds.add(article.id));
     });
-    const filteredLinks = data.newLinks.filter(link =>
+    const filteredLinks = newLinks.filter(link =>
         selectedArticleIds.has(link.source) && selectedArticleIds.has(link.target)
     );
-    self.postMessage({ type: 'GRAPH_LINKS', data: filteredLinks });
+    self.postMessage({
+        type: 'GRAPH_LINKS',
+        data: {
+            linksToDisplay: filteredLinks,
+            newLinks
+        }
+    });
 }
 
 function queueAddNewNodes(data: AddNodesOperationData) {
+    const newNodes = articlesToNodes(data.newArticles);
+
     const selectedArticleIds = new Set<string>();
     data.feedIds.forEach(feedId => {
         const articlesForFeed = data.articles[feedId];
         if (articlesForFeed) articlesForFeed.forEach(article =>
             selectedArticleIds.add(article.id));
     });
-    const filteredNodes = data.newNodes.filter(node =>
+    const filteredNodes = newNodes.filter(node =>
         selectedArticleIds.has(node.id)
     );
-    self.postMessage({ type: 'GRAPH_NODES', data: filteredNodes });
+    self.postMessage({
+        type: 'GRAPH_NODES',
+        data: {
+            nodesToDisplay: filteredNodes,
+            newNodes
+        }
+    });
 }
