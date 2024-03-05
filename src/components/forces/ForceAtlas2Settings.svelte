@@ -109,7 +109,6 @@
 		atlas2PanelSettings.update((settings) => {
 			const updatedSettings = { ...settings, ...booleanSettings };
 			updateForceSettings(updatedSettings);
-			console.log(updatedSettings);
 			return updatedSettings;
 		});
 	}
