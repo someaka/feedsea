@@ -15,10 +15,10 @@ const defaultForceAtlas2Settings: ForceAtlas2Settings = {
     outboundAttractionDistribution: false,
     adjustSizes: false,
     edgeWeightInfluence: 0.1,
-    scalingRatio: 0.01,
-    strongGravityMode: true,
-    gravity: 1,
-    slowDown: 5,
+    scalingRatio: 0.001,
+    strongGravityMode: false,
+    gravity: 0.1,
+    slowDown: 42,
     barnesHutOptimize: false,
     barnesHutTheta: 0.5
 };
