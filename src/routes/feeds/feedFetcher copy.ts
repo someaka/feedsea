@@ -1,7 +1,8 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { serverLogger as logger } from '../../logger';
 import axios, { AxiosError, type AxiosResponse } from 'axios';
-import type { Feeds, Story, StoryWithColor } from '../../lib/types';
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+import { serverLogger as logger } from '../../logger';
+import type { Feeds, Story, StoryWithColor,  } from '../../lib/types'
+
 
 const NEWSBLUR_URL = 'https://www.newsblur.com';
 
@@ -11,32 +12,27 @@ interface Options {
     include_hidden?: string;
 }
 
+
+
+
 class FeedsFetcher {
-    private isSessionValid: boolean;
-    private sessionCookie: string;
-    private static instances: Map<string, FeedsFetcher> = new Map();
+    static instance: FeedsFetcher | null = null;
+    static getInstance() {
+        if (!this.instance) {
+            this.instance = new FeedsFetcher();
+        }
+        return this.instance;
+    }
 
-    private constructor(sessionCookie: string) {
+    isSessionValid: boolean;
+
+    constructor() {
         this.isSessionValid = true;
-        this.sessionCookie = sessionCookie;
     }
 
-    static getInstance(sessionCookie: string): FeedsFetcher {
-        if (!this.instances.has(sessionCookie)) {
-            this.instances.set(sessionCookie, new FeedsFetcher(sessionCookie));
-        }
-        return this.instances.get(sessionCookie)!;
-    }
-
-    static destroyInstance(sessionCookie: string): void {
-        if (this.instances.has(sessionCookie)) {
-            this.instances.delete(sessionCookie);
-        }
-    }
-
-    async fetchWithSessionCookie(url: string, options = {}) {
+    async fetchWithSessionCookie(url: string, sessionCookie: string, options = {}) {
         try {
-            const cookie = `newsblur_sessionid=${this.sessionCookie}`;
+            const cookie = `newsblur_sessionid=${sessionCookie}`;
             const response: AxiosResponse = await axios.get(url, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -58,13 +54,17 @@ class FeedsFetcher {
         }
     }
 
-    async fetchFeeds(): Promise<Feeds> {
+
+    async fetchFeeds(sessionCookie: string): Promise<Feeds> {
         const url = `${NEWSBLUR_URL}/reader/feeds`;
-        const data = await this.fetchWithSessionCookie(url);
+        const data = await this.fetchWithSessionCookie(url, sessionCookie);
         return data.feeds;
     }
 
-    async fetchStories(feedId: string, color: string, options: Options = {}): Promise<StoryWithColor[]> {
+
+    async fetchStories(
+        sessionCookie: string, feedId: string, color: string, options: Options = {}
+    ): Promise<StoryWithColor[]> {
         const params = new URLSearchParams({
             page: options.page || "1",
             order: options.order || 'newest',
@@ -79,7 +79,7 @@ class FeedsFetcher {
 
         while (hasMore) {
             const url = `${NEWSBLUR_URL}/reader/feed/${feedId}?${params}&page=${page}`;
-            const data = await this.fetchWithSessionCookie(url);
+            const data = await this.fetchWithSessionCookie(url, sessionCookie);
             const stories: Story[] = data.stories || [];
             allUnreadStories = allUnreadStories.concat(stories);
             hasMore = stories.length > 0;
@@ -90,11 +90,15 @@ class FeedsFetcher {
     }
 }
 
-const fetchFeeds = (sessionCookie: string) => FeedsFetcher.getInstance(sessionCookie).fetchFeeds();
+const feedsFetcherInstance = new FeedsFetcher();
+
+const fetchFeeds = (sessionCookie: string) => feedsFetcherInstance.fetchFeeds(sessionCookie);
+
 const fetchStories = (sessionCookie: string, feedId: string, color: string, options = {}) =>
-    FeedsFetcher.getInstance(sessionCookie).fetchStories(feedId, color, options);
+    feedsFetcherInstance.fetchStories(sessionCookie, feedId, color, options);
 
 export {
     fetchFeeds,
     fetchStories
 };
+

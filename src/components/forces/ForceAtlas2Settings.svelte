@@ -82,54 +82,51 @@
 		)
 	];
 
-	onMount(() => {
-		const unsubscribe = atlas2PanelSettings.subscribe((settings: Partial<ForceAtlas2Settings>) => {
-			sliders = sliders.map((slider) => {
-				const newNumber = settings[slider.id] as number;
-				return new Slider<ForceAtlas2Settings>(
-					slider.id,
-					slider.label,
-					slider.description,
-					newNumber,
-					slider.config
-				);
-			});
+	// onMount(() => {
+	// 	const unsubscribe = atlas2PanelSettings.subscribe((settings: ForceAtlas2Settings) => {
+	// 		sliders.forEach((slider) => {
+	// 			slider.value = settings[slider.id] as number;
+	// 		});
 
-			toggles.forEach((toggle) => {
-				const newBoolean = settings[toggle.id] as boolean;
-				return new Toggle<ForceAtlas2Settings>(
-					toggle.id,
-					toggle.label,
-					newBoolean,
-					toggle.description
-				);
-			});
+	// 		toggles.forEach((toggle) => {
+	// 			toggle.value = settings[toggle.id] as boolean;
+	// 		});
+	// 	});
+
+	// 	return () => {
+	// 		unsubscribe();
+	// 	};
+	// });
+
+	function updateToggleSettings() {
+		const booleanSettings = toggles.reduce(
+			(acc, toggle) => {
+				acc[toggle.id] = toggle.value;
+				return acc;
+			},
+			{} as Record<string, boolean>
+		);
+		atlas2PanelSettings.update((settings) => {
+			const updatedSettings = { ...settings, ...booleanSettings };
+			updateForceSettings(updatedSettings);
+			console.log(updatedSettings);
+			return updatedSettings;
 		});
+	}
 
-		return () => {
-			unsubscribe();
-		};
-	});
-
-	function updateSettings() {
-		const booleanSettings: Record<string, boolean> = {};
-		const numberSettings: Record<string, number> = {};
-
-		sliders.forEach((slider) => {
-			numberSettings[slider.id] = Slider.calculateOriginalValue(slider.value, slider.config);
+	function updateSliderSettings() {
+		const numberSettings = sliders.reduce(
+			(acc, slider) => {
+				acc[slider.id] = Slider.calculateOriginalValue(slider.value, slider.config);
+				return acc;
+			},
+			{} as Record<string, number>
+		);
+		atlas2PanelSettings.update((settings) => {
+			const updatedSettings = { ...settings, ...numberSettings };
+			updateForceSettings(updatedSettings);
+			return updatedSettings;
 		});
-
-		toggles.forEach((toggle) => {
-			booleanSettings[toggle.id] = toggle.value;
-		});
-
-		const updatedSettings: ForceAtlas2Settings = {
-			...booleanSettings,
-			...numberSettings
-		};
-
-		atlas2PanelSettings.set(updatedSettings);
-		updateForceSettings(updatedSettings);
 	}
 
 	let easterEggActive = Math.random() < 0.1;
@@ -151,7 +148,7 @@
 					max={slider.config.scaleType === 'log' ? 100 : slider.config.max}
 					step="any"
 					class="slider"
-					on:input={updateSettings}
+					on:input={updateSliderSettings}
 				/>
 				<div class="slider-min-max">
 					<span class="slider-min">{slider.config.min}</span>
@@ -175,7 +172,7 @@
 					id="{toggle.id}Toggle"
 					class="toggle-input"
 					bind:checked={toggle.value}
-					on:input={updateSettings}
+					on:change={updateToggleSettings}
 				/>
 				<label for="{toggle.id}Toggle" class="toggle-switch"></label>
 			</div>
@@ -362,7 +359,7 @@
 		display: inline-block;
 		width: 49px; /* Adjust width as needed */
 		height: 20px; /* Adjust height as needed */
-		background-color: #007bff77;
+		background-color: #7e7d7d42;
 		border-radius: 20px;
 		cursor: pointer;
 		transition: background-color 0.2s;
@@ -382,7 +379,7 @@
 	}
 
 	.toggle-input:checked + .toggle-switch {
-		background-color: #7e7d7d42;
+		background-color: #007bff77;
 	}
 
 	.toggle-input:checked + .toggle-switch::before {

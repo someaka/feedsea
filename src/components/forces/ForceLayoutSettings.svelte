@@ -75,12 +75,11 @@
 	onMount(() => {
 		const unsubscribe = forcePanelSettings.subscribe((settings) => {
 			sliders = sliders.map((slider) => {
-				const storedValue = settings[slider.id] as number;
 				return new Slider<ForceLayoutSettings>(
 					slider.id,
 					slider.label,
 					slider.description,
-					storedValue,
+					settings[slider.id] as number,
 					slider.config
 				);
 			});
