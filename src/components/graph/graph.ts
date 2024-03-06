@@ -21,7 +21,7 @@ function articlesToNodes(articles: Article[]): Node[] {
 }
 
 
-function quickSelect(arr: number[], k: number): number | null {
+function quickSelect(arr: number[], k: number): number  {
     // Partition the array around a pivot
     const pivot = arr[Math.floor(Math.random() * arr.length)];
     const lower: number[] = [];
@@ -40,11 +40,14 @@ function quickSelect(arr: number[], k: number): number | null {
 }
 
 function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.5): Record<string, Pair> {
+    if (percentile < 0 || percentile > 1) 
+        throw new Error('Percentile must be between 0 and 1');
+    
     let similarities: number[] | null =
-        Object.values(links).map(link => link.similarity).filter(weight => weight > 0);
+        Object.values(links).map(link => link.similarity);
 
-    quickSelect(similarities, Math.floor(similarities.length * percentile));
-    const threshold = similarities[Math.floor(similarities.length * percentile)];
+    const thresholdIndex = Math.floor(similarities.length * percentile);
+    const threshold = quickSelect(similarities, thresholdIndex + 1); // quickSelect is 1-based for k
     similarities = null;
 
     const filteredLinksEntries = Object.entries(links).filter(([, link]) => link.similarity >= threshold);

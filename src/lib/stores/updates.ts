@@ -166,11 +166,12 @@ selectedFeedsStore.subscribe(($selectedFeedsStore: SelectedFeedsState) => {
 function newArticlesToNodes(articles: Article[] | undefined) {
     if (!articles) return;
     queueNewArticles(articles);
-    const newNodes = articlesToNodes(articles);
+    let newNodes: Node[] | null = articlesToNodes(articles);
     nodesStore.update((currentNodes) => {
-        const nodes = currentNodes.nodes.concat(newNodes);
-        return { nodes, newNodes };
+        const nodes = currentNodes.nodes.concat((newNodes as Node[]));
+        return { nodes, newNodes } as NodeUpdate;
     });
+    newNodes = null;
 }
 
 export default enqueueGraphOperation
