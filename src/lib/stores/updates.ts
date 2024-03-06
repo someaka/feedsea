@@ -1,6 +1,6 @@
 import { get } from 'svelte/store';
 import queueNewArticles from '$lib/embedFetch';
-import calculateAllPairs, { initPairWorker } from '$lib/pairCalculator';
+import { calculateAllPairs, initializePairWorker as initPairWorker } from '$lib/pairCalculator';
 import {
     addAll,
     addBoth,
@@ -33,26 +33,22 @@ import queueNodesToLinks, { initLinksWorker } from './nodesToLinks';
 
 
 let graphWorker: Worker | null = null;
+let idleTimeout: ReturnType<typeof setTimeout>;
 let graphWorkerPromise: Promise<Worker> | null = null;
-initPairWorker();
-initLinksWorker();
 
-async function initGraphWorker(): Promise<Worker> {
-    if (graphWorker !== null) {
-        return graphWorker;
-    }
-    if (graphWorkerPromise === null) {
-        graphWorkerPromise = (async () => {
-            const GraphWorkerModule = await import('$lib/graphWorker?worker');
-            graphWorker = new GraphWorkerModule.default();
+function initializeGraphWorker() {
+    if (!graphWorkerPromise) {
+        graphWorkerPromise = import('$lib/graphWorker?worker').then(module => {
+            graphWorker = new module.default();
             graphWorker.onmessage = (event) => {
+
                 switch (event.data.type) {
-                    case 'GRAPH_LINKS': 
+                    case 'GRAPH_LINKS':
                         addNewLinks(event.data.data);
                         break;
-                    case 'GRAPH_NODES': 
+                    case 'GRAPH_NODES':
                         addNewNodes(event.data.data);
-                        break;                    
+                        break;
                     case 'GRAPH_REMOVE':
                         removeNodesById(event.data.data);
                         break;
@@ -63,21 +59,41 @@ async function initGraphWorker(): Promise<Worker> {
                         addAll(event.data.data);
                         break;
                 }
+                resetWorkerIdleTimeout();
             };
+
             graphWorker.onerror = (error) => {
                 console.error('Graph Worker error:', error);
             };
             return graphWorker;
-        })();
+        });
     }
     return graphWorkerPromise;
 }
 
-async function enqueueGraphOperation(operation: GraphOperation) {
-    graphWorker = await initGraphWorker();
-    graphWorker.postMessage(operation);
+function resetWorkerIdleTimeout() {
+    clearTimeout(idleTimeout);
+    idleTimeout = setTimeout(() => {
+        if (graphWorker) {
+            graphWorker.terminate();
+            graphWorker = null;
+            graphWorkerPromise = null;
+        }
+    }, 10000);
 }
 
+async function postMessageToGraphWorker(operation: GraphOperation) {
+    const worker = await initializeGraphWorker();
+    worker.postMessage(operation);
+    resetWorkerIdleTimeout();
+}
+
+async function enqueueGraphOperation(operation: GraphOperation) {
+    await postMessageToGraphWorker(operation);
+}
+
+initPairWorker();
+initLinksWorker();
 
 embeddingsStore.subscribe(($embeddingsStore: EmbeddingsState) => {
     if (Object.keys($embeddingsStore.embeddings).length > 0)

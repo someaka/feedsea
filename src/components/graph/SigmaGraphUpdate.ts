@@ -13,6 +13,8 @@ import Sigma from "sigma";
 import ForceSupervisor from "graphology-layout-force/worker";
 import ForceAtlasSupervisor from 'graphology-layout-forceatlas2/worker';
 
+// import forceAtlas2 from "graphology-layout-forceatlas2";
+
 import type { Attributes, SerializedGraph } from 'graphology-types';
 import type { ForceLayoutSettings } from 'graphology-layout-force';
 import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
@@ -135,6 +137,7 @@ class SigmaGrapUpdate {
         } else {
             const settings = localStorage.getItem('layoutFA2Settings');
             return settings ? JSON.parse(settings) : defaultForceAtlas2Settings
+            // return forceAtlas2.inferSettings(this.graph);
         }
     }
 
