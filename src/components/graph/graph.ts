@@ -20,19 +20,50 @@ function articlesToNodes(articles: Article[]): Node[] {
     }));
 }
 
+
+function quickSelect(arr: number[], k: number): number | null {
+    // Partition the array around a pivot
+    const pivot = arr[Math.floor(Math.random() * arr.length)];
+    const lower: number[] = [];
+    const higher: number[] = [];
+    arr.forEach((num) => {
+        if (num < pivot)
+            lower.push(num);
+        else if (num > pivot)
+            higher.push(num);
+    });
+    if (k <= lower.length)
+        return quickSelect(lower, k);
+    if (k > arr.length - higher.length)
+        return quickSelect(higher, k - (arr.length - higher.length));
+    return pivot;
+}
+
 function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.5): Record<string, Pair> {
     let similarities: number[] | null =
         Object.values(links).map(link => link.similarity).filter(weight => weight > 0);
-    let sortedSimilarities: number[] | null =
-        similarities.sort((a, b) => b - a);
-    const thresholdIndex = Math.floor(sortedSimilarities.length * percentile);
-    const threshold = sortedSimilarities[thresholdIndex];
+
+    quickSelect(similarities, Math.floor(similarities.length * percentile));
+    const threshold = similarities[Math.floor(similarities.length * percentile)];
     similarities = null;
-    sortedSimilarities = null;
 
     const filteredLinksEntries = Object.entries(links).filter(([, link]) => link.similarity >= threshold);
     return Object.fromEntries(filteredLinksEntries);
 }
+
+// function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.5): Record<string, Pair> {
+//     let similarities: number[] | null =
+//         Object.values(links).map(link => link.similarity).filter(weight => weight > 0);
+//     let sortedSimilarities: number[] | null =
+//         similarities.sort((a, b) => b - a);
+//     const thresholdIndex = Math.floor(sortedSimilarities.length * percentile);
+//     const threshold = sortedSimilarities[thresholdIndex];
+//     similarities = null;
+//     sortedSimilarities = null;
+
+//     const filteredLinksEntries = Object.entries(links).filter(([, link]) => link.similarity >= threshold);
+//     return Object.fromEntries(filteredLinksEntries);
+// }
 
 function nodesToLinks(
     nodes: Node[],
@@ -43,7 +74,7 @@ function nodesToLinks(
         let filteredLinks: Record<string, Pair> | null = filterLinksByPercentile(pairsStore);
         let i = 0;
         let j = i + 1;
-        const batchSize = 1000;
+        const batchSize = 10000000;
         const delayMs = 0; // Math.log(Object.keys(filteredLinks).length + 1); // Delay in milliseconds 
 
         const processLink = () => {

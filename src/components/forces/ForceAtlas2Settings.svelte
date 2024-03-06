@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import Slider from './slider';
 	import Toggle from './toggle';
 	import { atlas2PanelSettings } from './forceSettingsStore';
@@ -53,50 +52,34 @@
 		new Toggle<ForceAtlas2Settings>(
 			'linLogMode',
 			'LinLog Mode',
-			false,
+			initialSettings.linLogMode,
 			'Toggles the linear logarithmic mode.'
 		),
 		new Toggle<ForceAtlas2Settings>(
 			'outboundAttractionDistribution',
 			'Outbound Attraction Distribution',
-			false,
+			initialSettings.outboundAttractionDistribution,
 			'Controls the distribution of outbound attraction.'
 		),
 		new Toggle<ForceAtlas2Settings>(
 			'adjustSizes',
 			'Adjust Sizes',
-			false,
+			initialSettings.adjustSizes,
 			'Adjusts node sizes to avoid overlap.'
 		),
 		new Toggle<ForceAtlas2Settings>(
 			'strongGravityMode',
 			'Strong Gravity Mode',
-			false,
+			initialSettings.strongGravityMode,
 			'Enables or disables strong gravity mode.'
 		),
 		new Toggle<ForceAtlas2Settings>(
 			'barnesHutOptimize',
 			'Barnes Hut Optimize',
-			false,
+			initialSettings.barnesHutOptimize,
 			'Toggles the Barnes-Hut optimization.'
 		)
 	];
-
-	// onMount(() => {
-	// 	const unsubscribe = atlas2PanelSettings.subscribe((settings: ForceAtlas2Settings) => {
-	// 		sliders.forEach((slider) => {
-	// 			slider.value = settings[slider.id] as number;
-	// 		});
-
-	// 		toggles.forEach((toggle) => {
-	// 			toggle.value = settings[toggle.id] as boolean;
-	// 		});
-	// 	});
-
-	// 	return () => {
-	// 		unsubscribe();
-	// 	};
-	// });
 
 	function updateToggleSettings() {
 		const booleanSettings = toggles.reduce(

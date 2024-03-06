@@ -14,8 +14,10 @@
 
 	import type { FeedChange, FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
 	import { theme } from '$lib/stores/night';
-	import enqueueGraphOperation from '$lib/stores/updates';
+
+	import '$lib/stores/updates';
 	import axios from 'axios';
+	import { clearGraph } from '../graph/SigmaGraphUpdate';
 
 	let feeds: FeedWithUnreadStories[] = [];
 	let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds
@@ -174,9 +176,10 @@
 	function unselectAllFeeds() {
 		selectedFeedsStore.update(() => ({ feedIds: new Set() }));
 		selectedFeeds = [];
-		enqueueGraphOperation({
-			type: 'clearGraph'
-		});
+		clearGraph();
+		// enqueueGraphOperation({
+		// 	type: 'clearGraph'
+		// });
 	}
 </script>
 

@@ -6,9 +6,7 @@ import {
     addBoth,
     addNewLinks,
     addNewNodes,
-    clearGraph,
     removeNodesById,
-    updateGraphFromSerializedData
 } from '../../components/graph/SigmaGraphUpdate';
 import {
     articlesStore,
@@ -26,13 +24,18 @@ import type {
     PairsState,
     Node,
     Link,
+    NodeUpdate,
+    LinkUpdate,
 } from '$lib/types';
 import type { GraphOperation } from '$lib/graphTypes';
+import { articlesToNodes } from '../../components/graph/graph';
+import queueNodesToLinks, { initLinksWorker } from './nodesToLinks';
 
 
 let graphWorker: Worker | null = null;
 let graphWorkerPromise: Promise<Worker> | null = null;
 initPairWorker();
+initLinksWorker();
 
 async function initGraphWorker(): Promise<Worker> {
     if (graphWorker !== null) {
@@ -44,29 +47,12 @@ async function initGraphWorker(): Promise<Worker> {
             graphWorker = new GraphWorkerModule.default();
             graphWorker.onmessage = (event) => {
                 switch (event.data.type) {
-                    case 'GRAPH_LINKS': {
-                        const newLinks = event.data.data.newLinks;
-                        const linksToDisplay = event.data.data.linksToDisplay;
-                        addNewLinks(linksToDisplay);
-                        linksStore.update(currentLinks => {
-                            const links = currentLinks.links.concat(newLinks);
-                            return { links, newLinks };
-                        });
+                    case 'GRAPH_LINKS': 
+                        addNewLinks(event.data.data);
                         break;
-                    }
-                    case 'GRAPH_NODES': {
-                        const newNodes = event.data.data.newNodes;
-                        const nodesToDisplay = event.data.data.nodesToDisplay;
-                        addNewNodes(nodesToDisplay);
-                        nodesStore.update((currentNodes) => {
-                            const nodes = currentNodes.nodes.concat(newNodes);
-                            return { nodes, newNodes };
-                        });
-                        break;
-                    }
-                    case 'GRAPH_UPDATE':
-                        updateGraphFromSerializedData(event.data.data);
-                        break;
+                    case 'GRAPH_NODES': 
+                        addNewNodes(event.data.data);
+                        break;                    
                     case 'GRAPH_REMOVE':
                         removeNodesById(event.data.data);
                         break;
@@ -75,9 +61,6 @@ async function initGraphWorker(): Promise<Worker> {
                         break;
                     case 'GRAPH_ALL':
                         addAll(event.data.data);
-                        break;
-                    case 'GRAPH_CLEAR':
-                        clearGraph();
                         break;
                 }
             };
@@ -101,13 +84,27 @@ embeddingsStore.subscribe(($embeddingsStore: EmbeddingsState) => {
         calculateAllPairs($embeddingsStore);
 });
 
-
 pairsStore.subscribe(($pairsStore: PairsState) => {
+    if (Object.keys($pairsStore.newPairs).length > 0)
+        queueNodesToLinks(get(nodesStore).nodes, $pairsStore.newPairs);
+});
+
+nodesStore.subscribe(($nodesStore: NodeUpdate) => {
+    enqueueGraphOperation({
+        type: 'addNodes',
+        data: {
+            newNodes: $nodesStore.newNodes,
+            feedIds: get(selectedFeedsStore).feedIds,
+            articles: get(articlesStore)
+        }
+    });
+});
+
+linksStore.subscribe(($linksStore: LinkUpdate) => {
     enqueueGraphOperation({
         type: 'addLinks',
         data: {
-            nodes: get(nodesStore).nodes,
-            newPairs: $pairsStore.newPairs,
+            newLinks: $linksStore.newLinks,
             feedIds: get(selectedFeedsStore).feedIds,
             articles: get(articlesStore)
         }
@@ -169,13 +166,10 @@ selectedFeedsStore.subscribe(($selectedFeedsStore: SelectedFeedsState) => {
 function newArticlesToNodes(articles: Article[] | undefined) {
     if (!articles) return;
     queueNewArticles(articles);
-    enqueueGraphOperation({
-        type: 'addNodes',
-        data: {
-            newArticles: articles,
-            articles: get(articlesStore),
-            feedIds: get(selectedFeedsStore).feedIds
-        }
+    const newNodes = articlesToNodes(articles);
+    nodesStore.update((currentNodes) => {
+        const nodes = currentNodes.nodes.concat(newNodes);
+        return { nodes, newNodes };
     });
 }
 

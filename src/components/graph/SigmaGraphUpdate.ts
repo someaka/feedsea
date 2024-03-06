@@ -192,8 +192,8 @@ class SigmaGrapUpdate {
 
 
     removeNodesById(graphData: GraphData) {
-        this.graph.clearEdges();
         const nodeIds = new Set(graphData.nodes.map(node => node.id));
+        this.graph.clearEdges();
         nodeIds.forEach((nodeId) => {
             this.graph.dropNode(nodeId);
         })
@@ -321,7 +321,7 @@ class SigmaGrapUpdate {
 
     updateGraphFromSerializedData(serializedData: SerializedGraph) {
         this.graph.import(serializedData, true);
-        this.renderer.refresh();
+        this.renderer.scheduleRefresh();
     }
 }
 

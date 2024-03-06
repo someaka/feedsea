@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import Slider from './slider';
 	import { forcePanelSettings } from './forceSettingsStore';
 	import { defaultForceAtlasSettings } from './defaultGraphSettings';
@@ -71,24 +70,6 @@
 			}
 		)
 	];
-
-	onMount(() => {
-		const unsubscribe = forcePanelSettings.subscribe((settings) => {
-			sliders = sliders.map((slider) => {
-				return new Slider<ForceLayoutSettings>(
-					slider.id,
-					slider.label,
-					slider.description,
-					settings[slider.id] as number,
-					slider.config
-				);
-			});
-		});
-
-		return () => {
-			unsubscribe();
-		};
-	});
 
 	function updateSettings() {
 		const settings: ForceLayoutSettings = sliders.reduce((acc, slider) => {

@@ -2,8 +2,7 @@ import type {
     ArticleType as Article,
     Node,
     Link,
-    GraphData,
-    Pair
+    GraphData
 } from '$lib/types';
 
 
@@ -22,17 +21,17 @@ interface AllSelectedOperationData {
 }
 
 interface AddLinkOperationData {
-    nodes: Node[]
-    newPairs: Record<string, Pair>
+    newLinks: Link[]
     feedIds: Set<number>
     articles: Record<string, Article[]>
 }
 
 interface AddNodesOperationData {
-    newArticles: Article[]
-    articles: Record<string, Article[]>
+    newNodes: Node[]
     feedIds: Set<number>
+    articles: Record<string, Article[]>
 }
+
 
 interface isNightModeData {
     isNightMode: boolean
