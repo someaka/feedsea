@@ -1,6 +1,6 @@
 import type { Pair, EmbeddingsState, EmbeddingsCache } from "./types";
 
-const DEFAULT_BATCHISIZE = 100;
+const DEFAULT_BATCHISIZE = 1;
 
 self.addEventListener('message', async (event) => {
     self.postMessage(await processPairs(event.data));

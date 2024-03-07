@@ -12,7 +12,7 @@ function initEmbedFetchWorker() {
             const newEmbeddings: EmbeddingsCache = event.data;
             embeddingsStore.update((currentEmbeddings) => {
                 Object.assign(currentEmbeddings.embeddings, newEmbeddings);
-                currentEmbeddings.newEmbeddings = newEmbeddings as EmbeddingsCache;
+                currentEmbeddings.newEmbeddings = newEmbeddings;
                 return currentEmbeddings;
             });
             resetWorkerIdleTimeout();

@@ -11,6 +11,9 @@ self.addEventListener('message', (event) => {
     const task = event.data;
 
     switch (task.type) {
+        case 'clearGraph':
+            queueClear();
+            break;
         case 'addNodes':
             queueAddNewNodes(task.data);
             break;
@@ -31,6 +34,9 @@ self.addEventListener('message', (event) => {
     }
 });
 
+function queueClear() {
+    self.postMessage({ type: 'GRAPH_CLEAR' });
+}
 
 function queueAddBoth(data: OperationData) {
     let selectedArticleIdsSet: Set<string> | null = new Set<string>();
@@ -123,7 +129,7 @@ async function queueAddNewLinks(data: AddLinkOperationData) {
 
     self.postMessage({
         type: 'GRAPH_LINKS',
-        data:  filteredLinks
+        data: filteredLinks
     });
     filteredLinks = null;
     selectedArticleIds = null;
@@ -142,7 +148,7 @@ function queueAddNewNodes(data: AddNodesOperationData) {
 
     self.postMessage({
         type: 'GRAPH_NODES',
-        data:  filteredNodes
+        data: filteredNodes
     });
     filteredNodes = null;
     selectedArticleIds = null;
