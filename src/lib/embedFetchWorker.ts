@@ -28,7 +28,8 @@ async function retryRequest(
                 { inputs: articlesWithIds.map(article => article.text) },
                 { headers: { 'Authorization': `Bearer ${HUGGINGFACE_TOKEN}` } }
             );
-            responses.push(...response.data);
+            for (let i = 0; i < response.data.length; i++)
+                responses.push(response.data[i]);
             break; // Break the loop on success
         } catch (error) {
             if (error instanceof AxiosError && error.response) {
@@ -91,12 +92,12 @@ async function processQueue() {
 }
 
 function queueNewArticles(articles: Article[]) {
-    if (!articlesQueue) articlesQueue = [];    
+    if (!articlesQueue) articlesQueue = [];
 
     // Array.prototype.push.apply(articlesQueue, articles);
-    
-    for (let i = 0; i < articles.length; i++) 
+
+    for (let i = 0; i < articles.length; i++)
         articlesQueue.push(articles[i]);
-    
+
     if (!isCooldownActive) processQueue();
 }

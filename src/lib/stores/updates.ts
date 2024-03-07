@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
+import queueArticlesToNodes from './articlesToNodes';
 import { queueNewArticles, initEmbedFetchWorker } from '$lib/embedFetch';
 import { calculateAllPairs, initializePairWorker as initPairWorker } from '$lib/pairCalculator';
-import { articlesToNodes } from '../../components/graph/graph';
 import { queueNodesToLinks, initLinksWorker } from './nodesToLinks';
 import {
     addAll,
@@ -192,13 +192,14 @@ selectedFeedsStore.subscribe(($selectedFeedsStore: SelectedFeedsState) => {
 function newArticlesToNodes(articles: Article[] | undefined) {
     if (!articles) return;
     queueNewArticles(articles);
-    let newNodes: Node[] | null = articlesToNodes(articles);
-    nodesStore.update((currentNodes) => {
-        (newNodes as Node[]).forEach(node => currentNodes.nodes.push(node))
-        currentNodes.newNodes = newNodes as Node[];
-        return currentNodes;
-    });
-    newNodes = null;
+    queueArticlesToNodes(articles);
+    // let newNodes: Node[] | null = articlesToNodes(articles);
+    // nodesStore.update((currentNodes) => {
+    //     (newNodes as Node[]).forEach(node => currentNodes.nodes.push(node))
+    //     currentNodes.newNodes = newNodes as Node[];
+    //     return currentNodes;
+    // });
+    // newNodes = null;
 }
 
 export default enqueueGraphOperation

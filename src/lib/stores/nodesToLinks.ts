@@ -7,13 +7,13 @@ let idleTimeout: ReturnType<typeof setTimeout>;
 const TIMEOUT_INTERVAL = 10000;
 
 function resetWorkerIdleTimeout() {
-    clearTimeout(idleTimeout); // Clear any existing timeout
+    clearTimeout(idleTimeout);
     idleTimeout = setTimeout(() => {
         if (linksWorker) {
-            linksWorker.terminate(); // Terminate the worker if idle for 10 seconds
-            linksWorker = null; // Clear the reference to the terminated worker
+            linksWorker.terminate();
+            linksWorker = null;
         }
-    }, TIMEOUT_INTERVAL); // 10 seconds
+    }, TIMEOUT_INTERVAL);
 }
 
 async function initLinksWorker(): Promise<Worker> {
@@ -25,11 +25,12 @@ async function initLinksWorker(): Promise<Worker> {
     linksWorker.onmessage = (event) => {
         const newLinks = event.data;
         linksStore.update(currentLinks => {
-            newLinks.forEach((link: Link) =>  currentLinks.links.push(link));
+            newLinks.forEach((link: Link) =>
+                currentLinks.links.push(link));
             currentLinks.newLinks = newLinks;
             return currentLinks;
         });
-        resetWorkerIdleTimeout(); // Reset the timeout after a task is completed
+        resetWorkerIdleTimeout();
     };
 
     linksWorker.onerror = (error) => {
