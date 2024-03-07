@@ -1,11 +1,14 @@
 import { get } from 'svelte/store';
-import queueNewArticles from '$lib/embedFetch';
+import { queueNewArticles, initEmbedFetchWorker } from '$lib/embedFetch';
 import { calculateAllPairs, initializePairWorker as initPairWorker } from '$lib/pairCalculator';
+import { articlesToNodes } from '../../components/graph/graph';
+import { queueNodesToLinks, initLinksWorker } from './nodesToLinks';
 import {
     addAll,
     addBoth,
     addNewLinks,
     addNewNodes,
+    clearGraph,
     removeNodesById,
 } from '../../components/graph/SigmaGraphUpdate';
 import {
@@ -28,8 +31,7 @@ import type {
     LinkUpdate,
 } from '$lib/types';
 import type { GraphOperation } from '$lib/graphTypes';
-import { articlesToNodes } from '../../components/graph/graph';
-import queueNodesToLinks, { initLinksWorker } from './nodesToLinks';
+
 
 
 let graphWorker: Worker | null = null;
@@ -43,6 +45,9 @@ function initializeGraphWorker() {
             graphWorker.onmessage = (event) => {
 
                 switch (event.data.type) {
+                    case 'GRAPH_CLEAR':
+                        queueClear();
+                        break;
                     case 'GRAPH_LINKS':
                         addNewLinks(event.data.data);
                         break;
@@ -71,6 +76,10 @@ function initializeGraphWorker() {
     return graphWorkerPromise;
 }
 
+function queueClear() {
+    clearGraph();
+}
+
 function resetWorkerIdleTimeout() {
     clearTimeout(idleTimeout);
     idleTimeout = setTimeout(() => {
@@ -83,15 +92,16 @@ function resetWorkerIdleTimeout() {
 }
 
 async function postMessageToGraphWorker(operation: GraphOperation) {
-    const worker = await initializeGraphWorker();
-    worker.postMessage(operation);
-    resetWorkerIdleTimeout();
+    graphWorker = await initializeGraphWorker();
+    clearTimeout(idleTimeout);
+    graphWorker.postMessage(operation);
 }
 
 async function enqueueGraphOperation(operation: GraphOperation) {
     await postMessageToGraphWorker(operation);
 }
 
+initEmbedFetchWorker();
 initPairWorker();
 initLinksWorker();
 
@@ -184,8 +194,9 @@ function newArticlesToNodes(articles: Article[] | undefined) {
     queueNewArticles(articles);
     let newNodes: Node[] | null = articlesToNodes(articles);
     nodesStore.update((currentNodes) => {
-        const nodes = currentNodes.nodes.concat((newNodes as Node[]));
-        return { nodes, newNodes } as NodeUpdate;
+        (newNodes as Node[]).forEach(node => currentNodes.nodes.push(node))
+        currentNodes.newNodes = newNodes as Node[];
+        return currentNodes;
     });
     newNodes = null;
 }

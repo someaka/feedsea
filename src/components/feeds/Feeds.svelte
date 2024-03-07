@@ -18,6 +18,7 @@
 	import '$lib/stores/updates';
 	import axios from 'axios';
 	import { clearGraph } from '../graph/SigmaGraphUpdate';
+	import enqueueGraphOperation from '$lib/stores/updates';
 
 	let feeds: FeedWithUnreadStories[] = [];
 	let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds
@@ -25,7 +26,6 @@
 
 	const PING_INTERVAL = 10 * 60 * 1000; // 10 minutes
 
-	// Subscribe to feedsStore
 	const unsubscribeFeeds = feedsStore.subscribe((value) => {
 		feeds = Object.values(value);
 		isLoadingFeeds.set(false);
@@ -177,9 +177,9 @@
 		selectedFeedsStore.update(() => ({ feedIds: new Set() }));
 		selectedFeeds = [];
 		clearGraph();
-		// enqueueGraphOperation({
-		// 	type: 'clearGraph'
-		// });
+		enqueueGraphOperation({
+			type: 'clearGraph'
+		});
 	}
 </script>
 

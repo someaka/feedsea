@@ -105,12 +105,19 @@ function getSimilarity(
 }
 
 async function processLinks(nodes: Node[], pairsStore: Record<string, Pair>): Promise<Link[]> {
-    const linksBatchSize = 100; // Customize this as needed
+    const linksBatchSize = 1000; // Customize this as needed
     const linkGenerator = nodesToLinksGenerator(nodes, pairsStore, linksBatchSize);
-    let allLinks: Link[] = [];
-    for (const linksBatch of linkGenerator) {
-        allLinks = allLinks.concat(linksBatch);
-    }
+    const allLinks: Link[] = [];
+
+
+    // for (const linksBatch of linkGenerator) 
+    //     allLinks = allLinks.concat(linksBatch);
+    
+
+    for (const linksBatch of linkGenerator) 
+        for (const link of linksBatch) 
+            allLinks.push(link);
+    
     return allLinks;
 }
 

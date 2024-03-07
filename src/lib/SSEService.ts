@@ -4,6 +4,7 @@ import type { ArticleType, FeedChange } from './types';
 let eventSource: EventSource | null = null;
 let decompressionWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
+const TIMEOUT_INTERVAL = 10000;
 
 function initializeDecompressionWorker() {
     import('./decompressionWorker?worker').then(module => {
@@ -41,15 +42,13 @@ function resetWorkerIdleTimeout() {
             decompressionWorker.terminate();
             decompressionWorker = null;
         }
-    }, 10000);
+    }, TIMEOUT_INTERVAL);
 }
 
 function postMessageToDecompressionWorker(data: string) {
-    if (!decompressionWorker) {
-        initializeDecompressionWorker();
-    }
+    if (!decompressionWorker) initializeDecompressionWorker();
+    clearTimeout(idleTimeout); // Clear the timeout when a new task starts
     decompressionWorker?.postMessage(data);
-    resetWorkerIdleTimeout();
 }
 
 export function startSSE() {

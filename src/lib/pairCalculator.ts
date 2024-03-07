@@ -3,6 +3,7 @@ import type { EmbeddingsState } from '$lib/types';
 
 let pairWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
+const TIMEOUT_INTERVAL = 10000;
 
 function initializePairWorker() {
     import('$lib/pairWorker?worker').then(module => {
@@ -11,7 +12,8 @@ function initializePairWorker() {
             const newPairs = event.data;
             pairsStore.update(currentPairs => {
                 Object.assign(currentPairs.pairs, newPairs);
-                return { pairs: currentPairs.pairs, newPairs };
+                currentPairs.newPairs = newPairs;
+                return currentPairs;
             });
             resetWorkerIdleTimeout();
         };
@@ -29,15 +31,13 @@ function resetWorkerIdleTimeout() {
             pairWorker.terminate();
             pairWorker = null;
         }
-    }, 10000);
+    }, TIMEOUT_INTERVAL);
 }
 
 function postMessageToPairWorker(data: EmbeddingsState) {
-    if (!pairWorker) {
-        initializePairWorker();
-    }
+    if (!pairWorker) initializePairWorker();
+    clearTimeout(idleTimeout); // Clear the timeout when a new task starts
     pairWorker?.postMessage(data);
-    resetWorkerIdleTimeout();
 }
 
 async function calculateAllPairs(currentEmbeddingsState: EmbeddingsState) {

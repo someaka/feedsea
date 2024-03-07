@@ -65,28 +65,35 @@ class FeedsFetcher {
     }
 
     async fetchStories(feedId: string, color: string, options: Options = {}): Promise<StoryWithColor[]> {
-        const params = new URLSearchParams({
-            page: options.page || "1",
-            order: options.order || 'newest',
-            read_filter: 'unread',
-            include_hidden: options.include_hidden ? options.include_hidden : 'false',
-            include_story_content: 'false'
-        }).toString();
-
-        let allUnreadStories: Story[] = [];
+        let allUnreadStories: Story[] | null = [];
         let page = 1;
         let hasMore = true;
 
         while (hasMore) {
-            const url = `${NEWSBLUR_URL}/reader/feed/${feedId}?${params}&page=${page}`;
+            const params = new URLSearchParams({
+                page: page.toString(),
+                order: options.order || 'newest',
+                read_filter: 'unread',
+                include_hidden: options.include_hidden ? options.include_hidden : 'false',
+                include_story_content: 'false'
+            }).toString();
+            const url = `${NEWSBLUR_URL}/reader/feed/${feedId}?${params}`;
             const data = await this.fetchWithSessionCookie(url);
             const stories: Story[] = data.stories || [];
-            allUnreadStories = allUnreadStories.concat(stories);
+
+            for (const story of stories)
+                allUnreadStories.push(story);
+
             hasMore = stories.length > 0;
             page++;
         }
 
-        return allUnreadStories.map(story => ({ ...story, color }));
+        const storiesWithColor: StoryWithColor[] = [];
+        for (const story of allUnreadStories)
+            storiesWithColor.push(Object.assign({}, story, { color: color }));
+
+        allUnreadStories = null;
+        return storiesWithColor;
     }
 }
 
