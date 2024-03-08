@@ -25,7 +25,7 @@ async function initNodesWorker(): Promise<Worker> {
                     currentNodes.newNodes = newNodes;
                     return currentNodes;
                 });
-                resetWorkerIdleTimeout();
+                // resetWorkerIdleTimeout();
             };
             nodesWorker.onerror = (error) =>
                 console.error('Nodes Worker error:', error);

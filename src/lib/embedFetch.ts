@@ -25,7 +25,7 @@ async function initEmbedFetchWorker() {
                         currentEmbeddings.newEmbeddings = newEmbeddings;
                         return currentEmbeddings;
                     });
-                resetWorkerIdleTimeout();
+                // resetWorkerIdleTimeout();
             };
             embedFetchWorker.onerror = (error) => {
                 console.error('EmbedFetch Worker error:', error);

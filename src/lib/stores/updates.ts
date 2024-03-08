@@ -63,7 +63,7 @@ function initializeGraphWorker() {
                         addAll(event.data.data);
                         break;
                 }
-                resetWorkerIdleTimeout();
+                // resetWorkerIdleTimeout();
             };
 
             graphWorker.onerror = (error) => {

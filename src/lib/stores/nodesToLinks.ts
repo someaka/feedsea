@@ -17,7 +17,7 @@ async function initLinksWorker(): Promise<Worker> {
                     currentLinks.newLinks = newLinks;
                     return currentLinks;
                 });
-            resetWorkerIdleTimeout();
+            // resetWorkerIdleTimeout();
         };
 
         linksWorker.onerror = (error) =>

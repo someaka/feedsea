@@ -17,7 +17,7 @@ async function initPairWorker(): Promise<Worker> {
                     currentPairs.newPairs = newPairs;
                     return currentPairs;
                 });
-            resetWorkerIdleTimeout();
+            // resetWorkerIdleTimeout();
         };
 
         pairWorker.onerror = (error) =>

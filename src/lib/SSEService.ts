@@ -13,7 +13,7 @@ async function initDecompressionWorker(): Promise<Worker> {
         decompressionWorker.onmessage = (event) => {
             const articlesBatch: ArticleType[] = event.data;
             updateArticlesState(articlesBatch);
-            resetWorkerIdleTimeout();
+            // resetWorkerIdleTimeout();
         };
         decompressionWorker.onerror = (error) => 
             console.error('Decompression Worker error:', error);        
