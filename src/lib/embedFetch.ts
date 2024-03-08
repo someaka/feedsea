@@ -1,4 +1,3 @@
-// embedFetch.ts
 import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 import { embeddingsStore } from './stores/stores';
 
@@ -13,11 +12,12 @@ function initEmbedFetchWorker() {
             embedFetchWorker = new module.default();
             embedFetchWorker.onmessage = (event) => {
                 const newEmbeddings: EmbeddingsCache = event.data;
-                embeddingsStore.update((currentEmbeddings) => {
-                    Object.assign(currentEmbeddings.embeddings, newEmbeddings);
-                    currentEmbeddings.newEmbeddings = newEmbeddings;
-                    return currentEmbeddings;
-                });
+                if (Object.keys(newEmbeddings).length > 0)
+                    embeddingsStore.update((currentEmbeddings) => {
+                        Object.assign(currentEmbeddings.embeddings, newEmbeddings);
+                        currentEmbeddings.newEmbeddings = newEmbeddings;
+                        return currentEmbeddings;
+                    });
                 resetWorkerIdleTimeout();
             };
             embedFetchWorker.onerror = (error) => {
@@ -55,4 +55,4 @@ function queueNewArticles(articles: Article[]) {
     postMessageToEmbedFetchWorker(articles);
 }
 
-export { queueNewArticles, initEmbedFetchWorker };
+export default queueNewArticles;

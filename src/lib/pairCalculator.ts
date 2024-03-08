@@ -5,23 +5,25 @@ let pairWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
 const TIMEOUT_INTERVAL = 10000;
 
-function initializePairWorker() {
-    import('$lib/pairWorker?worker').then(module => {
-        pairWorker = new module.default();
+async function initPairWorker(): Promise<Worker> {
+    if (!pairWorker) {
+        const pairWorkerModule = await import('$lib/pairWorker?worker')
+        pairWorker = new pairWorkerModule.default();
         pairWorker.onmessage = (event) => {
             const newPairs = event.data;
-            pairsStore.update(currentPairs => {
-                Object.assign(currentPairs.pairs, newPairs);
-                currentPairs.newPairs = newPairs;
-                return currentPairs;
-            });
+            if (Object.values(newPairs).length > 0)
+                pairsStore.update(currentPairs => {
+                    Object.assign(currentPairs.pairs, newPairs);
+                    currentPairs.newPairs = newPairs;
+                    return currentPairs;
+                });
             resetWorkerIdleTimeout();
         };
 
-        pairWorker.onerror = (error) => {
+        pairWorker.onerror = (error) =>
             console.error('Pair Worker error:', error);
-        };
-    });
+    }
+    return pairWorker;
 }
 
 function resetWorkerIdleTimeout() {
@@ -34,14 +36,14 @@ function resetWorkerIdleTimeout() {
     }, TIMEOUT_INTERVAL);
 }
 
-function postMessageToPairWorker(data: EmbeddingsState) {
-    if (!pairWorker) initializePairWorker();
+async function postMessageToPairWorker(data: EmbeddingsState) {
+    pairWorker = await initPairWorker();
     clearTimeout(idleTimeout); // Clear the timeout when a new task starts
-    pairWorker?.postMessage(data);
+    pairWorker.postMessage(data);
 }
 
 async function calculateAllPairs(currentEmbeddingsState: EmbeddingsState) {
-    postMessageToPairWorker(currentEmbeddingsState);
+    await postMessageToPairWorker(currentEmbeddingsState);
 }
 
-export { calculateAllPairs, initializePairWorker }
+export default calculateAllPairs;

@@ -1,10 +1,30 @@
 import { linksStore } from './stores';
-import type { Link, Node, Pair } from '$lib/types';
+import type { Node, Pair } from '$lib/types';
 
 let linksWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
-
 const TIMEOUT_INTERVAL = 10000;
+
+async function initLinksWorker(): Promise<Worker> {
+    if (!linksWorker) {
+        const LinksWorkerModule = await import('$lib/linksWorker?worker');
+        linksWorker = new LinksWorkerModule.default();
+        linksWorker.onmessage = (event) => {
+            const newLinks = event.data;
+            if (Object.values(newLinks).length > 0)
+                linksStore.update(currentLinks => {
+                    Object.assign(currentLinks.links, newLinks);
+                    currentLinks.newLinks = newLinks;
+                    return currentLinks;
+                });
+            resetWorkerIdleTimeout();
+        };
+
+        linksWorker.onerror = (error) =>
+            console.error('Links Worker error:', error);
+    }
+    return linksWorker;
+}
 
 function resetWorkerIdleTimeout() {
     clearTimeout(idleTimeout);
@@ -16,34 +36,15 @@ function resetWorkerIdleTimeout() {
     }, TIMEOUT_INTERVAL);
 }
 
-async function initLinksWorker(): Promise<Worker> {
-    if (linksWorker) return linksWorker;
-
-    const NodesWorkerModule = await import('$lib/linksWorker?worker');
-    linksWorker = new NodesWorkerModule.default();
-
-    linksWorker.onmessage = (event) => {
-        const newLinks = event.data;
-        linksStore.update(currentLinks => {
-            newLinks.forEach((link: Link) =>
-                currentLinks.links.push(link));
-            currentLinks.newLinks = newLinks;
-            return currentLinks;
-        });
-        resetWorkerIdleTimeout();
-    };
-
-    linksWorker.onerror = (error) => {
-        console.error('Links Worker error:', error);
-    };
-
-    return linksWorker;
-}
-
-async function queueNodesToLinks(nodes: Node[], newPairs: Record<string, Pair>) {
+async function postMessageToLinkWorker(
+    nodes: Node[], newPairs: Record<string, Pair>
+) {
     linksWorker = await initLinksWorker();
     clearTimeout(idleTimeout); // Clear the timeout when a new task starts
     linksWorker.postMessage({ nodes, newPairs });
 }
+async function queueNodesToLinks(nodes: Node[], newPairs: Record<string, Pair>) {
+    await postMessageToLinkWorker(nodes, newPairs);
+}
 
-export { queueNodesToLinks, initLinksWorker };
+export default queueNodesToLinks;

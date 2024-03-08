@@ -25,7 +25,7 @@ function articlesToNodes(articles: Article[]): Node[] {
 }
 
 
-function quickSelect(arr: number[], k: number): number  {
+function quickSelect(arr: number[], k: number): number {
     // Partition the array around a pivot
     const pivot = arr[Math.floor(Math.random() * arr.length)];
     const lower: number[] = [];
@@ -44,9 +44,9 @@ function quickSelect(arr: number[], k: number): number  {
 }
 
 function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.5): Record<string, Pair> {
-    if (percentile < 0 || percentile > 1) 
+    if (percentile < 0 || percentile > 1)
         throw new Error('Percentile must be between 0 and 1');
-    
+
     let similarities: number[] | null =
         Object.values(links).map(link => link.similarity);
 
@@ -64,34 +64,36 @@ function* nodesToLinksGenerator(
     pairsStore: Record<string, Pair>,
     batchSize: number = DEFAULT_BATCHISIZE
 ): Generator<Link[]> {
-    let links: Link[] = [];
-    const filteredLinks: Record<string, Pair> | null = filterLinksByPercentile(pairsStore);
-    for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-            const mix = chroma.mix(nodes[i].color, nodes[j].color, 0.5, 'rgb');
-            const day = mix.brighten(0.27).hex();
-            const night = mix.darken(0.77).hex();
-            const similarity = getSimilarity(nodes[i].id, nodes[j].id, filteredLinks as Record<string, Pair>);
-            if (similarity) {
-                links.push({
-                    source: nodes[i].id,
-                    target: nodes[j].id,
-                    weight: similarity,
-                    color: day,
-                    day_color: day,
-                    night_color: night
-                });
-            }
-            if (links.length >= batchSize) {
-                yield links;
-                links = []; // Reset the links array after yielding
+    if (Object.keys(pairsStore).length > 0) {
+        let links: Link[] = [];
+        const filteredLinks: Record<string, Pair> | null = filterLinksByPercentile(pairsStore);
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const mix = chroma.mix(nodes[i].color, nodes[j].color, 0.5, 'rgb');
+                const day = mix.brighten(0.27).hex();
+                const night = mix.darken(0.77).hex();
+                const similarity = getSimilarity(nodes[i].id, nodes[j].id, filteredLinks as Record<string, Pair>);
+                if (similarity) {
+                    links.push({
+                        source: nodes[i].id,
+                        target: nodes[j].id,
+                        weight: similarity,
+                        color: day,
+                        day_color: day,
+                        night_color: night
+                    });
+                }
+                if (links.length >= batchSize) {
+                    yield links;
+                    links = []; // Reset the links array after yielding
+                }
             }
         }
-    }
-    // Yield any remaining links in the batch
-    if (links.length > 0) {
-        yield links;
-    }
+        // Yield any remaining links in the batch
+        if (links.length > 0) {
+            yield links;
+        }
+    } else yield [];
 }
 
 function getSimilarity(
@@ -105,19 +107,18 @@ function getSimilarity(
 }
 
 async function processLinks(nodes: Node[], pairsStore: Record<string, Pair>): Promise<Link[]> {
-    const linksBatchSize = 1000; // Customize this as needed
-    const linkGenerator = nodesToLinksGenerator(nodes, pairsStore, linksBatchSize);
+    const linkGenerator = nodesToLinksGenerator(nodes, pairsStore);
     const allLinks: Link[] = [];
 
 
     // for (const linksBatch of linkGenerator) 
     //     allLinks = allLinks.concat(linksBatch);
-    
 
-    for (const linksBatch of linkGenerator) 
-        for (const link of linksBatch) 
+
+    for (const linksBatch of linkGenerator)
+        for (const link of linksBatch)
             allLinks.push(link);
-    
+
     return allLinks;
 }
 

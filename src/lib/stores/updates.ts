@@ -1,8 +1,8 @@
 import { get } from 'svelte/store';
 import queueArticlesToNodes from './articlesToNodes';
-import { queueNewArticles, initEmbedFetchWorker } from '$lib/embedFetch';
-import { calculateAllPairs, initializePairWorker as initPairWorker } from '$lib/pairCalculator';
-import { queueNodesToLinks, initLinksWorker } from './nodesToLinks';
+import queueNewArticles from '$lib/embedFetch';
+import calculateAllPairs from '$lib/pairCalculator';
+import queueNodesToLinks from './nodesToLinks';
 import {
     addAll,
     addBoth,
@@ -101,21 +101,14 @@ async function enqueueGraphOperation(operation: GraphOperation) {
     await postMessageToGraphWorker(operation);
 }
 
-initEmbedFetchWorker();
-initPairWorker();
-initLinksWorker();
 
-embeddingsStore.subscribe(($embeddingsStore: EmbeddingsState) => {
-    if (Object.keys($embeddingsStore.embeddings).length > 0)
-        calculateAllPairs($embeddingsStore);
-});
+embeddingsStore.subscribe(($embeddingsStore: EmbeddingsState) =>
+    calculateAllPairs($embeddingsStore));
 
-pairsStore.subscribe(($pairsStore: PairsState) => {
-    if (Object.keys($pairsStore.newPairs).length > 0)
-        queueNodesToLinks(get(nodesStore).nodes, $pairsStore.newPairs);
-});
+pairsStore.subscribe(($pairsStore: PairsState) =>
+    queueNodesToLinks(get(nodesStore).nodes, $pairsStore.newPairs));
 
-nodesStore.subscribe(($nodesStore: NodeUpdate) => {
+nodesStore.subscribe(($nodesStore: NodeUpdate) =>
     enqueueGraphOperation({
         type: 'addNodes',
         data: {
@@ -123,10 +116,10 @@ nodesStore.subscribe(($nodesStore: NodeUpdate) => {
             feedIds: get(selectedFeedsStore).feedIds,
             articles: get(articlesStore)
         }
-    });
-});
+    })
+);
 
-linksStore.subscribe(($linksStore: LinkUpdate) => {
+linksStore.subscribe(($linksStore: LinkUpdate) =>
     enqueueGraphOperation({
         type: 'addLinks',
         data: {
@@ -134,8 +127,8 @@ linksStore.subscribe(($linksStore: LinkUpdate) => {
             feedIds: get(selectedFeedsStore).feedIds,
             articles: get(articlesStore)
         }
-    });
-});
+    })
+);
 
 
 selectedFeedsStore.subscribe(($selectedFeedsStore: SelectedFeedsState) => {
@@ -143,8 +136,7 @@ selectedFeedsStore.subscribe(($selectedFeedsStore: SelectedFeedsState) => {
     if ($selectedFeedsStore.change.type === 'new')
         return newArticlesToNodes($selectedFeedsStore.change.articles);
 
-    let articles: Record<string, Article[]> | null =
-        get(articlesStore);
+    let articles: Record<string, Article[]> | null = get(articlesStore);
     let nodes: Node[] | null = get(nodesStore).nodes;
     let links: Link[] | null = get(linksStore).links;
 

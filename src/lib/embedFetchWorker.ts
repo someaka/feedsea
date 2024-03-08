@@ -2,7 +2,7 @@ import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 import axios, { AxiosError, type AxiosResponse } from 'axios';
 import { HUGGINGFACE_API_URL, HUGGINGFACE_TOKEN } from './similarityConfig';
 
-const DEFAULT_QUEUE_TIME = 2.5; // in seconds
+const DEFAULT_QUEUE_TIME = 2.71; // in seconds
 let articlesQueue: Article[] | null = [];
 let isCooldownActive = false;
 
@@ -34,7 +34,7 @@ async function retryRequest(
         } catch (error) {
             if (error instanceof AxiosError && error.response) {
                 const statusCode = error.response.status;
-                if ([503, 502, 400].includes(statusCode) && i < retries - 1) {
+                if ([503, 502, 429, 400].includes(statusCode) && i < retries - 1) {
                     const retryWaitTime = error.response.data.estimated_time || waitTime;
                     await sleep(retryWaitTime);
                 } else {
