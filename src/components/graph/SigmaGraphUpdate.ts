@@ -61,7 +61,7 @@ class SigmaGrapUpdate {
         this.graph = new Graph();
         this.renderer = new Sigma(this.graph, this.container, {
             renderLabels: true, // Disable automatic label rendering   
-            allowInvalidContainer: true, //shusshes cypress
+            //allowInvalidContainer: true, //shusshes cypress
             labelDensity: 1,
             labelGridCellSize: 150
         });
@@ -195,23 +195,28 @@ class SigmaGrapUpdate {
 
 
     removeNodesById(graphData: GraphData) {
+        this.stopLayout();
         const nodeIds = new Set(graphData.nodes.map(node => node.id));
         this.graph.clearEdges();
         nodeIds.forEach((nodeId) => {
             this.graph.dropNode(nodeId);
         })
         this.addNewLinks(graphData.links);
+        this.startLayout();
     }
 
     addNewNodes(nodes: Node[]) {
+        this.stopLayout();
         for (const node of nodes)
             this.graph.addNode(
                 node.id,
                 this.getNodeAttributes(node)
             );
+        this.startLayout();
     }
 
     addNewLinks(links: Link[]) {
+        this.stopLayout();
         for (const link of links) {
             const sourceId = link.source;
             const targetId = link.target;
@@ -223,6 +228,7 @@ class SigmaGrapUpdate {
                 night_color: link.night_color
             });
         }
+        this.startLayout();
     }
 
     addBoth(graphData: GraphData) {
@@ -231,6 +237,7 @@ class SigmaGrapUpdate {
     }
 
     addAll(graphData: GraphData) {
+        this.stopLayout();
         this.addNewNodes(graphData.nodes);
         for (const link of graphData.links) {
             const sourceId = link.source;
@@ -243,6 +250,7 @@ class SigmaGrapUpdate {
                 night_color: link.night_color
             });
         }
+        this.startLayout();
     }
 
 

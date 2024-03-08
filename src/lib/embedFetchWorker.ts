@@ -2,7 +2,7 @@ import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 import axios, { AxiosError, type AxiosResponse } from 'axios';
 import { HUGGINGFACE_API_URL, HUGGINGFACE_TOKEN } from './similarityConfig';
 
-const DEFAULT_QUEUE_TIME = 2.71; // in seconds
+const DEFAULT_QUEUE_TIME = 10; // in seconds
 let articlesQueue: Article[] | null = [];
 let isCooldownActive = false;
 

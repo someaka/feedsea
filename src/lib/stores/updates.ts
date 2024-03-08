@@ -32,11 +32,10 @@ import type {
 } from '$lib/types';
 import type { GraphOperation } from '$lib/graphTypes';
 
-
-
 let graphWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
 let graphWorkerPromise: Promise<Worker> | null = null;
+const TIMEOUT_INTERVAL = 10000;
 
 function initializeGraphWorker() {
     if (!graphWorkerPromise) {
@@ -88,7 +87,7 @@ function resetWorkerIdleTimeout() {
             graphWorker = null;
             graphWorkerPromise = null;
         }
-    }, 10000);
+    }, TIMEOUT_INTERVAL);
 }
 
 async function postMessageToGraphWorker(operation: GraphOperation) {

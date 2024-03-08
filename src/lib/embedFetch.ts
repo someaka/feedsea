@@ -1,58 +1,51 @@
-import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 import { embeddingsStore } from './stores/stores';
+import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 
 let embedFetchWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
 const TIMEOUT_INTERVAL = 10000;
-let embedFetchWorkerPromise: Promise<Worker> | null = null;
 
-function initEmbedFetchWorker() {
-    if (!embedFetchWorkerPromise) {
-        embedFetchWorkerPromise = import('$lib/embedFetchWorker?worker').then(module => {
-            embedFetchWorker = new module.default();
-            embedFetchWorker.onmessage = (event) => {
-                const newEmbeddings: EmbeddingsCache = event.data;
-                if (Object.keys(newEmbeddings).length > 0)
-                    embeddingsStore.update((currentEmbeddings) => {
-                        Object.assign(currentEmbeddings.embeddings, newEmbeddings);
-                        currentEmbeddings.newEmbeddings = newEmbeddings;
-                        return currentEmbeddings;
-                    });
-                resetWorkerIdleTimeout();
-            };
-            embedFetchWorker.onerror = (error) => {
-                console.error('EmbedFetch Worker error:', error);
-            };
-            return embedFetchWorker;
-        });
+async function initEmbedFetchWorker() {
+    if (!embedFetchWorker) {
+        const EmbedFetchWorkerModule = await import('$lib/embedFetchWorker?worker')
+        embedFetchWorker = new EmbedFetchWorkerModule.default();
+        embedFetchWorker.onmessage = (event) => {
+            const newEmbeddings: EmbeddingsCache = event.data;
+            if (Object.keys(newEmbeddings).length > 0)
+                embeddingsStore.update((currentEmbeddings) => {
+                    Object.assign(currentEmbeddings.embeddings, newEmbeddings);
+                    currentEmbeddings.newEmbeddings = newEmbeddings;
+                    return currentEmbeddings;
+                });
+            resetWorkerIdleTimeout();
+        };
+        embedFetchWorker.onerror = (error) => {
+            console.error('EmbedFetch Worker error:', error);
+        };
     }
-    return embedFetchWorkerPromise;
+    return embedFetchWorker;
 }
 
 function resetWorkerIdleTimeout() {
     clearTimeout(idleTimeout);
-    idleTimeout = setTimeout(() => {
-        terminateEmbedFetchWorker();
-    }, TIMEOUT_INTERVAL);
+    idleTimeout = setTimeout(terminateEmbedFetchWorker, TIMEOUT_INTERVAL);
 }
 
 function terminateEmbedFetchWorker() {
     if (embedFetchWorker) {
         embedFetchWorker.terminate();
         embedFetchWorker = null;
-        embedFetchWorkerPromise = null;
     }
 }
 
-function postMessageToEmbedFetchWorker(articles: Article[]) {
-    initEmbedFetchWorker().then(() => {
-        clearTimeout(idleTimeout); // Clear the timeout when a new task starts
-        embedFetchWorker?.postMessage(articles);
-    });
+async function postMessageToEmbedFetchWorker(articles: Article[]) {
+    embedFetchWorker = await initEmbedFetchWorker()
+    clearTimeout(idleTimeout); // Clear the timeout when a new task starts
+    embedFetchWorker?.postMessage(articles);
 }
 
-function queueNewArticles(articles: Article[]) {
-    postMessageToEmbedFetchWorker(articles);
+async function queueNewArticles(articles: Article[]) {
+    await postMessageToEmbedFetchWorker(articles);
 }
 
 export default queueNewArticles;

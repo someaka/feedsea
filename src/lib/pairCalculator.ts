@@ -28,12 +28,14 @@ async function initPairWorker(): Promise<Worker> {
 
 function resetWorkerIdleTimeout() {
     clearTimeout(idleTimeout);
-    idleTimeout = setTimeout(() => {
-        if (pairWorker) {
-            pairWorker.terminate();
-            pairWorker = null;
-        }
-    }, TIMEOUT_INTERVAL);
+    idleTimeout = setTimeout(terminatePairWorker, TIMEOUT_INTERVAL);
+}
+
+function terminatePairWorker() {
+    if (pairWorker) {
+        pairWorker.terminate();
+        pairWorker = null;
+    }
 }
 
 async function postMessageToPairWorker(data: EmbeddingsState) {

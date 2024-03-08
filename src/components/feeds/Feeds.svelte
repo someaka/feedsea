@@ -41,10 +41,11 @@
 		const feeds = get(feedsStore);
 		const articlesCacheKeys = new Set(Object.keys(get(articlesStore)));
 		const allFeedsCached = Object.keys(feeds).every((feedId) => articlesCacheKeys.has(feedId));
-
-		if (!allFeedsCached) {
+		console.log('All feeds cached?', allFeedsCached);
+		//if (!allFeedsCached) {
+			console.log('Sending keep-alive');
 			axios.get('/keep-alive', { withCredentials: true });
-		}
+		//}
 	}
 	onMount(() => {
 		(async () => {
