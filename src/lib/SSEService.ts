@@ -4,7 +4,7 @@ import type { ArticleType } from './types';
 let eventSource: EventSource | null = null;
 let decompressionWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
-const TIMEOUT_INTERVAL = 10000;
+const TIMEOUT_INTERVAL = 60 * 1000;
 
 async function initDecompressionWorker(): Promise<Worker> {
     if (!decompressionWorker) {

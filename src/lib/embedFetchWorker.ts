@@ -34,7 +34,7 @@ async function retryRequest(
         } catch (error) {
             if (error instanceof AxiosError && error.response) {
                 const statusCode = error.response.status;
-                if ([503, 502, 429, 400].includes(statusCode) && i < retries - 1) {
+                if ([503, 502, 500, 429, 400].includes(statusCode) && i < retries - 1) {
                     const retryWaitTime = error.response.data.estimated_time || waitTime;
                     await sleep(retryWaitTime);
                 } else {

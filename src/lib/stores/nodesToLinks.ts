@@ -3,7 +3,7 @@ import type { Node, Pair } from '$lib/types';
 
 let linksWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
-const TIMEOUT_INTERVAL = 10000;
+const TIMEOUT_INTERVAL = 60 * 1000;
 
 async function initLinksWorker(): Promise<Worker> {
     if (!linksWorker) {

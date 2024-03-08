@@ -35,7 +35,7 @@ import type { GraphOperation } from '$lib/graphTypes';
 let graphWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
 let graphWorkerPromise: Promise<Worker> | null = null;
-const TIMEOUT_INTERVAL = 10000;
+const TIMEOUT_INTERVAL = 60 * 1000;
 
 function initializeGraphWorker() {
     if (!graphWorkerPromise) {
@@ -184,13 +184,6 @@ function newArticlesToNodes(articles: Article[] | undefined) {
     if (!articles) return;
     queueNewArticles(articles);
     queueArticlesToNodes(articles);
-    // let newNodes: Node[] | null = articlesToNodes(articles);
-    // nodesStore.update((currentNodes) => {
-    //     (newNodes as Node[]).forEach(node => currentNodes.nodes.push(node))
-    //     currentNodes.newNodes = newNodes as Node[];
-    //     return currentNodes;
-    // });
-    // newNodes = null;
 }
 
 export default enqueueGraphOperation
