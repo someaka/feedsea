@@ -3,9 +3,9 @@ import chroma from 'chroma-js';
 import type { Node, Link, Pair, ArticleType as Article } from '$lib/types';
 
 
-const DEFAULT_BATCHISIZE = 1;
+const DEFAULT_BATCHISIZE = 1; 
 
-
+ 
 function articlesToNodes(articles: Article[]): Node[] {
     const center = { x: 0, y: 0 };
     const radius = 0.0001;

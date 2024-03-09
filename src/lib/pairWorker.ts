@@ -22,9 +22,9 @@ function* calculatePairsGenerator(
     const embeddings: EmbeddingsCache = task.embeddings;
     const newEmbeddings: EmbeddingsCache = task.newEmbeddings;
 
-    const newEmbeddingKeys: string[] = Object.keys(newEmbeddings || {});
-    const currentEmbeddingKeys: string[] =
-        Object.keys(embeddings || {}).filter(key => !newEmbeddingKeys.includes(key));
+    const newEmbeddingKeys: string[] = Object.keys(newEmbeddings);
+    const currentEmbeddingKeys: string[] = Object.keys(embeddings)
+    //.filter(key => !newEmbeddingKeys.includes(key));
 
     let batch = [];
 
@@ -32,6 +32,7 @@ function* calculatePairsGenerator(
         const newKey: string = newEmbeddingKeys[i];
         for (let j = 0; j < currentEmbeddingKeys.length; j++) {
             const currentKey: string = currentEmbeddingKeys[j];
+            if (newKey === currentKey) continue;
             const vecA = newEmbeddings![newKey];
             const vecB = embeddings![currentKey];
             let dotProduct = 0.0, normA = 0.0, normB = 0.0;

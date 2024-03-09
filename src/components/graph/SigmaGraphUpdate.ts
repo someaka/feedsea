@@ -225,7 +225,10 @@ class SigmaGrapUpdate {
         Math.max(0.5, this.totalLinkWeight / this.linkCount);
 
     isSignificantLink = (link: Link): boolean =>
-        link.weight > this.getAverageLinkWeight() * 0.9;
+        link.weight > Math.max(
+            0.5,
+            (this.totalLinkWeight + link.weight) / (this.linkCount + 1) * 0.90
+        );
 
     addNewLinks(links: Link[]) {
         this.stopLayout();
