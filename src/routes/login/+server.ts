@@ -12,8 +12,9 @@ export async function POST(event) {
       const clientId = loginResult.sessionCookie?.split('sessionid=')[1];
     
       addSubscriber(clientId);
-  
-      const newCookie = `sessionid=${loginResult.sessionCookie}; HttpOnly; Secure; SameSite=None; Max-Age=3600`;
+
+      const sessionTime = 60 * 60 * 2;  
+      const newCookie = `sessionid=${loginResult.sessionCookie}; HttpOnly; Secure; SameSite=None; Max-Age=${sessionTime}`;
       const options: ResponseInit = {
         status:  200,
         headers: {

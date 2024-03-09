@@ -222,7 +222,7 @@ class SigmaGrapUpdate {
     }
 
     getAverageLinkWeight = (): number =>
-        this.linkCount > 0 ? this.totalLinkWeight / this.linkCount : 0;
+        Math.max(0.5, this.totalLinkWeight / this.linkCount);
 
     isSignificantLink = (link: Link): boolean =>
         link.weight > this.getAverageLinkWeight() * 0.9;
@@ -278,16 +278,10 @@ class SigmaGrapUpdate {
     }
 
 
-
-
-
-    clearEdges() {
-        this.graph.clearEdges();
-    }
-
-
     clearGraph() {
         this.graph.clear();
+        this.totalLinkWeight = 0;
+        this.linkCount = 0;
         this.renderer.refresh();
     }
 
@@ -382,7 +376,7 @@ const switchLayout = () =>
     SigmaGrapUpdate.getInstance()?.switchLayout();
 const clearGraph = () =>
     SigmaGrapUpdate.getInstance()?.clearGraph();
-const clearEdges = () => SigmaGrapUpdate.getInstance()?.clearEdges();
+
 const refreshRenderer = () => SigmaGrapUpdate.getInstance()?.renderer.scheduleRefresh();
 
 export {
@@ -396,7 +390,6 @@ export {
     addNewLinks,
     removeNodesById,
     switchLayout,
-    clearEdges,
     refreshRenderer,
     updateGraphFromSerializedData
 };

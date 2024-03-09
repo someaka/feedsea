@@ -39,31 +39,6 @@ async function initEmbedFetchWorker() {
     }
 }
 
-// let EmbedFetchWorkerModule: typeof import('$lib/embedFetchWorker?worker') | null = null;
-
-// async function initEmbedFetchWorker() {
-//     if (!embedFetchWorker) {
-//         if (!EmbedFetchWorkerModule)
-//             EmbedFetchWorkerModule = await import('$lib/embedFetchWorker?worker')
-//         embedFetchWorker = new EmbedFetchWorkerModule.default();
-//         embedFetchWorker.onmessage = (event) => {
-//             const newEmbeddings: EmbeddingsCache = event.data;
-//             if (Object.keys(newEmbeddings).length > 0)
-//                 embeddingsStore.update((currentEmbeddings) => {
-//                     Object.assign(currentEmbeddings.embeddings, newEmbeddings);
-//                     currentEmbeddings.newEmbeddings = newEmbeddings;
-//                     return currentEmbeddings;
-//                 });
-//             //resetWorkerIdleTimeout();
-//         };
-//         embedFetchWorker.onerror = (error) => {
-//             console.error('EmbedFetch Worker error:', error);
-//         };
-
-
-//     }
-//     return embedFetchWorker;
-// }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function resetWorkerIdleTimeout() {

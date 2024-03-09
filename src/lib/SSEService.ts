@@ -2,25 +2,37 @@ import { articlesStore, selectedFeedsStore } from './stores/stores';
 import type { ArticleType } from './types';
 
 let eventSource: EventSource | null = null;
-let decompressionWorker: Worker | null = null;
-let idleTimeout: ReturnType<typeof setTimeout>;
-let DecompressionWorkerModules: typeof import('./decompressionWorker?worker') | null = null;
+
 const TIMEOUT_INTERVAL = 60 * 1000;
+let idleTimeout: ReturnType<typeof setTimeout>;
+let decompressionWorker: Worker | null = null;
+
+let workerInitializationPromise: Promise<Worker> | null = null;
 
 async function initDecompressionWorker(): Promise<Worker> {
-    if (!decompressionWorker) {
-        if (!DecompressionWorkerModules)
-            DecompressionWorkerModules = await import('./decompressionWorker?worker')
-        decompressionWorker = new DecompressionWorkerModules.default();
-        decompressionWorker.onmessage = (event) => {
-            const articlesBatch: ArticleType[] = event.data;
-            updateArticlesState(articlesBatch);
-            // resetWorkerIdleTimeout();
-        };
-        decompressionWorker.onerror = (error) =>
-            console.error('Decompression Worker error:', error);
+    if (decompressionWorker) {
+        return decompressionWorker;
+    } else if (workerInitializationPromise) {
+        // Wait for the ongoing initialization to complete
+        return workerInitializationPromise;
+    } else {
+        // Start a new initialization
+        workerInitializationPromise = (async () => {
+            const DecompressionWorkerModules = await import('$lib/decompressionWorker?worker');
+            decompressionWorker = new DecompressionWorkerModules.default();
+            decompressionWorker.onmessage = (event) => {
+                const articlesBatch: ArticleType[] = event.data;
+                updateArticlesState(articlesBatch);
+                // resetWorkerIdleTimeout();
+            };
+            decompressionWorker.onerror = (error) =>
+                console.error('Decompression Worker error:', error);
+            return decompressionWorker;
+        })();
+        const worker = await workerInitializationPromise;
+        workerInitializationPromise = null; // Reset for future initializations
+        return worker;
     }
-    return decompressionWorker;
 }
 
 function updateArticlesState(articlesBatch: ArticleType[]) {
@@ -57,7 +69,7 @@ function terminateDecompressionWorker() {
 async function postMessageToDecompressionWorker(data: string) {
     decompressionWorker = await initDecompressionWorker();
     // clearTimeout(idleTimeout); // Clear the timeout when a new task starts
-    decompressionWorker?.postMessage(data);
+    decompressionWorker.postMessage(data);
 }
 
 export function startSSE() {
