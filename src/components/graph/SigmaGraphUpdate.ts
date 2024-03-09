@@ -15,7 +15,7 @@ import ForceAtlasSupervisor from 'graphology-layout-forceatlas2/worker';
 
 // import forceAtlas2 from "graphology-layout-forceatlas2";
 
-import type { Attributes, EdgeMergeResult, SerializedGraph } from 'graphology-types';
+import type { Attributes, SerializedGraph } from 'graphology-types';
 import type { ForceLayoutSettings } from 'graphology-layout-force';
 import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
 import type { GraphData, Link, Node } from '$lib/types';
@@ -227,7 +227,7 @@ class SigmaGrapUpdate {
     isSignificantLink = (link: Link): boolean =>
         link.weight > Math.max(
             0.5,
-            (this.totalLinkWeight + link.weight) / (this.linkCount + 1) * 0.90
+            (this.totalLinkWeight + link.weight) / (this.linkCount + 1) * 0.77
         );
 
     addNewLinks(links: Link[]) {
@@ -259,24 +259,10 @@ class SigmaGrapUpdate {
     addAll(graphData: GraphData) {
         this.stopLayout();
         this.addNewNodes(graphData.nodes);
-        for (const link of graphData.links) {
-            if (this.isSignificantLink(link)) {
-                const sourceId = link.source;
-                const targetId = link.target;
-                const edgeKey = `${sourceId}_${targetId}`;
-                const edgeMergeResult: EdgeMergeResult =
-                    this.graph.mergeEdgeWithKey(edgeKey, sourceId, targetId, {
-                        weight: link.weight,
-                        color: this.DayOrNight ? link.day_color : link.night_color,
-                        day_color: link.day_color,
-                        night_color: link.night_color
-                    });
-                if (edgeMergeResult[1]) {
-                    this.totalLinkWeight += link.weight;
-                    this.linkCount++;
-                }
-            }
-        }
+        this.graph.clearEdges();
+        this.totalLinkWeight = 0;
+        this.linkCount = 0;
+        this.addNewLinks(graphData.links);
         this.startLayout();
     }
 
