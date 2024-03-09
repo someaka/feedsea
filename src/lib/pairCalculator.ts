@@ -3,12 +3,14 @@ import type { EmbeddingsState } from '$lib/types';
 
 let pairWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
+let PairsWorkerModule: typeof import('$lib/pairWorker?worker') | null = null;
 const TIMEOUT_INTERVAL = 60 * 1000;
 
 async function initPairWorker(): Promise<Worker> {
     if (!pairWorker) {
-        const pairWorkerModule = await import('$lib/pairWorker?worker')
-        pairWorker = new pairWorkerModule.default();
+        if (!PairsWorkerModule)
+            PairsWorkerModule = await import('$lib/pairWorker?worker')
+        pairWorker = new PairsWorkerModule.default();
         pairWorker.onmessage = (event) => {
             const newPairs = event.data;
             if (Object.values(newPairs).length > 0)
@@ -26,11 +28,11 @@ async function initPairWorker(): Promise<Worker> {
     return pairWorker;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function resetWorkerIdleTimeout() {
     clearTimeout(idleTimeout);
     idleTimeout = setTimeout(terminatePairWorker, TIMEOUT_INTERVAL);
 }
-
 function terminatePairWorker() {
     if (pairWorker) {
         pairWorker.terminate();
@@ -40,7 +42,7 @@ function terminatePairWorker() {
 
 async function postMessageToPairWorker(data: EmbeddingsState) {
     pairWorker = await initPairWorker();
-    clearTimeout(idleTimeout); // Clear the timeout when a new task starts
+    // clearTimeout(idleTimeout); // Clear the timeout when a new task starts
     pairWorker.postMessage(data);
 }
 

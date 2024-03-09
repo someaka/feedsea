@@ -4,19 +4,21 @@ import type { ArticleType } from './types';
 let eventSource: EventSource | null = null;
 let decompressionWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
+let DecompressionWorkerModules: typeof import('./decompressionWorker?worker') | null = null;
 const TIMEOUT_INTERVAL = 60 * 1000;
 
 async function initDecompressionWorker(): Promise<Worker> {
     if (!decompressionWorker) {
-        const DecompressionWorkerModules = await import('./decompressionWorker?worker')
+        if (!DecompressionWorkerModules)
+            DecompressionWorkerModules = await import('./decompressionWorker?worker')
         decompressionWorker = new DecompressionWorkerModules.default();
         decompressionWorker.onmessage = (event) => {
             const articlesBatch: ArticleType[] = event.data;
             updateArticlesState(articlesBatch);
             // resetWorkerIdleTimeout();
         };
-        decompressionWorker.onerror = (error) => 
-            console.error('Decompression Worker error:', error);        
+        decompressionWorker.onerror = (error) =>
+            console.error('Decompression Worker error:', error);
     }
     return decompressionWorker;
 }
@@ -40,19 +42,21 @@ function updateArticlesState(articlesBatch: ArticleType[]) {
     });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function resetWorkerIdleTimeout() {
     clearTimeout(idleTimeout);
-    idleTimeout = setTimeout(() => {
-        if (decompressionWorker) {
-            decompressionWorker.terminate();
-            decompressionWorker = null;
-        }
-    }, TIMEOUT_INTERVAL);
+    idleTimeout = setTimeout(terminateDecompressionWorker, TIMEOUT_INTERVAL);
+}
+function terminateDecompressionWorker() {
+    if (decompressionWorker) {
+        decompressionWorker.terminate();
+        decompressionWorker = null;
+    }
 }
 
 async function postMessageToDecompressionWorker(data: string) {
     decompressionWorker = await initDecompressionWorker();
-    clearTimeout(idleTimeout); // Clear the timeout when a new task starts
+    // clearTimeout(idleTimeout); // Clear the timeout when a new task starts
     decompressionWorker?.postMessage(data);
 }
 

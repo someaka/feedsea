@@ -15,7 +15,7 @@ import ForceAtlasSupervisor from 'graphology-layout-forceatlas2/worker';
 
 // import forceAtlas2 from "graphology-layout-forceatlas2";
 
-import type { Attributes, SerializedGraph } from 'graphology-types';
+import type { Attributes, EdgeMergeResult, SerializedGraph } from 'graphology-types';
 import type { ForceLayoutSettings } from 'graphology-layout-force';
 import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
 import type { GraphData, Link, Node } from '$lib/types';
@@ -50,6 +50,8 @@ class SigmaGrapUpdate {
     settings: Attributes;
     layout: ForceSupervisor | ForceAtlasSupervisor;
     DayOrNight: boolean;
+    totalLinkWeight: number;
+    linkCount: number;
 
 
     constructor() {
@@ -79,6 +81,8 @@ class SigmaGrapUpdate {
             settings: this.layoutSettings
         };
         this.layout = this.setLayout(this.layoutType === "forceAtlas");
+        this.totalLinkWeight = 0;
+        this.linkCount = 0;
 
         this.startLayout();
         this.initializeInteractions();
@@ -198,6 +202,8 @@ class SigmaGrapUpdate {
         this.stopLayout();
         const nodeIds = new Set(graphData.nodes.map(node => node.id));
         this.graph.clearEdges();
+        this.totalLinkWeight = 0;
+        this.linkCount = 0;
         nodeIds.forEach((nodeId) => {
             this.graph.dropNode(nodeId);
         })
@@ -215,20 +221,31 @@ class SigmaGrapUpdate {
         this.startLayout();
     }
 
+    getAverageLinkWeight = (): number =>
+        this.linkCount > 0 ? this.totalLinkWeight / this.linkCount : 0;
+
+    isSignificantLink = (link: Link): boolean =>
+        link.weight > this.getAverageLinkWeight() * 0.9;
+
     addNewLinks(links: Link[]) {
         this.stopLayout();
         for (const link of links) {
-            const sourceId = link.source;
-            const targetId = link.target;
-            const edgeKey = `${sourceId}_${targetId}`;
-            this.graph.addEdgeWithKey(edgeKey, sourceId, targetId, {
-                weight: link.weight || 1,
-                color: this.DayOrNight ? link.day_color : link.night_color,
-                day_color: link.day_color,
-                night_color: link.night_color
-            });
+            if (this.isSignificantLink(link)) {
+                const sourceId = link.source;
+                const targetId = link.target;
+                const edgeKey = `${sourceId}_${targetId}`;
+                this.graph.addEdgeWithKey(edgeKey, sourceId, targetId, {
+                    weight: link.weight,
+                    color: this.DayOrNight ? link.day_color : link.night_color,
+                    day_color: link.day_color,
+                    night_color: link.night_color
+                });
+                this.totalLinkWeight += link.weight;
+                this.linkCount++;
+            }
         }
         this.startLayout();
+        this.renderer.scheduleRefresh();
     }
 
     addBoth(graphData: GraphData) {
@@ -240,15 +257,22 @@ class SigmaGrapUpdate {
         this.stopLayout();
         this.addNewNodes(graphData.nodes);
         for (const link of graphData.links) {
-            const sourceId = link.source;
-            const targetId = link.target;
-            const edgeKey = `${sourceId}_${targetId}`;
-            this.graph.mergeEdgeWithKey(edgeKey, sourceId, targetId, {
-                weight: link.weight || 1,
-                color: this.DayOrNight ? link.day_color : link.night_color,
-                day_color: link.day_color,
-                night_color: link.night_color
-            });
+            if (this.isSignificantLink(link)) {
+                const sourceId = link.source;
+                const targetId = link.target;
+                const edgeKey = `${sourceId}_${targetId}`;
+                const edgeMergeResult: EdgeMergeResult =
+                    this.graph.mergeEdgeWithKey(edgeKey, sourceId, targetId, {
+                        weight: link.weight,
+                        color: this.DayOrNight ? link.day_color : link.night_color,
+                        day_color: link.day_color,
+                        night_color: link.night_color
+                    });
+                if (edgeMergeResult[1]) {
+                    this.totalLinkWeight += link.weight;
+                    this.linkCount++;
+                }
+            }
         }
         this.startLayout();
     }

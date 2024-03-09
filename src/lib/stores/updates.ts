@@ -37,7 +37,7 @@ let idleTimeout: ReturnType<typeof setTimeout>;
 let graphWorkerPromise: Promise<Worker> | null = null;
 const TIMEOUT_INTERVAL = 60 * 1000;
 
-function initializeGraphWorker() {
+function initGraphWorker() {
     if (!graphWorkerPromise) {
         graphWorkerPromise = import('$lib/graphWorker?worker').then(module => {
             graphWorker = new module.default();
@@ -79,20 +79,22 @@ function queueClear() {
     clearGraph();
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function resetWorkerIdleTimeout() {
     clearTimeout(idleTimeout);
-    idleTimeout = setTimeout(() => {
-        if (graphWorker) {
-            graphWorker.terminate();
-            graphWorker = null;
-            graphWorkerPromise = null;
-        }
-    }, TIMEOUT_INTERVAL);
+    idleTimeout = setTimeout(terminateGraphWorker, TIMEOUT_INTERVAL);
+}
+function terminateGraphWorker() {
+    if (graphWorker) {
+        graphWorker.terminate();
+        graphWorker = null;
+        graphWorkerPromise = null;
+    }
 }
 
 async function postMessageToGraphWorker(operation: GraphOperation) {
-    graphWorker = await initializeGraphWorker();
-    clearTimeout(idleTimeout);
+    graphWorker = await initGraphWorker();
+    // clearTimeout(idleTimeout);
     graphWorker.postMessage(operation);
 }
 
@@ -105,7 +107,15 @@ embeddingsStore.subscribe(($embeddingsStore: EmbeddingsState) =>
     calculateAllPairs($embeddingsStore));
 
 pairsStore.subscribe(($pairsStore: PairsState) =>
-    queueNodesToLinks(get(nodesStore).nodes, $pairsStore.newPairs));
+    queueNodesToLinks(
+        get(nodesStore).nodes.map(
+            node => ({
+                id: node.id,
+                color: node.color
+            })
+        ),
+        $pairsStore.newPairs)
+);
 
 nodesStore.subscribe(($nodesStore: NodeUpdate) =>
     enqueueGraphOperation({

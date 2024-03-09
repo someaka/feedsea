@@ -4,7 +4,7 @@ import { hasSubscriber } from "$lib/subscribers";
 export async function GET({ request }) {
     const cookie = request.headers.get('cookie');
     const clientId = cookie?.split('sessionid=')[2];
-    console.log("Requesting keep-alive for " + clientId);
+    // console.log("Received keep-alive for " + clientId);
     if (!clientId || !hasSubscriber(clientId))
         return new Response(null, { status: 401 });
 

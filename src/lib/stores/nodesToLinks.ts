@@ -1,13 +1,15 @@
 import { linksStore } from './stores';
-import type { Node, Pair } from '$lib/types';
+import type { Pair } from '$lib/types';
 
 let linksWorker: Worker | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
+let LinksWorkerModule: typeof import('$lib/linksWorker?worker') | null = null;
 const TIMEOUT_INTERVAL = 60 * 1000;
 
 async function initLinksWorker(): Promise<Worker> {
     if (!linksWorker) {
-        const LinksWorkerModule = await import('$lib/linksWorker?worker');
+        if (!LinksWorkerModule)
+            LinksWorkerModule = await import('$lib/linksWorker?worker');
         linksWorker = new LinksWorkerModule.default();
         linksWorker.onmessage = (event) => {
             const newLinks = event.data;
@@ -26,24 +28,26 @@ async function initLinksWorker(): Promise<Worker> {
     return linksWorker;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function resetWorkerIdleTimeout() {
     clearTimeout(idleTimeout);
-    idleTimeout = setTimeout(() => {
-        if (linksWorker) {
-            linksWorker.terminate();
-            linksWorker = null;
-        }
-    }, TIMEOUT_INTERVAL);
+    idleTimeout = setTimeout(terminateLinksWorker, TIMEOUT_INTERVAL);
+}
+function terminateLinksWorker() {
+    if (linksWorker) {
+        linksWorker.terminate();
+        linksWorker = null;
+    }
 }
 
 async function postMessageToLinkWorker(
-    nodes: Node[], newPairs: Record<string, Pair>
+    nodes: {id: string,color: string}[], newPairs: Record<string, Pair>
 ) {
     linksWorker = await initLinksWorker();
-    clearTimeout(idleTimeout); // Clear the timeout when a new task starts
+    // clearTimeout(idleTimeout); // Clear the timeout when a new task starts
     linksWorker.postMessage({ nodes, newPairs });
 }
-async function queueNodesToLinks(nodes: Node[], newPairs: Record<string, Pair>) {
+async function queueNodesToLinks(nodes: {id: string,color: string}[], newPairs: Record<string, Pair>) {
     await postMessageToLinkWorker(nodes, newPairs);
 }
 

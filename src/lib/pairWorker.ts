@@ -46,7 +46,7 @@ function* calculatePairsGenerator(
                 (dotProduct / (Math.sqrt(normA) * Math.sqrt(normB)) + 1) / 2;
 
             batch.push({
-                [`${newKey}-${currentKey}`]: {
+                [`${newKey}_${currentKey}`]: {
                     id1: newKey,
                     id2: currentKey,
                     similarity

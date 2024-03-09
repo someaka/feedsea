@@ -131,11 +131,11 @@ interface Node {
     color: string;
     x: number;
     y: number;
-    vx: number;
-    vy: number;
-    degree: number;
-    mass: number;
     size: number;
+    // vx: number;
+    // vy: number;
+    // degree: number;
+    // mass: number;
 }
 
 
