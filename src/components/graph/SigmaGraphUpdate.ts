@@ -86,7 +86,6 @@ class SigmaGrapUpdate {
 
         this.startLayout();
         this.initializeInteractions();
-        this.initializeInteractions();
     }
 
     initializeInteractions() {
@@ -204,6 +203,7 @@ class SigmaGrapUpdate {
         this.graph.clearEdges();
         this.totalLinkWeight = 0;
         this.linkCount = 0;
+        this.linkWeights = [];
         nodeIds.forEach((nodeId) => {
             this.graph.dropNode(nodeId);
         })
@@ -221,18 +221,32 @@ class SigmaGrapUpdate {
         this.startLayout();
     }
 
-    getAverageLinkWeight = (): number =>
-        Math.max(0.5, this.totalLinkWeight / this.linkCount);
+    linkWeights: number[] = [];
 
-    isSignificantLink = (link: Link): boolean =>
-        link.weight > Math.max(
-            0.5,
-            (this.totalLinkWeight + link.weight) / (this.linkCount + 1) * 0.77
-        );
+    getAverageLinkWeight = (): number =>
+        this.totalLinkWeight / this.linkCount;
+
+    getPercentileLinkWeight = (percentile: number = 0.5): number =>
+        this.linkWeights.length === 0 ? 0 :
+            this.linkWeights[Math.ceil(percentile * (this.linkWeights.length - 1))];
+
+    isSignificantLink = (link: Link, significancePercentile: number = 0.5): boolean =>
+        link.weight >= this.getPercentileLinkWeight(significancePercentile);
+
+    insertSorted(value: number) {
+        let low = 0, high = this.linkWeights.length;
+        while (low < high) {
+            const mid = (low + high) >>> 1;
+            if (this.linkWeights[mid] < value) low = mid + 1;
+            else high = mid;
+        }
+        this.linkWeights.splice(low, 0, value);
+    }
 
     addNewLinks(links: Link[]) {
         this.stopLayout();
         for (const link of links) {
+            this.insertSorted(link.weight);
             if (this.isSignificantLink(link)) {
                 const sourceId = link.source;
                 const targetId = link.target;
@@ -262,6 +276,7 @@ class SigmaGrapUpdate {
         this.graph.clearEdges();
         this.totalLinkWeight = 0;
         this.linkCount = 0;
+        this.linkWeights = [];
         this.addNewLinks(graphData.links);
         this.startLayout();
     }
@@ -271,6 +286,7 @@ class SigmaGrapUpdate {
         this.graph.clear();
         this.totalLinkWeight = 0;
         this.linkCount = 0;
+        this.linkWeights = [];
         this.renderer.refresh();
     }
 

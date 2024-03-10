@@ -37,7 +37,7 @@ async function initDecompressionWorker(): Promise<Worker> {
 
 function updateArticlesState(articlesBatch: ArticleType[]) {
     articlesStore.update(currentArticles => {
-        articlesBatch?.forEach(article => {
+        articlesBatch.forEach(article => {
             if (!currentArticles[article.feedId])
                 currentArticles[article.feedId] = [];
             currentArticles[article.feedId].push(article);
