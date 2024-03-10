@@ -98,20 +98,16 @@ function queueRemoveSelectedNodes(data: OperationData) {
 }
 
 function queueAllSelectedNodes(data: AllSelectedOperationData) {
-    let articleIdsSet: Set<string> | null = new Set((data.articles).flatMap(article => article.id));
-    let newNodes: Node[] | null = data.nodes.filter(node => (articleIdsSet as Set<string>).has(node.id));
-    let nodeIds: Set<string> | null = new Set(newNodes.map(node => node.id));
-    let newLinks: Link[] | null = data.links.filter(link =>
-        (nodeIds as Set<string>).has(link.source)
-        && (nodeIds as Set<string>).has(link.target)
-    );
+    let articleIdsSet: Set<string> | null =
+        new Set((data.articles).flatMap(article => article.id));
     self.postMessage({
         type: 'GRAPH_ALL',
-        data: { nodes: newNodes, links: newLinks }
+        data: {
+            nodes: data.nodes.filter(node =>
+                (articleIdsSet as Set<string>).has(node.id)),
+            links: data.links
+        }
     });
-    newNodes = null;
-    nodeIds = null;
-    newLinks = null;
     articleIdsSet = null;
 }
 

@@ -18,57 +18,94 @@ function articlesToNodes(articles: Article[]): Node[] {
     }));
 }
 
+function quickSelect(arr: number[], k: number): number {
+    // Partition the array around a pivot
+    const pivot = arr[Math.floor(Math.random() * arr.length)];
+    const lower: number[] = [];
+    const higher: number[] = [];
+    arr.forEach((num) => {
+        if (num < pivot)
+            lower.push(num);
+        else if (num > pivot)
+            higher.push(num);
+    });
+    if (k <= lower.length)
+        return quickSelect(lower, k);
+    if (k > arr.length - higher.length)
+        return quickSelect(higher, k - (arr.length - higher.length));
+    return pivot;
+}
+
+function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.5): Record<string, Pair> {
+    if (percentile < 0 || percentile > 1)
+        throw new Error('Percentile must be between 0 and 1');
+
+    let similarities: number[] | null =
+        Object.values(links).map(link => link.similarity);
+
+    const thresholdIndex = Math.floor(similarities.length * percentile);
+    const threshold = quickSelect(similarities, thresholdIndex + 1);
+    similarities = null;
+
+    return Object.fromEntries(
+        Object.entries(links).filter(([, link]) => link.similarity >= threshold)
+    );
+}
+
 function* nodesToLinksGenerator(
     nodes: Array<{ id: string; color: string }>,
     pairsStore: Record<string, Pair>,
     batchSize: number = DEFAULT_BATCHISIZE
 ): Generator<Link[]> {
-    let links: Link[] = [];
-    const nodeColorMap = new Map(nodes.map(node => [node.id, node.color]));
-    const colorMixesMap = new Map<string, { day: string; night: string }>();
+    if (Object.keys(pairsStore).length > 0) {
+        let links: Link[] = [];
+        const nodeColorMap = new Map(nodes.map(node => [node.id, node.color]));
+        const colorMixesMap = new Map<string, { day: string; night: string }>();
 
-    // Precompute all possible color mixes
-    for (const color1 of nodeColorMap.values()) {
-        for (const color2 of nodeColorMap.values()) {
-            const key = [color1, color2].sort().join('_');
-            if (!colorMixesMap.has(key)) {
-                const mix = chroma.mix(color1, color2, 0.5, 'rgb');
-                const day = mix.brighten(0.27).hex();
-                const night = mix.darken(0.77).hex();
-                colorMixesMap.set(key, { day, night });
+        for (const color1 of nodeColorMap.values()) {
+            for (const color2 of nodeColorMap.values()) {
+                const key = [color1, color2].sort().join('_');
+                if (!colorMixesMap.has(key)) {
+                    const mix = chroma.mix(color1, color2, 0.5, 'rgb');
+                    const day = mix.brighten(0.27).hex();
+                    const night = mix.darken(0.77).hex();
+                    colorMixesMap.set(key, { day, night });
+                }
             }
         }
-    }
 
-    // Use precomputed color mixes to generate links
-    for (const [pairKey, pair] of Object.entries(pairsStore)) {
-        const [sourceId, targetId] = pairKey.split('_');
-        const sourceColor = nodeColorMap.get(sourceId);
-        const targetColor = nodeColorMap.get(targetId);
+        for (const [pairKey, pair] of Object.entries(filterLinksByPercentile(pairsStore))) {
+            const [sourceId, targetId] = pairKey.split('_');
+            const sourceColor = nodeColorMap.get(sourceId);
+            const targetColor = nodeColorMap.get(targetId);
 
-        if (sourceColor && targetColor) {
-            const key = [sourceColor, targetColor].sort().join('_');
-            const { day, night } = colorMixesMap.get(key) as { day: string; night: string };
+            if (sourceColor && targetColor) {
+                const { day, night } = colorMixesMap
+                    .get([sourceColor, targetColor].sort()
+                        .join('_')) as { day: string; night: string };
 
-            links.push({
-                source: sourceId,
-                target: targetId,
-                weight: pair.similarity,
-                color: day,
-                day_color: day,
-                night_color: night
-            });
+                links.push({
+                    source: sourceId,
+                    target: targetId,
+                    weight: pair.similarity,
+                    color: day,
+                    day_color: day,
+                    night_color: night
+                });
+            }
+
+            if (links.length >= batchSize) {
+                yield links;
+                links = [];
+            }
         }
 
-        if (links.length >= batchSize) {
+        if (links.length > 0) {
             yield links;
-            links = [];
         }
     }
+    else yield [];
 
-    if (links.length > 0) {
-        yield links;
-    }
 }
 
 async function processLinks(nodes: Node[], pairsStore: Record<string, Pair>): Promise<Link[]> {

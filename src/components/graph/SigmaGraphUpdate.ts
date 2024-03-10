@@ -246,20 +246,20 @@ class SigmaGrapUpdate {
     addNewLinks(links: Link[]) {
         this.stopLayout();
         for (const link of links) {
-            this.insertSorted(link.weight);
-            if (this.isSignificantLink(link)) {
-                const sourceId = link.source;
-                const targetId = link.target;
-                const edgeKey = `${sourceId}_${targetId}`;
-                this.graph.addEdgeWithKey(edgeKey, sourceId, targetId, {
-                    weight: link.weight,
-                    color: this.DayOrNight ? link.day_color : link.night_color,
-                    day_color: link.day_color,
-                    night_color: link.night_color
-                });
-                this.totalLinkWeight += link.weight;
-                this.linkCount++;
-            }
+            //this.insertSorted(link.weight);
+            //if (this.isSignificantLink(link)) {
+            const sourceId = link.source;
+            const targetId = link.target;
+            const edgeKey = `${sourceId}_${targetId}`;
+            this.graph.addEdgeWithKey(edgeKey, sourceId, targetId, {
+                weight: link.weight,
+                color: this.DayOrNight ? link.day_color : link.night_color,
+                day_color: link.day_color,
+                night_color: link.night_color
+            });
+            this.totalLinkWeight += link.weight;
+            this.linkCount++;
+            //}
         }
         this.startLayout();
         this.renderer.scheduleRefresh();
