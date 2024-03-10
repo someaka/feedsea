@@ -199,16 +199,10 @@ class SigmaGrapUpdate {
 
     removeNodesById(graphData: GraphData) {
         this.stopLayout();
-        const nodeIds = new Set(graphData.nodes.map(node => node.id));
         this.graph.clearEdges();
-        this.totalLinkWeight = 0;
-        this.linkCount = 0;
-        this.linkWeights = [];
-        nodeIds.forEach((nodeId) => {
-            this.graph.dropNode(nodeId);
-        })
+        for (const node of graphData.nodes)
+            this.graph.dropNode(node.id);
         this.addNewLinks(graphData.links);
-        this.startLayout();
     }
 
     addNewNodes(nodes: Node[]) {
@@ -221,48 +215,21 @@ class SigmaGrapUpdate {
         this.startLayout();
     }
 
-    linkWeights: number[] = [];
-
-    getAverageLinkWeight = (): number =>
-        this.totalLinkWeight / this.linkCount;
-
-    getPercentileLinkWeight = (percentile: number = 0.5): number =>
-        this.linkWeights.length === 0 ? 0 :
-            this.linkWeights[Math.ceil(percentile * (this.linkWeights.length - 1))];
-
-    isSignificantLink = (link: Link, significancePercentile: number = 0.5): boolean =>
-        link.weight >= this.getPercentileLinkWeight(significancePercentile);
-
-    insertSorted(value: number) {
-        let low = 0, high = this.linkWeights.length;
-        while (low < high) {
-            const mid = (low + high) >>> 1;
-            if (this.linkWeights[mid] < value) low = mid + 1;
-            else high = mid;
-        }
-        this.linkWeights.splice(low, 0, value);
-    }
-
     addNewLinks(links: Link[]) {
         this.stopLayout();
-        for (const link of links) {
-            //this.insertSorted(link.weight);
-            //if (this.isSignificantLink(link)) {
-            const sourceId = link.source;
-            const targetId = link.target;
-            const edgeKey = `${sourceId}_${targetId}`;
-            this.graph.addEdgeWithKey(edgeKey, sourceId, targetId, {
-                weight: link.weight,
-                color: this.DayOrNight ? link.day_color : link.night_color,
-                day_color: link.day_color,
-                night_color: link.night_color
-            });
-            this.totalLinkWeight += link.weight;
-            this.linkCount++;
-            //}
-        }
+        for (const link of links)
+            this.graph.addEdgeWithKey(
+                `${link.source}_${link.target}`,
+                link.source,
+                link.target,
+                {
+                    weight: link.weight,
+                    color: this.DayOrNight ? link.day_color : link.night_color,
+                    day_color: link.day_color,
+                    night_color: link.night_color
+                }
+            );
         this.startLayout();
-        this.renderer.scheduleRefresh();
     }
 
     addBoth(graphData: GraphData) {
@@ -271,22 +238,14 @@ class SigmaGrapUpdate {
     }
 
     addAll(graphData: GraphData) {
-        this.stopLayout();
         this.addNewNodes(graphData.nodes);
         this.graph.clearEdges();
-        this.totalLinkWeight = 0;
-        this.linkCount = 0;
-        this.linkWeights = [];
         this.addNewLinks(graphData.links);
-        this.startLayout();
     }
 
 
     clearGraph() {
         this.graph.clear();
-        this.totalLinkWeight = 0;
-        this.linkCount = 0;
-        this.linkWeights = [];
         this.renderer.refresh();
     }
 
