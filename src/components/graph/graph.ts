@@ -1,14 +1,14 @@
 import { getColorFromString } from '$lib/colors';
 import chroma from 'chroma-js';
-import type { Node, Link, Pair, ArticleType as Article } from '$lib/types';
+import type { Node, Link, Pair } from '$lib/types';
 
-const DEFAULT_BATCHISIZE = 10000;
+const DEFAULT_BATCHISIZE = 1;
 
-function articlesToNodes(articles: Article[]): Node[] {
+function articlesToNodes(articles: { id: string, feedColor: string, title: string }[]): Node[] {
     const center = { x: 0, y: 0 };
-    const radius = 0.0001;
+    const radius = 0.01;
 
-    return articles.map((article: Article) => ({
+    return articles.map((article) => ({
         id: article.id,
         title: article.title,
         color: getColorFromString(article.feedColor),
@@ -74,7 +74,8 @@ function* nodesToLinksGenerator(
             }
         }
 
-        for (const [pairKey, pair] of Object.entries(filterLinksByPercentile(pairsStore))) {
+        const filteredPairsStore = filterLinksByPercentile(pairsStore);
+        for (const [pairKey, pair] of Object.entries(filteredPairsStore)) {
             const [sourceId, targetId] = pairKey.split('_');
             const sourceColor = nodeColorMap.get(sourceId);
             const targetColor = nodeColorMap.get(targetId);
@@ -93,7 +94,6 @@ function* nodesToLinksGenerator(
                     night_color: night
                 });
             }
-
             if (links.length >= batchSize) {
                 yield links;
                 links = [];
@@ -109,13 +109,12 @@ function* nodesToLinksGenerator(
 }
 
 async function processLinks(nodes: Node[], pairsStore: Record<string, Pair>): Promise<Link[]> {
-    const linkGenerator = nodesToLinksGenerator(nodes, pairsStore);
+    let linkGenerator: Generator<Link[]> | null = nodesToLinksGenerator(nodes, pairsStore);
     const allLinks: Link[] = [];
-
     for (const linksBatch of linkGenerator)
         for (const link of linksBatch)
             allLinks.push(link);
-
+    linkGenerator = null;
     return allLinks;
 }
 

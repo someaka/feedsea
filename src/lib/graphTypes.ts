@@ -9,15 +9,10 @@ import type {
 interface OperationData {
     feedIds: Set<number>
     newFeedId: number
-    articles: Record<string, Article[]>
-    nodes: Node[]
-    links: Link[]
 }
 
 interface AllSelectedOperationData {
-    articles: Article[]
-    nodes: Node[]
-    links: Link[]
+    articles: Article[] | Set<string>
 }
 
 interface AddLinkOperationData {
@@ -47,7 +42,7 @@ interface GraphOperation {
     | 'themeChange';
     data?:
     isNightModeData
-    | Node[] | Link[] | GraphData
+    | Node[] | Link[]| GraphData
     | OperationData
     | AllSelectedOperationData
     | AddLinkOperationData

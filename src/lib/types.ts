@@ -115,7 +115,7 @@ interface ArticleType {
 interface FeedChange {
     type: 'add' | 'remove' | 'new' | 'all';
     feedId: number;
-    articles?: ArticleType[];
+    articles?: ArticleType[] | Set<string>;
 }
 
 interface SelectedFeedsState {

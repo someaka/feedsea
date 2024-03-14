@@ -1,4 +1,5 @@
-import { articlesStore, selectedFeedsStore } from './stores/stores';
+import { get } from 'svelte/store';
+import { articleIdsStore, articlesStore, selectedArticleIds, selectedFeedIds, selectedFeedsStore } from './stores/stores';
 import type { ArticleType } from './types';
 
 let eventSource: EventSource | null = null;
@@ -34,15 +35,30 @@ async function initDecompressionWorker(): Promise<Worker> {
         return worker;
     }
 }
-
 function updateArticlesState(articlesBatch: ArticleType[]) {
+
     articlesStore.update(currentArticles => {
-        articlesBatch.forEach(article => {
-            if (!currentArticles[article.feedId])
-                currentArticles[article.feedId] = [];
-            currentArticles[article.feedId].push(article);
-        });
+        for (const article of articlesBatch)
+            (currentArticles[article.feedId] ||= []).push(article);
         return currentArticles;
+    });
+    articleIdsStore.update(currentArticleIds => {
+        for (const article of articlesBatch)
+            (currentArticleIds[article.feedId] ||= new Set<string>()).add(article.id);
+        return currentArticleIds;
+    });
+    selectedArticleIds.update(currentIds => {
+        const feedIds = get(selectedFeedIds);
+        const articleIds = get(articleIdsStore);
+        const newSet = new Set<string>();
+        for (const feedId of feedIds)
+            if (articleIds[feedId].size > 0)
+                for (const articleId of articleIds[feedId])
+                  newSet.add(articleId);
+        for (const article of articlesBatch)
+            if (newSet.has(article.id))
+                currentIds.add(article.id);
+        return currentIds;
     });
     selectedFeedsStore.update(selectedFeedState => {
         selectedFeedState.change = {

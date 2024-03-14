@@ -13,8 +13,18 @@ import type {
 const feedCache: Record<string, FeedWithUnreadStories> = {};
 const feedsStore = writable(feedCache);
 
+
+const selectedFeeds = writable<FeedWithUnreadStories[]>([]);
+const selectedArticleIds = writable(new Set<string>());
+const selectedFeedIds = writable(new Set<string>());
+
+
+
 const articleCache: Record<string, Article[]> = {};
 const articlesStore = writable(articleCache);
+
+
+const articleIdsStore = writable<Record<string, Set<string>>>({});
 
 const initialEmbeddingsState: EmbeddingsState = {
    embeddings: {},
@@ -48,26 +58,19 @@ const initialLinksUpdate: LinkUpdate = {
 };
 const linksStore = writable<LinkUpdate>(initialLinksUpdate);
 
-
-
-// const graphState: GraphState = {
-//    graph: new Graph(),
-//    newGraph: new Graph(),
-//    task: '',
-//    newLinks: new Set()
-// };
-// const graphStore = writable(graphState);
-
 const focusedArticleId = writable<string | null>(null);
 
 export {
    feedsStore,
+   selectedArticleIds,
+   selectedFeeds,
+   selectedFeedIds,
    articlesStore,
+   articleIdsStore,
    selectedFeedsStore,
    embeddingsStore,
    pairsStore,
    nodesStore,
    linksStore,
-   // graphStore,
    focusedArticleId
 };

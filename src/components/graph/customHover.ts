@@ -1,4 +1,6 @@
-import { drawDiscNodeLabel } from "sigma/rendering/node-labels";
+// import { drawDiscNodeLabel } from "sigma/rendering/node-labels"
+import { drawDiscNodeLabel } from "sigma/rendering";
+
 import type { NodeDisplayData, PartialButFor } from "sigma/types";
 import type { Settings } from "sigma/settings";
 

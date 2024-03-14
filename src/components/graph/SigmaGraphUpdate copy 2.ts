@@ -103,9 +103,9 @@ function initializeInteractions() {
 }
 
 function getLayoutType() {
-    const loadedLayoutType = localStorage.getItem('layoutType');
-    if (loadedLayoutType) isForceAtlas.update( () => loadedLayoutType === 'forceAtlas');
-    return loadedLayoutType || 'forceAtlas';
+    const layoutType = localStorage.getItem('layoutType');
+    if (layoutType) isForceAtlas.update( () => layoutType === 'forceAtlas');
+    return layoutType || 'forceAtlas';
 }
 
 function getSettings() {

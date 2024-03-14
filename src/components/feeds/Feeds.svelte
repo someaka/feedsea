@@ -4,15 +4,24 @@
 	import {
 		feedsStore,
 		articlesStore,
+		selectedFeeds,
+		selectedFeedIds,
 		selectedFeedsStore,
-		focusedArticleId
-	} from '../../lib/stores/stores';
+		focusedArticleId,
+		selectedArticleIds,
+		articleIdsStore
+	} from '$lib/stores/stores';
 	import { fetchFeeds, selectFeed } from '$lib/api';
 	import { startSSE, stopSSE } from '$lib/SSEService';
 	import ArticlesPanel from '../articles/ArticlesPanel.svelte';
 	import { isLoadingFeeds, isLoadingArticles } from '$lib/loadingState';
 
-	import type { FeedChange, FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
+	import type {
+		FeedChange,
+		FeedWithUnreadStories,
+		ArticleType as Article,
+		SelectedFeedsState
+	} from '$lib/types';
 	import { theme } from '$lib/stores/night';
 
 	import '$lib/stores/updates';
@@ -21,7 +30,7 @@
 	import enqueueGraphOperation from '$lib/stores/updates';
 
 	let feeds: FeedWithUnreadStories[] = [];
-	let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds
+	// let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds
 	let latestSelectedFeed: FeedWithUnreadStories | null = null;
 
 	const PING_INTERVAL = 10 * 60 * 1000; // 10 minutes
@@ -39,10 +48,10 @@
 
 	async function checkAndKeepAlive() {
 		const feeds = get(feedsStore);
-		const articlesCacheKeys = new Set(Object.keys(get(articlesStore)));
+		const articlesCacheKeys = new Set(Object.keys(get(articleIdsStore)));
 		const allFeedsCached = Object.keys(feeds).every((feedId) => articlesCacheKeys.has(feedId));
 		//if (!allFeedsCached) {
-			axios.get('/keep-alive', { withCredentials: true });
+		axios.get('/keep-alive', { withCredentials: true });
 		//}
 	}
 	onMount(() => {
@@ -74,19 +83,13 @@
 	});
 
 	async function pointArticleFromNode(nodeId: string) {
-		const allArticles = get(articlesStore);
-
-		// Use find to directly get the feedId
-		const foundEntry = Object.entries(allArticles).find(([_, articles]) =>
-			articles.some((article) => article.id === nodeId)
+		const foundEntry = Object.entries(get(articleIdsStore)).find(([_, articleIds]) =>
+			articleIds.has(nodeId)
 		);
-
 		if (foundEntry) {
 			const [foundFeedId] = foundEntry;
 			latestSelectedFeed = get(feedsStore)[foundFeedId];
-
 			await tick(); // Wait for the DOM to update after displaying the feed
-
 			scrollToArticle(nodeId);
 		}
 	}
@@ -105,11 +108,16 @@
 
 			if (!feedIds.has(feed.id)) {
 				// Feed is being selected
-				const allArticles = get(articlesStore);
-				const cachedFeed = Object.keys(allArticles).includes(feed.id.toString());
-				if (!cachedFeed) {
+				if (
+					//!selectedFeeds.map((f) => f.id).includes(feed.id)
+					!Object.keys(get(articleIdsStore)).includes(feed.id.toString())
+				) {
 					articlesStore.update((articles) => {
 						articles[feed.id] = [];
+						return articles;
+					});
+					articleIdsStore.update((articles) => {
+						articles[feed.id] = new Set();
 						return articles;
 					});
 					selectFeed(feed);
@@ -117,7 +125,16 @@
 				updatedFeedIds.add(feed.id);
 				updatedChange = { type: 'add', feedId: feed.id, articles: [] };
 				latestSelectedFeed = feed;
-				selectedFeeds = [...selectedFeeds, feed];
+				selectedFeeds.update((selectedFeeds) => [...selectedFeeds, feed]);
+				selectedFeedIds.update((feedIds) => {
+					feedIds.add(feed.id.toString());
+					return feedIds;
+				});
+				selectedArticleIds.update((articleIds) => {
+					const articles = get(articleIdsStore)[feed.id];
+					articles.forEach((article) => articleIds.add(article));
+					return articleIds;
+				});
 			} else {
 				// Feed is being deselected
 				updatedFeedIds.delete(feed.id);
@@ -125,7 +142,16 @@
 				if (latestSelectedFeed && latestSelectedFeed.id === feed.id) {
 					latestSelectedFeed = null;
 				}
-				selectedFeeds = selectedFeeds.filter((f) => f.id !== feed.id);
+				selectedFeeds.update((selectedFeeds) => selectedFeeds.filter((f) => f.id !== feed.id));
+				selectedFeedIds.update((feedIds) => {
+					feedIds.delete(feed.id.toString());
+					return feedIds;
+				});
+				selectedArticleIds.update((articleIds) => {
+					const articles = get(articleIdsStore)[feed.id];
+					articles.forEach((article) => articleIds.delete(article));
+					return articleIds;
+				});
 			}
 
 			return { feedIds: updatedFeedIds, change: updatedChange };
@@ -143,8 +169,7 @@
 
 	function selectAllFeeds() {
 		const fullFeedStore = get(feedsStore);
-		const articleStoreSnapshot = get(articlesStore);
-		const cachedFeeds = Object.keys(articleStoreSnapshot);
+		const cachedFeeds = Object.keys(get(articleIdsStore));
 		const allFeedIds = Object.keys(fullFeedStore).map((id) => parseInt(id));
 		const allFeeds = Object.values(fullFeedStore);
 		const feedsToSelect = allFeeds.filter((feed) => !cachedFeeds.includes(feed.id.toString()));
@@ -155,30 +180,49 @@
 			});
 			return articles;
 		});
+		articleIdsStore.update((articles) => {
+			const allArticleIds = new Set<string>();
+			for (const articleSet of Object.values(articles))
+				for (const articleId of articleSet) allArticleIds.add(articleId);
+
+			selectedArticleIds.set(allArticleIds);
+			for (const feed of feedsToSelect) articles[feed.id] = new Set();
+
+			return articles;
+		});
+
+		selectedFeedIds.set(new Set(Object.keys(fullFeedStore)));
 
 		feedsToSelect.forEach((feedId) => selectFeed(feedId));
+
+		const articleIds = get(articleIdsStore);
 		selectedFeedsStore.update(({ feedIds }) => {
-			const feedIdsSet = new Set(allFeedIds.filter((id) => !feedIds.has(id)));
-			const articlesToAdd = Array.from(feedIdsSet).flatMap(
-				(feedId) => articleStoreSnapshot[feedId] || []
-			);
+			const unselectedArticleIds = new Set<string>();
+			for (const feedId of Object.keys(articleIds))
+				if (!feedIds.has(parseInt(feedId)))
+					for (const articleId of articleIds[feedId]) unselectedArticleIds.add(articleId);
 
 			return {
 				feedIds: new Set(allFeedIds),
-				change: { type: 'all', feedId: -1, articles: articlesToAdd } as FeedChange
+				change: {
+					type: 'all',
+					feedId: -1,
+					articles: unselectedArticleIds
+				}
 			};
 		});
-
-		selectedFeeds = allFeeds;
+		selectedFeeds.set(allFeeds);
 	}
 
 	function unselectAllFeeds() {
 		selectedFeedsStore.update(() => ({ feedIds: new Set() }));
-		selectedFeeds = [];
+		selectedFeeds.set([]);
+		selectedArticleIds.set(new Set());
+		selectedFeedIds.set(new Set());
 		clearGraph();
-		enqueueGraphOperation({
-			type: 'clearGraph'
-		});
+		// enqueueGraphOperation({
+		// 	type: 'clearGraph'
+		// });
 	}
 </script>
 
@@ -199,7 +243,7 @@
 			{#each feeds as feed}
 				<button
 					class="feed-item"
-					class:selected={selectedFeeds.some((f) => f.id === feed.id)}
+					class:selected={$selectedFeedIds.has(feed.id.toString())}
 					on:click={() => handleFeedClick(feed)}
 					style="background-color: {feed.color};"
 				>
