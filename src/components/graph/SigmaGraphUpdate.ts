@@ -264,16 +264,16 @@ function saveCurrentSettings() {
 
 function switchLayout() {
     saveCurrentSettings();
-    const res = layoutType !== 'forceAtlas';
+    const res = layoutType === 'forceAtlas';
     layoutType = res ? 'forceAtlas2' : 'forceAtlas';
     localStorage.setItem('layoutType', layoutType);
     layoutSettings = getSettings();
     settings.settings = layoutSettings;
-    // stopLayout();
+    stopLayout();
     layoutInstance.kill();
     layoutInstance = setLayout();
     startLayout();
-    isForceAtlas.update(() => res);
+    isForceAtlas.update(() => !res);
     return res;
 }
 
