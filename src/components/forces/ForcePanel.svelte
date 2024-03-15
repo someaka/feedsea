@@ -15,12 +15,14 @@
 	};
 	const flyParams = { x: -100, duration: 500 };
 
-	let linksPercentileSlider = new Slider<number>(
+	const savedValue = localStorage.getItem('linksPercentile');
+    let savedPercentile = savedValue ? JSON.parse(savedValue) : 0.5;
+    let linksPercentileSlider = new Slider<number>(
         'linksPercentile',
         'Links Percentile',
         'Adjusts the percentile of links displayed.',
-        0.5, // Default value
-        {
+        savedPercentile, 
+		{
             min: 0,
             max: 1,
             precision: 3,
@@ -29,8 +31,12 @@
     );
 
     function updateLinksPercentile() {
-        linksPercentile.set(Slider.calculateOriginalValue(linksPercentileSlider.value, linksPercentileSlider.config));
+        const originalValue = Slider.calculateOriginalValue(linksPercentileSlider.value, linksPercentileSlider.config);
+        linksPercentile.set(originalValue);
+        localStorage.setItem('linksPercentile', JSON.stringify(originalValue));
     }
+
+	let easterEggActive = Math.random() < 0.1;
 </script>
 
 <div class="force-panel">
@@ -49,51 +55,36 @@
 		</div>
 	</h3>
 
-
-
-
-
-
-
-
 	<div class="slider-container">
-        <div class="slider-header">
-            <label for="linksPercentileSlider" class="slider-title">{linksPercentileSlider.label}:</label>
-            <small class="slider-explanation">{linksPercentileSlider.description}</small>
-        </div>
-        <div class="range-slider">
-            <input
-                type="range"
-                id="linksPercentileSlider"
-                bind:value={linksPercentileSlider.value}
-                min={linksPercentileSlider.config.min}
-                max={linksPercentileSlider.config.max}
-                step="any"
-                class="slider"
-                on:input={updateLinksPercentile}
-            />
-            <div class="slider-min-max">
-                <span class="slider-min">{linksPercentileSlider.config.min}</span>
-                <output for="linksPercentileSlider" id="linksPercentileOutput" class="slider-output">
-                    {Slider.calculateOriginalValue(linksPercentileSlider.value, linksPercentileSlider.config)}
-                </output>
-                <span class="slider-max">{linksPercentileSlider.config.max}</span>
-            </div>
-        </div>
-    </div>
-
-
-
-
-
-
-
-
+		<div class="slider-header">
+			<label for="linksPercentileSlider" class="slider-title">{linksPercentileSlider.label}:</label>
+			<small class="slider-explanation">{linksPercentileSlider.description}</small>
+		</div>
+		<div class="range-slider" class:easter-egg={easterEggActive}>
+			<input
+				type="range"
+				id="linksPercentileSlider"
+				bind:value={linksPercentileSlider.value}
+				min={linksPercentileSlider.config.min}
+				max={linksPercentileSlider.config.max}
+				step="any"
+				class="slider"
+				on:input={updateLinksPercentile}
+			/>
+			<div class="slider-min-max">
+				<span class="slider-min">{linksPercentileSlider.config.min}</span>
+				<output for="linksPercentileSlider" id="linksPercentileOutput" class="slider-output">
+					{Slider.calculateOriginalValue(linksPercentileSlider.value, linksPercentileSlider.config)}
+				</output>
+				<span class="slider-max">{linksPercentileSlider.config.max}</span>
+			</div>
+		</div>
+	</div>
 
 	{#if $isForceAtlas}
-		<ForceLayoutSettings />
+		<ForceLayoutSettings {easterEggActive} />
 	{:else}
-		<ForceAtlas2Settings />
+		<ForceAtlas2Settings {easterEggActive} />
 	{/if}
 </div>
 
@@ -113,15 +104,6 @@
 		display: inline-flex;
 		align-items: center;
 	}
-
-
-
-
-
-
-
-
-
 
 	.slider-container {
 		margin-bottom: 1rem;
@@ -222,7 +204,7 @@
 	}
 
 	/* Easter egg styling */
-	/* .easter-egg .slider::-webkit-slider-runnable-track {
+	.easter-egg .slider::-webkit-slider-runnable-track {
 		background: var(--easter-slider-track-background) !important;
 	}
 	.easter-egg .slider::-moz-range-track {
@@ -230,7 +212,7 @@
 	}
 	.easter-egg .slider::-ms-track {
 		background: var(--easter-slider-track-background) !important;
-	} */
+	}
 
 	/* Slider thumb styling */
 	.slider::-webkit-slider-thumb {

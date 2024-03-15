@@ -83,7 +83,7 @@
 		updateForceSettings(settings);
 	}
 
-	let easterEggActive = Math.random() < 0.1;
+	export let easterEggActive: boolean;
 </script>
 
 <div id="forceSettings">

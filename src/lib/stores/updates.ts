@@ -40,7 +40,12 @@ import { quickSelect } from '../../components/graph/graph';
 
 
 linksPercentile.subscribe(percentile => {
-    const links = get(linksStore).links.filter(link => link.weight >= percentile);
+    const selectedArticleIdsSet = get(selectedArticleIds);
+    const links = get(linksStore).links
+        .filter(link => link.weight >= percentile)
+        .filter(link =>
+            selectedArticleIdsSet.has(link.source)
+            && selectedArticleIdsSet.has(link.target));
     if (links.length > 0) redrawLinks(links);
 })
 
