@@ -15,10 +15,16 @@ import ForceAtlasSupervisor from 'graphology-layout-forceatlas2/worker';
 // import forceLayout from 'graphology-layout-force';
 // import forceAtlas2 from 'graphology-layout-forceatlas2';
 
+import {
+    // EdgeLineProgram,
+    EdgeClampedProgram
+} from 'sigma/rendering';
+
 import type { Attributes, SerializedGraph } from 'graphology-types';
 import type { ForceLayoutSettings } from 'graphology-layout-force';
 import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
 import type { GraphData, Link, Node } from '$lib/types';
+// import { initializeGraphAndRender } from './testLargeGraph';
 
 // type LayoutMapping = { [key: string]: { x: number; y: number } };
 
@@ -35,21 +41,29 @@ let isDragging: boolean = false;
 let settings: Attributes;
 let DayOrNight: boolean;
 
-function setContainer(container: HTMLElement) {
-    graphContainer = container;
-    initializeSigmaGraph();
-}
+// function setContainer(container: HTMLElement) {
+//     graphContainer = container;
+//     initializeSigmaGraph();
+// }
 
-function initializeSigmaGraph() {
-    if (!graphContainer)
-        throw new Error(`Container not found.`);
+// import EdgeCurveProgram from './thingsandstuff';
+// import { initializeGraphAndRender } from './testLargeGraph';
+
+function initializeSigmaGraph(container: HTMLElement) {
+    graphContainer = container;
 
     graphInstance = new Graph();
     sigmaInstance = new Sigma(graphInstance, graphContainer, {
-        //renderLabels: true,
-        allowInvalidContainer: true, //shusshes cypress
+        // renderLabels: true,
+        // hideEdgesOnMove: true,
+        // allowInvalidContainer: true, //shusshes cypress
         labelDensity: 1,
-        labelGridCellSize: 150
+        labelGridCellSize: 150,
+        // edgeLabelFont: "Papyrus",
+        // enableEdgeEvents: false,
+        edgeProgramClasses: {
+            default: EdgeClampedProgram
+        }
     });
 
     DayOrNight = get(isNightMode);
@@ -104,7 +118,7 @@ function initializeInteractions() {
 
 function getLayoutType() {
     const loadedLayoutType = localStorage.getItem('layoutType');
-    if (loadedLayoutType) isForceAtlas.update( () => loadedLayoutType === 'forceAtlas');
+    if (loadedLayoutType) isForceAtlas.update(() => loadedLayoutType === 'forceAtlas');
     return loadedLayoutType || 'forceAtlas';
 }
 
@@ -138,10 +152,11 @@ function setLayout(res: boolean = layoutType === "forceAtlas") {
 }
 
 function addNewNodes(nodes: Node[]) {
-    if (!graphInstance) return;
+    // layoutInstance.kill();
+    // sigmaInstance.kill();
     const tempGraph: Graph = new Graph() // graphInstance.copy();
     for (const node of nodes)
-        tempGraph.addNode(
+    tempGraph.addNode(
             node.id,
             {
                 x: node.x,
@@ -153,14 +168,15 @@ function addNewNodes(nodes: Node[]) {
             }
         );
     graphInstance.import(tempGraph);
-    sigmaInstance.refresh();
+    // taumate();
 }
 
 function addNewLinks(links: Link[]) {
-    if (!graphInstance) return;
+    // layoutInstance.kill();
+    // sigmaInstance.kill();
     const tempGraph: Graph = graphInstance.emptyCopy();
     for (const link of links)
-        tempGraph.addEdgeWithKey(
+    tempGraph.addEdgeWithKey(
             `${link.source}_${link.target}`,
             link.source,
             link.target,
@@ -172,17 +188,43 @@ function addNewLinks(links: Link[]) {
             }
         );
     graphInstance.import(tempGraph, true);
-    sigmaInstance.refresh();
+    // taumate();
 }
 
+// function taumate() {
+//     // ({
+//     //     renderer: sigmaInstance,
+//     //     layoutInstance: layoutInstance
+//     // } = initializeGraphAndRender(graphContainer, graphInstance));
+//     const box = sigmaInstance.getBBox();
+//     sigmaInstance = new Sigma(graphInstance, graphContainer,
+//         {
+//             labelDensity: 1,
+//             labelGridCellSize: 150,
+//             edgeProgramClasses: {
+//                 default: EdgeClampedProgram
+//             }
+//         }
+//     );
+//     sigmaInstance.setCustomBBox(box);
+//     initializeInteractions();
+//     if (DayOrNight) {
+//         sigmaInstance.setSetting("labelColor", { color: '#000000' });
+//         sigmaInstance.setSetting("defaultDrawNodeHover", lightDrawDiscNodeHover);
+//     } else {
+//         sigmaInstance.setSetting("labelColor", { color: '#FFFFFF' });
+//         sigmaInstance.setSetting("defaultDrawNodeHover", darkDrawDiscNodeHover);
+//     }
+//     layoutInstance = setLayout();
+//     startLayout();
+// }
+
 function removeNodesById(nodes: Set<string>) {
-    if (!graphInstance) return;
+    layoutInstance.kill();
     const tempGraph: Graph = graphInstance.copy();
     nodes.forEach(node => tempGraph.dropNode(node));
     graphInstance = tempGraph;
-    layoutInstance.kill();
     sigmaInstance.setGraph(graphInstance);
-    sigmaInstance.refresh();
     layoutInstance = setLayout();
     startLayout();
 }
@@ -200,8 +242,12 @@ function addBoth(graphData: GraphData) {
 
 function clearGraph() {
     graphInstance.clear();
-    // sigmaInstance.clear();
     // layoutInstance.kill();
+    // sigmaInstance.kill();
+    // ({
+    //     renderer: sigmaInstance,
+    //     layoutInstance: layoutInstance
+    // } = initializeGraphAndRender(graphContainer));
 }
 
 function startLayout() {
@@ -295,7 +341,8 @@ function getNodeAttributes(node: Node) {
 }
 
 export {
-    setContainer,
+    // setContainer,
+    initializeSigmaGraph,
     clearGraph,
     updateDayNightMode,
     updateForceSettings,

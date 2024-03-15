@@ -36,7 +36,7 @@ function quickSelect(arr: number[], k: number): number {
     return pivot;
 }
 
-function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.5): Record<string, Pair> {
+function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.9): Record<string, Pair> {
     if (percentile < 0 || percentile > 1)
         throw new Error('Percentile must be between 0 and 1');
 
