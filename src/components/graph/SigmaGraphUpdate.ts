@@ -219,6 +219,11 @@ function addNewLinks(links: Link[]) {
 //     startLayout();
 // }
 
+function redrawLinks(links: Link[]) {
+    graphInstance.clearEdges();
+    addNewLinks(links);
+}
+
 function removeNodesById(nodes: Set<string>) {
     layoutInstance.kill();
     const tempGraph: Graph = graphInstance.copy();
@@ -353,5 +358,6 @@ export {
     switchLayout,
     // refreshRenderer,
     updateGraphFromSerializedData,
-    addAll
+    addAll,
+    redrawLinks
 };

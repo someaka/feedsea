@@ -73,7 +73,10 @@
 
 	function updateSettings() {
 		const settings: ForceLayoutSettings = sliders.reduce((acc, slider) => {
-			acc[slider.id] = Slider.calculateOriginalValue(slider.value, slider.config);
+			acc[slider.id as keyof ForceLayoutSettings] = Slider.calculateOriginalValue(
+				slider.value,
+				slider.config
+			);
 			return acc;
 		}, {} as ForceLayoutSettings);
 		forcePanelSettings.set(settings);

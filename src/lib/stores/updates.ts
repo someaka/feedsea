@@ -9,6 +9,7 @@ import {
     addNewLinks,
     addNewNodes,
     clearGraph,
+    redrawLinks,
     removeNodesById,
 } from '../../components/graph/SigmaGraphUpdate';
 import {
@@ -19,6 +20,7 @@ import {
     linksStore,
     selectedArticleIds,
     articleIdsStore,
+    linksPercentile,
 } from './stores';
 
 import type {
@@ -34,47 +36,63 @@ import type {
     GraphOperation,
     OperationData
 } from '$lib/graphTypes';
+import { quickSelect } from '../../components/graph/graph';
 
 
+linksPercentile.subscribe(percentile => {
+    const links = get(linksStore).links.filter(link => link.weight >= percentile);
+    if (links.length > 0) redrawLinks(links);
+})
+
+function getPercentileThreshold() {
+    let similarities: number[] | null =
+        Object.values(get(pairsStore).pairs).map(pair => pair.similarity);
+    if (similarities.length === 0) return 0;
+    const percentile = get(linksPercentile)
+    // Object.values(links).map(link => link.similarity);
+    const thresholdIndex = Math.floor(similarities.length * percentile);
+    const threshold = quickSelect(similarities, thresholdIndex + 1);
+    similarities = null;
+    return threshold;
+}
 
 function queueAddBoth(data: OperationData) {
     const selectedArticleIdsSet = get(selectedArticleIds);
     const latestArticleIdsSet = get(articleIdsStore)[data.newFeedId];
+    const threshold = getPercentileThreshold();
     addBoth({
         nodes: get(nodesStore).nodes.filter(node => latestArticleIdsSet.has(node.id)),
-        links: get(linksStore).links.filter(link =>
-            (latestArticleIdsSet.has(link.source) && selectedArticleIdsSet.has(link.target)) ||
-            (selectedArticleIdsSet.has(link.source) && latestArticleIdsSet.has(link.target)))
+        links: get(linksStore).links
+            .filter(link => link.weight >= threshold)
+            .filter(link =>
+                (latestArticleIdsSet.has(link.source) && selectedArticleIdsSet.has(link.target)) ||
+                (selectedArticleIdsSet.has(link.source) && latestArticleIdsSet.has(link.target)))
     });
 }
 
 function queueRemoveSelectedNodes(data: OperationData) {
-    // const feedIdToRemove = data.newFeedId;
-    const articleIdsSetToRemove = get(articleIdsStore)[data.newFeedId];
-    // const nodesToRemove = get(nodesStore).nodes.filter(node => articleIdsSetToRemove.has(node.id));
-    // const selectedArticleIdsSet = get(selectedArticleIds);
-    // const linksToReAdd = get(linksStore).links.filter(link =>
-    //     selectedArticleIdsSet.has(link.target) && selectedArticleIdsSet.has(link.source)
-    // );
-    removeNodesById(articleIdsSetToRemove,
-        //linksToReAdd
-    );
+    removeNodesById(get(articleIdsStore)[data.newFeedId]);
 }
 
 
 function queueAllSelectedNodes(data: { articles: Set<string> }) {
+    const threshold = getPercentileThreshold();
     addAll({
         nodes: get(nodesStore).nodes.filter(node =>
             (data.articles as Set<string>).has(node.id)),
         links: get(linksStore).links
+            .filter(link => link.weight >= threshold)
     });
 }
 
 async function queueAddNewLinks(data: Link[]) {
+    const threshold = getPercentileThreshold();
     const selectedArticleIdsSet = get(selectedArticleIds);
-    const newLinks = data.filter(link =>
-        selectedArticleIdsSet.has(link.source)
-        && selectedArticleIdsSet.has(link.target))
+    const newLinks = data
+        .filter(link => link.weight >= threshold)
+        .filter(link =>
+            selectedArticleIdsSet.has(link.source)
+            && selectedArticleIdsSet.has(link.target))
     if (newLinks.length > 0) addNewLinks(newLinks);
 }
 

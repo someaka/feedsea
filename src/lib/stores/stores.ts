@@ -59,6 +59,7 @@ const initialLinksUpdate: LinkUpdate = {
 const linksStore = writable<LinkUpdate>(initialLinksUpdate);
 
 const focusedArticleId = writable<string | null>(null);
+const linksPercentile = writable<number>(0.5);
 
 export {
    feedsStore,
@@ -72,5 +73,6 @@ export {
    pairsStore,
    nodesStore,
    linksStore,
-   focusedArticleId
+   focusedArticleId,
+   linksPercentile
 };

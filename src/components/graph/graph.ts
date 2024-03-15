@@ -18,7 +18,7 @@ function articlesToNodes(articles: { id: string, feedColor: string, title: strin
     }));
 }
 
-function quickSelect(arr: number[], k: number): number {
+export function quickSelect(arr: number[], k: number): number {
     // Partition the array around a pivot
     const pivot = arr[Math.floor(Math.random() * arr.length)];
     const lower: number[] = [];
@@ -36,7 +36,8 @@ function quickSelect(arr: number[], k: number): number {
     return pivot;
 }
 
-function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.9): Record<string, Pair> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.95): Record<string, Pair> {
     if (percentile < 0 || percentile > 1)
         throw new Error('Percentile must be between 0 and 1');
 
@@ -74,8 +75,8 @@ function* nodesToLinksGenerator(
             }
         }
 
-        const filteredPairsStore = filterLinksByPercentile(pairsStore);
-        for (const [pairKey, pair] of Object.entries(filteredPairsStore)) {
+        //const filteredPairsStore = filterLinksByPercentile(pairsStore);
+        for (const [pairKey, pair] of Object.entries(pairsStore)) {
             const [sourceId, targetId] = pairKey.split('_');
             const sourceColor = nodeColorMap.get(sourceId);
             const targetColor = nodeColorMap.get(targetId);

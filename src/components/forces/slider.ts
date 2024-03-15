@@ -8,7 +8,9 @@ interface SliderConfig {
 	scaleType: ScaleType;
 }
 
-type SliderId<T> = keyof T;
+type SliderId<T> = keyof T | string;
+// type SliderId<T> = string;
+
 
 interface SliderType<T> {
     id: SliderId<T>;
