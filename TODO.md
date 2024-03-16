@@ -1,5 +1,6 @@
-cluster articles ?
-
-percentile calculation check
-
-files clean up
+optimal number of edges ?
+    optimal for what ?!
+    performance
+    modularity
+    number of clusters
+    

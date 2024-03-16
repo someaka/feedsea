@@ -2,7 +2,9 @@ import type {
     ArticleType as Article,
     Node,
     Link,
-    GraphData
+    GraphData,
+    NodeUpdate,
+    LinkUpdate
 } from '$lib/types';
 
 
@@ -42,7 +44,7 @@ interface GraphOperation {
     | 'themeChange';
     data?:
     isNightModeData
-    | Node[] | Link[]| GraphData
+    | NodeUpdate | LinkUpdate | GraphData
     | OperationData
     | AllSelectedOperationData
     | AddLinkOperationData

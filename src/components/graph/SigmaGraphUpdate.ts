@@ -1,5 +1,4 @@
 // import { graphLogger as logger } from '../../logger';
-
 import { get } from 'svelte/store';
 
 import { focusedArticleId } from '$lib/stores/stores';
@@ -12,28 +11,19 @@ import Graph from "graphology";
 import Sigma from "sigma";
 import ForceSupervisor from "graphology-layout-force/worker";
 import ForceAtlasSupervisor from 'graphology-layout-forceatlas2/worker';
-// import forceLayout from 'graphology-layout-force';
-// import forceAtlas2 from 'graphology-layout-forceatlas2';
 
-import {
-    // EdgeLineProgram,
-    EdgeClampedProgram
-} from 'sigma/rendering';
+import { EdgeClampedProgram } from 'sigma/rendering';
 
 import type { Attributes, SerializedGraph } from 'graphology-types';
 import type { ForceLayoutSettings } from 'graphology-layout-force';
 import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
 import type { GraphData, Link, Node } from '$lib/types';
-// import { initializeGraphAndRender } from './testLargeGraph';
 
-// type LayoutMapping = { [key: string]: { x: number; y: number } };
 
 let graphContainer: HTMLElement;
 let sigmaInstance: Sigma;
 let graphInstance: Graph;
-let layoutInstance:
-    // LayoutMapping;
-    ForceSupervisor | ForceAtlasSupervisor;
+let layoutInstance: ForceSupervisor | ForceAtlasSupervisor;
 let layoutType: string = 'forceAtlas';
 let layoutSettings: ForceLayoutSettings | ForceAtlas2Settings;
 let draggedNode: string | null = null;
@@ -41,26 +31,17 @@ let isDragging: boolean = false;
 let settings: Attributes;
 let DayOrNight: boolean;
 
-// function setContainer(container: HTMLElement) {
-//     graphContainer = container;
-//     initializeSigmaGraph();
-// }
 
-// import EdgeCurveProgram from './thingsandstuff';
-// import { initializeGraphAndRender } from './testLargeGraph';
 
 function initializeSigmaGraph(container: HTMLElement) {
     graphContainer = container;
 
     graphInstance = new Graph();
     sigmaInstance = new Sigma(graphInstance, graphContainer, {
-        // renderLabels: true,
         // hideEdgesOnMove: true,
         // allowInvalidContainer: true, //shusshes cypress
         labelDensity: 1,
         labelGridCellSize: 150,
-        // edgeLabelFont: "Papyrus",
-        // enableEdgeEvents: false,
         edgeProgramClasses: {
             default: EdgeClampedProgram
         }
@@ -111,7 +92,7 @@ function initializeInteractions() {
         draggedNode = null;
     });
 
-    sigmaInstance.getMouseCaptor().on("mousedown", () => {
+    sigmaInstance.getMouseCaptor().once("mousedown", () => {
         if (!sigmaInstance.getCustomBBox()) sigmaInstance.setCustomBBox(sigmaInstance.getBBox());
     });
 }
@@ -132,51 +113,29 @@ function getSettings() {
     }
 }
 
-// function setLayout(res: boolean = layoutType === "forceAtlas") {
-//     if (!graphInstance) throw new Error("Graph instance is not initialized.");
-//     return res
-//         ? forceLayout(graphInstance, {
-//             maxIterations: 500,
-//             settings: settings.settings
-//         })
-//         : forceAtlas2(graphInstance, {
-//             iterations: 500,
-//             settings: forceAtlas2.inferSettings(graphInstance)
-//         });
-// }
 
-function setLayout(res: boolean = layoutType === "forceAtlas") {
-    return res
-        ? new ForceSupervisor(graphInstance, settings)
-        : new ForceAtlasSupervisor(graphInstance, settings);
-}
+const setLayout = (res: boolean = layoutType === "forceAtlas") => res
+    ? new ForceSupervisor(graphInstance, settings)
+    : new ForceAtlasSupervisor(graphInstance, settings);
 
 function addNewNodes(nodes: Node[]) {
-    // layoutInstance.kill();
-    // sigmaInstance.kill();
-    const tempGraph: Graph = new Graph() // graphInstance.copy();
+    const tempGraph: Graph = new Graph();
     for (const node of nodes)
-    tempGraph.addNode(
-            node.id,
-            {
-                x: node.x,
-                y: node.y,
-                size: node.size,
-                color: node.color,
-                label: node.title,
-                title: node.title,
-            }
-        );
+        tempGraph.addNode(node.id, {
+            x: node.x,
+            y: node.y,
+            size: node.size,
+            color: node.color,
+            label: node.title,
+            title: node.title,
+        });
     graphInstance.import(tempGraph);
-    // taumate();
 }
 
 function addNewLinks(links: Link[]) {
-    // layoutInstance.kill();
-    // sigmaInstance.kill();
     const tempGraph: Graph = graphInstance.emptyCopy();
     for (const link of links)
-    tempGraph.addEdgeWithKey(
+        tempGraph.addEdgeWithKey(
             `${link.source}_${link.target}`,
             link.source,
             link.target,
@@ -188,36 +147,7 @@ function addNewLinks(links: Link[]) {
             }
         );
     graphInstance.import(tempGraph, true);
-    // taumate();
 }
-
-// function taumate() {
-//     // ({
-//     //     renderer: sigmaInstance,
-//     //     layoutInstance: layoutInstance
-//     // } = initializeGraphAndRender(graphContainer, graphInstance));
-//     const box = sigmaInstance.getBBox();
-//     sigmaInstance = new Sigma(graphInstance, graphContainer,
-//         {
-//             labelDensity: 1,
-//             labelGridCellSize: 150,
-//             edgeProgramClasses: {
-//                 default: EdgeClampedProgram
-//             }
-//         }
-//     );
-//     sigmaInstance.setCustomBBox(box);
-//     initializeInteractions();
-//     if (DayOrNight) {
-//         sigmaInstance.setSetting("labelColor", { color: '#000000' });
-//         sigmaInstance.setSetting("defaultDrawNodeHover", lightDrawDiscNodeHover);
-//     } else {
-//         sigmaInstance.setSetting("labelColor", { color: '#FFFFFF' });
-//         sigmaInstance.setSetting("defaultDrawNodeHover", darkDrawDiscNodeHover);
-//     }
-//     layoutInstance = setLayout();
-//     startLayout();
-// }
 
 function redrawLinks(links: Link[]) {
     graphInstance.clearEdges();
@@ -247,12 +177,24 @@ function addBoth(graphData: GraphData) {
 
 function clearGraph() {
     graphInstance.clear();
-    // layoutInstance.kill();
-    // sigmaInstance.kill();
-    // ({
-    //     renderer: sigmaInstance,
-    //     layoutInstance: layoutInstance
-    // } = initializeGraphAndRender(graphContainer));
+    graphInstance = new Graph();
+    sigmaInstance.kill();
+    layoutInstance.kill();
+    sigmaInstance = new Sigma(graphInstance, graphContainer, {
+        labelDensity: 1,
+        labelGridCellSize: 150,
+        edgeProgramClasses: { default: EdgeClampedProgram }
+    });
+    initializeInteractions();
+    if (DayOrNight) {
+        sigmaInstance.setSetting("labelColor", { color: '#000000' });
+        sigmaInstance.setSetting("defaultDrawNodeHover", lightDrawDiscNodeHover);
+    } else {
+        sigmaInstance.setSetting("labelColor", { color: '#FFFFFF' });
+        sigmaInstance.setSetting("defaultDrawNodeHover", darkDrawDiscNodeHover);
+    }
+    layoutInstance = setLayout();
+    startLayout();
 }
 
 function startLayout() {
@@ -286,13 +228,11 @@ function updateDayNightMode() {
         });
         DayOrNight = false;
     }
-    //sigmaInstance.refresh();
 }
 
 function updateGraphFromSerializedData(serializedData: SerializedGraph) {
     if (!graphInstance || !sigmaInstance) return;
     graphInstance.import(serializedData, true);
-    //sigmaInstance.scheduleRefresh();
 }
 
 function updateForceSettings(newSettings: ForceLayoutSettings | ForceAtlas2Settings) {
@@ -328,25 +268,7 @@ function switchLayout() {
     return res;
 }
 
-// function refreshRenderer() {
-//     sigmaInstance?.scheduleRefresh();
-// }
-
-// Additional helper functions if needed
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function getNodeAttributes(node: Node) {
-    return {
-        x: node.x,
-        y: node.y,
-        size: node.size,
-        color: node.color,
-        label: node.title,
-        title: node.title,
-    };
-}
-
 export {
-    // setContainer,
     initializeSigmaGraph,
     clearGraph,
     updateDayNightMode,
@@ -356,7 +278,6 @@ export {
     addNewLinks,
     removeNodesById,
     switchLayout,
-    // refreshRenderer,
     updateGraphFromSerializedData,
     addAll,
     redrawLinks

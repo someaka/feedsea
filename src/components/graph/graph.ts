@@ -34,7 +34,7 @@ function articlesToNodes(
 }
 export function quickSelect(arr: number[], k: number): number {
     // Partition the array around a pivot
-    const pivot = arr[Math.floor(Math.random() * arr.length)];
+    const pivot = arr[Math.floor(Math.random() *  arr.length)];
     const lower: number[] = [];
     const higher: number[] = [];
     arr.forEach((num) => {
@@ -50,8 +50,7 @@ export function quickSelect(arr: number[], k: number): number {
     return pivot;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.95): Record<string, Pair> {
+export function filterLinksByPercentile(links: Record<string, Pair>, percentile = 0.95): Record<string, Pair> {
     if (percentile < 0 || percentile > 1)
         throw new Error('Percentile must be between 0 and 1');
 

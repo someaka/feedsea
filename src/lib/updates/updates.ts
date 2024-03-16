@@ -30,7 +30,7 @@ import type {
     PairsState,
     NodeUpdate,
     LinkUpdate,
-    Node, Link
+    Link,
 } from '$lib/types';
 import type {
     GraphOperation,
@@ -38,40 +38,31 @@ import type {
 } from '$lib/graphTypes';
 import { quickSelect } from '../../components/graph/graph';
 
+let threshold: number;
 
 linksPercentile.subscribe(percentile => {
     const selectedArticleIdsSet = get(selectedArticleIds);
     if (selectedArticleIdsSet.size === 0) return;
-    const threshold = getPercentileThreshold(percentile);
-    const links = get(linksStore).links
-        .filter(link => link.weight > threshold)
-        .filter(link => selectedArticleIdsSet.has(link.source
-            ) && selectedArticleIdsSet.has(link.target));
-    redrawLinks(links);
+    const selectedLinks = get(linksStore).links.filter(link =>
+        selectedArticleIdsSet.has(link.source)
+        && selectedArticleIdsSet.has(link.target))
+    threshold = getThresholdFromLinks(selectedLinks, percentile);
+    redrawLinks(selectedLinks.filter(link => link.weight > threshold));
 })
 
-function getPercentileThreshold( percentile : number | undefined = undefined) {
-    let similarities: number[] | null =
-        Object.values(get(pairsStore).pairs).map(pair => pair.similarity);
-    if(!percentile) percentile = get(linksPercentile)
-    if (similarities.length === 0 || percentile === 1) return 1;
-    const thresholdIndex = Math.floor(similarities.length * percentile);
-    const threshold = quickSelect(similarities, thresholdIndex + 1);
-    similarities = null;
-    return threshold;
-}
+
 
 function queueAddBoth(data: OperationData) {
     const selectedArticleIdsSet = get(selectedArticleIds);
     const latestArticleIdsSet = get(articleIdsStore)[data.newFeedId];
-    const threshold = getPercentileThreshold();
+    const selectedLinks = get(linksStore).links.filter(link =>
+        selectedArticleIdsSet.has(link.source)
+        && selectedArticleIdsSet.has(link.target))
+    threshold = getThresholdFromLinks(selectedLinks, get(linksPercentile));
     addBoth({
         nodes: get(nodesStore).nodes.filter(node => latestArticleIdsSet.has(node.id)),
-        links: get(linksStore).links
-            .filter(link => link.weight > threshold)
-            .filter(link =>
-                (latestArticleIdsSet.has(link.source) && selectedArticleIdsSet.has(link.target)) ||
-                (selectedArticleIdsSet.has(link.source) && latestArticleIdsSet.has(link.target)))
+        links: selectedLinks.filter(link => link.weight > threshold &&
+            (latestArticleIdsSet.has(link.source) || latestArticleIdsSet.has(link.target)))
     });
 }
 
@@ -81,29 +72,45 @@ function queueRemoveSelectedNodes(data: OperationData) {
 
 
 function queueAllSelectedNodes(data: { articles: Set<string> }) {
-    const threshold = getPercentileThreshold();
+    const links = get(linksStore).links;
+    threshold = getThresholdFromLinks(links, get(linksPercentile));
     addAll({
         nodes: get(nodesStore).nodes.filter(node =>
             (data.articles as Set<string>).has(node.id)),
-        links: get(linksStore).links
-            .filter(link => link.weight > threshold)
+        links: links.filter(link => link.weight > threshold)
     });
 }
 
-async function queueAddNewLinks(data: Link[]) {
-    const threshold = getPercentileThreshold();
+function getThresholdFromLinks(links: Link[], percentile: number) {
+    if (percentile === 1) return 1;
+    const selectedWeights = links.map(link => link.weight);
+    const thresholdIndex = Math.floor(selectedWeights.length * percentile);
+    return selectedWeights.length > 1
+        ? quickSelect(selectedWeights, thresholdIndex + 1)
+        : threshold;
+}
+
+async function queueAddNewLinks(data: LinkUpdate) {
+    const percentile = get(linksPercentile);
+    if (percentile === 1) return;
+
     const selectedArticleIdsSet = get(selectedArticleIds);
-    const newLinks = data
-        .filter(link => link.weight > threshold)
-        .filter(link =>
-            selectedArticleIdsSet.has(link.source)
-            && selectedArticleIdsSet.has(link.target))
+    const selectedLinks = data.links.filter(link =>
+        selectedArticleIdsSet.has(link.source)
+        && selectedArticleIdsSet.has(link.target))
+
+    const threshold = getThresholdFromLinks(selectedLinks, percentile);
+
+    const newLinks = data.newLinks.filter(link =>
+        link.weight > threshold
+        && selectedArticleIdsSet.has(link.source)
+        && selectedArticleIdsSet.has(link.target))
     if (newLinks.length > 0) addNewLinks(newLinks);
 }
 
-function queueAddNewNodes(data: Node[]) {
+function queueAddNewNodes(data: NodeUpdate) {
     const selectedArticleIdsSet = get(selectedArticleIds);
-    const newNodes = data.filter(node => selectedArticleIdsSet.has(node.id))
+    const newNodes = data.newNodes.filter(node => selectedArticleIdsSet.has(node.id))
     if (newNodes.length > 0) addNewNodes(newNodes);
 }
 
@@ -117,10 +124,10 @@ async function enqueueGraphOperation(task: GraphOperation) {
             queueClear();
             break;
         case 'addNodes':
-            queueAddNewNodes(task.data as Node[]);
+            queueAddNewNodes(task.data as NodeUpdate);
             break;
         case 'addLinks':
-            queueAddNewLinks(task.data as Link[]);
+            queueAddNewLinks(task.data as LinkUpdate);
             break;
         case 'removeNodes':
             queueRemoveSelectedNodes(task.data as OperationData);
@@ -154,14 +161,14 @@ pairsStore.subscribe(($pairsStore: PairsState) =>
 nodesStore.subscribe(($nodesStore: NodeUpdate) =>
     enqueueGraphOperation({
         type: 'addNodes',
-        data: $nodesStore.newNodes
+        data: $nodesStore
     })
 );
 
 linksStore.subscribe(($linksStore: LinkUpdate) =>
     enqueueGraphOperation({
         type: 'addLinks',
-        data: $linksStore.newLinks
+        data: $linksStore
     })
 );
 
