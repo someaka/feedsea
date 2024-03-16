@@ -38,9 +38,6 @@ dependencies:
   jsdom:
     specifier: ^24.0.0
     version: 24.0.0
-  seedrandom:
-    specifier: ^3.0.5
-    version: 3.0.5
   sigma:
     specifier: 3.0.0-beta.11
     version: 3.0.0-beta.11(graphology-types@0.24.7)
@@ -76,9 +73,6 @@ devDependencies:
   '@types/sanitize-html':
     specifier: ^2.11.0
     version: 2.11.0
-  '@types/seedrandom':
-    specifier: ^3.0.8
-    version: 3.0.8
   '@types/tough-cookie':
     specifier: ^4.0.5
     version: 4.0.5
@@ -732,10 +726,6 @@ packages:
     resolution: {integrity: sha512-7oxPGNQHXLHE48r/r/qjn7q0hlrs3kL7oZnGj0Wf/h9tj/6ibFyRkNbsDxaBBZ4XUZ0Dx5LGCyDJ04ytSofacQ==}
     dependencies:
       htmlparser2: 8.0.2
-    dev: true
-
-  /@types/seedrandom@3.0.8:
-    resolution: {integrity: sha512-TY1eezMU2zH2ozQoAFAQFOPpvP15g+ZgSfTZt31AUUH/Rxtnz3H+A/Sv1Snw2/amp//omibc+AEkTaA8KUeOLQ==}
     dev: true
 
   /@types/semver@7.5.8:
@@ -2463,10 +2453,6 @@ packages:
     engines: {node: '>=v12.22.7'}
     dependencies:
       xmlchars: 2.2.0
-
-  /seedrandom@3.0.5:
-    resolution: {integrity: sha512-8OwmbklUNzwezjGInmZ+2clQmExQPvomqjL7LFqOYqtmuxRgQYqOD3mHaU+MvZn5FLUeVxVfQjwLZW/n/JFuqg==}
-    dev: false
 
   /semver@7.6.0:
     resolution: {integrity: sha512-EnwXhrlwXMk9gKu5/flx5sv/an57AkRplG3hTK68W7FRDN+k+OWBj65M7719OkA82XLBxrcX0KSHj+X5COhOVg==}
