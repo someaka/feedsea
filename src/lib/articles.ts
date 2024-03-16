@@ -12,7 +12,7 @@ import { Readability } from '@mozilla/readability';
 // import sanitizeHtml from 'sanitize-html';
 import { EventEmitter } from 'events';
 import { compress } from './compression';
-import { hasSubscriber, removeSubscriber } from './subscribers';
+import { hasSubscriber, removeSubscriber } from './updates/subscribers';
 
 import fastq from 'fastq';
 import type { done, queue } from 'fastq';
@@ -34,6 +34,7 @@ class Article implements ArticleType {
     feedColor: string;
     title: string;
     text: string;
+    date: string;
     url: string;
 
     constructor() {
@@ -42,6 +43,7 @@ class Article implements ArticleType {
         this.feedColor = '';
         this.title = '';
         this.text = '';
+        this.date = '';
         this.url = '';
     }
 }
@@ -128,6 +130,8 @@ class Articles {
                 timeout: BATCH_INTERVAL,
             });
 
+            if(!response) throw new Error('Failed to fetch article');
+            
             dom = new JSDOM(this.preprocessHtml(response?.data), { url: task.story });
             reader = new Readability(dom.window.document);
             articleData = reader.parse();
@@ -141,6 +145,7 @@ class Articles {
             article.feedId = task.feedId;
             article.title = articleData.title;
             article.text = articleData.content;
+            article.date = articleData.publishedTime;
             article.url = task.story;
 
             articleData = null;

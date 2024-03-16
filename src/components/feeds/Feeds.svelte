@@ -14,7 +14,7 @@
 	import { fetchFeeds, selectFeed } from '$lib/api';
 	import { startSSE, stopSSE } from '$lib/SSEService';
 	import ArticlesPanel from '../articles/ArticlesPanel.svelte';
-	import { isLoadingFeeds, isLoadingArticles } from '$lib/loadingState';
+	import { isLoadingFeeds, isLoadingArticles } from '$lib/stores/loadingState';
 
 	import type {
 		FeedChange,
@@ -24,10 +24,10 @@
 	} from '$lib/types';
 	import { theme } from '$lib/stores/night';
 
-	import '$lib/stores/updates';
+	import '$lib/updates/updates';
 	import axios from 'axios';
 	import { clearGraph } from '../graph/SigmaGraphUpdate';
-	import enqueueGraphOperation from '$lib/stores/updates';
+	import enqueueGraphOperation from '$lib/updates/updates';
 
 	let feeds: FeedWithUnreadStories[] = [];
 	// let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds

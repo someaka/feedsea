@@ -20,7 +20,7 @@
     let linksPercentileSlider = new Slider<number>(
         'linksPercentile',
         'Links Percentile',
-        'Adjusts the percentile of links displayed.',
+        'Adjusts the percentile of links filtered.',
         savedPercentile, 
 		{
             min: 0,

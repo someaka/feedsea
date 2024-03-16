@@ -1,5 +1,5 @@
 import { isActive } from "$lib/articles.js";
-import { hasSubscriber } from "$lib/subscribers";
+import { hasSubscriber } from "$lib/updates/subscribers";
 
 export async function GET({ request }) {
     const cookie = request.headers.get('cookie');

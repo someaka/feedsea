@@ -1,4 +1,4 @@
-import { embeddingsStore } from './stores/stores';
+import { embeddingsStore } from '../stores/stores';
 import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 
 const TIMEOUT_INTERVAL = 60 * 1000;
@@ -16,7 +16,7 @@ async function initEmbedFetchWorker() {
     } else {
         // Start a new initialization
         workerInitializationPromise = (async () => {
-            const EmbedFetchWorkerModule = await import('$lib/embedFetchWorker?worker');
+            const EmbedFetchWorkerModule = await import('$lib/workers/embedFetchWorker?worker');
             embedFetchWorker = new EmbedFetchWorkerModule.default();
             embedFetchWorker.onmessage = (event) => {
                 const newEmbeddings: EmbeddingsCache = event.data;

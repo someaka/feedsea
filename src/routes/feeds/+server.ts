@@ -1,7 +1,7 @@
 import { serverLogger as logger } from '../../logger';
 import { fetchFeeds, fetchStories } from './feedFetcher';
 import { generateColors } from '$lib/colors';
-import { hasSubscriber } from '$lib/subscribers';
+import { hasSubscriber } from '$lib/updates/subscribers';
 import type { RequestHandler } from '@sveltejs/kit';
 import type { FeedsWithUnreadStories, FeedsWithColor } from '$lib/types';
 

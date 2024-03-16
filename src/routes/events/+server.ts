@@ -1,5 +1,5 @@
 import { Articles, getArticleEvents } from '$lib/articles';
-import { hasSubscriber, removeSubscriber } from '$lib/subscribers';
+import { hasSubscriber, removeSubscriber } from '$lib/updates/subscribers';
 
 export async function GET({ request }) {
     const cookie = request.headers.get('cookie');

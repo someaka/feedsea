@@ -1,4 +1,4 @@
-import { nodesStore } from './stores';
+import { nodesStore } from '../stores/stores';
 import type { Node } from '$lib/types';
 
 const TIMEOUT_INTERVAL = 60 * 1000;
@@ -16,7 +16,7 @@ async function initNodesWorker(): Promise<Worker> {
     } else {
         // Start a new initialization
         workerInitializationPromise = (async () => {
-            const NodesWorkerModule = await import('$lib/nodesWorker?worker');
+            const NodesWorkerModule = await import('$lib/workers/nodesWorker?worker');
             nodesWorker = new NodesWorkerModule.default();
             nodesWorker.onmessage = (event: MessageEvent<Node[]>) => {
                 const newNodes = event.data;
@@ -38,29 +38,6 @@ async function initNodesWorker(): Promise<Worker> {
     }
 }
 
-// let NodesWorkerModule: typeof import('$lib/nodesWorker?worker') | null = null;
-
-// async function initNodesWorker(): Promise<Worker> {
-//     if (!nodesWorker) {
-//         if (!NodesWorkerModule)
-//             NodesWorkerModule = await import('$lib/nodesWorker?worker');
-//         nodesWorker = new NodesWorkerModule.default();
-//         nodesWorker.onmessage = (event: MessageEvent<Node[]>) => {
-//             const newNodes = event.data;
-//             nodesStore.update(currentNodes => {
-//                 newNodes.forEach((node: Node) =>
-//                     currentNodes.nodes.push(node));
-//                 currentNodes.newNodes = newNodes;
-//                 return currentNodes;
-//             });
-//             //resetWorkerIdleTimeout();
-//         };
-//         nodesWorker.onerror = (error) =>
-//             console.error('Nodes Worker error:', error);
-//     }
-//     return nodesWorker;
-// }
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function resetWorkerIdleTimeout() {
     clearTimeout(idleTimeout);
@@ -73,7 +50,9 @@ function terminateNodesWorker() {
     }
 }
 
-async function queueArticlesToNodes(articles: { id: string, feedColor: string, title: string }[]) {
+async function queueArticlesToNodes(
+    articles: { id: string, feedColor: string, title: string, date: string }[]
+) {
     nodesWorker = await initNodesWorker();
     // clearTimeout(idleTimeout);
     nodesWorker.postMessage(articles);

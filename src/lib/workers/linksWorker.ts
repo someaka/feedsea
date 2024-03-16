@@ -1,4 +1,4 @@
-import { processLinks } from '../components/graph/graph';
+import { processLinks } from '../../components/graph/graph';
 
 self.onmessage = async (event) => {
     self.postMessage( await processLinks(

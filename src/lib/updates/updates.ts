@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import queueArticlesToNodes from './articlesToNodes';
-import queueNewArticles from '$lib/embedFetch';
-import calculateAllPairs from '$lib/pairCalculator';
+import queueNewArticles from '$lib/updates/embedFetch';
+import calculateAllPairs from '$lib/updates/pairCalculator';
 import queueNodesToLinks from './nodesToLinks';
 import {
     addAll,
@@ -21,7 +21,7 @@ import {
     selectedArticleIds,
     articleIdsStore,
     linksPercentile,
-} from './stores';
+} from '../stores/stores';
 
 import type {
     ArticleType as Article,
@@ -41,20 +41,20 @@ import { quickSelect } from '../../components/graph/graph';
 
 linksPercentile.subscribe(percentile => {
     const selectedArticleIdsSet = get(selectedArticleIds);
+    if (selectedArticleIdsSet.size === 0) return;
+    const threshold = getPercentileThreshold(percentile);
     const links = get(linksStore).links
-        .filter(link => link.weight >= percentile)
-        .filter(link =>
-            selectedArticleIdsSet.has(link.source)
-            && selectedArticleIdsSet.has(link.target));
-    if (links.length > 0) redrawLinks(links);
+        .filter(link => link.weight > threshold)
+        .filter(link => selectedArticleIdsSet.has(link.source
+            ) && selectedArticleIdsSet.has(link.target));
+    redrawLinks(links);
 })
 
-function getPercentileThreshold() {
+function getPercentileThreshold( percentile : number | undefined = undefined) {
     let similarities: number[] | null =
         Object.values(get(pairsStore).pairs).map(pair => pair.similarity);
-    if (similarities.length === 0) return 0;
-    const percentile = get(linksPercentile)
-    // Object.values(links).map(link => link.similarity);
+    if(!percentile) percentile = get(linksPercentile)
+    if (similarities.length === 0 || percentile === 1) return 1;
     const thresholdIndex = Math.floor(similarities.length * percentile);
     const threshold = quickSelect(similarities, thresholdIndex + 1);
     similarities = null;
@@ -68,7 +68,7 @@ function queueAddBoth(data: OperationData) {
     addBoth({
         nodes: get(nodesStore).nodes.filter(node => latestArticleIdsSet.has(node.id)),
         links: get(linksStore).links
-            .filter(link => link.weight >= threshold)
+            .filter(link => link.weight > threshold)
             .filter(link =>
                 (latestArticleIdsSet.has(link.source) && selectedArticleIdsSet.has(link.target)) ||
                 (selectedArticleIdsSet.has(link.source) && latestArticleIdsSet.has(link.target)))
@@ -86,7 +86,7 @@ function queueAllSelectedNodes(data: { articles: Set<string> }) {
         nodes: get(nodesStore).nodes.filter(node =>
             (data.articles as Set<string>).has(node.id)),
         links: get(linksStore).links
-            .filter(link => link.weight >= threshold)
+            .filter(link => link.weight > threshold)
     });
 }
 
@@ -94,7 +94,7 @@ async function queueAddNewLinks(data: Link[]) {
     const threshold = getPercentileThreshold();
     const selectedArticleIdsSet = get(selectedArticleIds);
     const newLinks = data
-        .filter(link => link.weight >= threshold)
+        .filter(link => link.weight > threshold)
         .filter(link =>
             selectedArticleIdsSet.has(link.source)
             && selectedArticleIdsSet.has(link.target))
@@ -208,7 +208,9 @@ function newArticlesToNodes(articles: Article[] | undefined) {
     if (!articles) return;
     queueNewArticles(articles);
     queueArticlesToNodes(
-        articles.map(({ id, feedColor, title }) => ({ id, feedColor, title }))
+        articles.map(
+            ({ id, feedColor, title, date }) => ({ id, feedColor, title, date })
+        )
     );
 }
 

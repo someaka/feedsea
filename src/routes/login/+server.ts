@@ -1,5 +1,5 @@
 import loginUser from '../../components/login/loginService';
-import { addSubscriber } from '$lib/subscribers';
+import { addSubscriber } from '$lib/updates/subscribers';
 
 export async function POST(event) {
   const request = event.request;

@@ -1,4 +1,4 @@
-import type { Pair, EmbeddingsState, EmbeddingsCache } from "./types";
+import type { Pair, EmbeddingsState, EmbeddingsCache } from "../types";
 
 self.addEventListener('message', async (event) => {
     self.postMessage(await processPairs(event.data));

@@ -1,5 +1,5 @@
 import { queueFeedRequest } from '../../lib/articles';
-import { hasSubscriber } from '../../lib/subscribers';
+import { hasSubscriber } from '../../lib/updates/subscribers';
 
 import type { FeedWithUnreadStories } from '../../lib/types';
 

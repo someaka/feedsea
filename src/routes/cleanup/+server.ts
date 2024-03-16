@@ -1,6 +1,6 @@
 import { stopAllRequests } from '$lib/articles';
 import { getArticleEvents } from '$lib/articles';
-import { hasSubscriber } from '$lib/subscribers';
+import { hasSubscriber } from '$lib/updates/subscribers';
 
 export async function POST({ request }) {
   const cookie = request.headers.get('cookie');

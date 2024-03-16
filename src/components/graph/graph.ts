@@ -4,20 +4,34 @@ import type { Node, Link, Pair } from '$lib/types';
 
 const DEFAULT_BATCHISIZE = 1;
 
-function articlesToNodes(articles: { id: string, feedColor: string, title: string }[]): Node[] {
+function articlesToNodes(
+    articles: { id: string, feedColor: string, title: string, date: string }[]
+): Node[] {
     const center = { x: 0, y: 0 };
     const radius = 0.01;
+    const maxBrightnessIncrease = 0.5 ;
 
-    return articles.map((article) => ({
-        id: article.id,
-        title: article.title,
-        color: getColorFromString(article.feedColor),
-        x: center.x + Math.random() * radius * Math.cos(Math.random() * Math.PI * 2),
-        y: center.y + Math.random() * radius * Math.sin(Math.random() * Math.PI * 2),
-        size: 10,
-    }));
+    return articles.map((article) => {
+        const hoursSincePublished = Math
+            .abs(new Date().getTime()
+                - new Date(article.date).getTime())
+            / (1000 * 60 * 60);
+        let color = getColorFromString(article.feedColor);
+
+        if (hoursSincePublished <= 48)
+            color = chroma(color)
+                .brighten((1 - (hoursSincePublished / 48)) * maxBrightnessIncrease).hex();
+
+        return {
+            id: article.id,
+            title: article.title,
+            color: color,
+            x: center.x + Math.random() * radius * Math.cos(Math.random() * Math.PI * 2),
+            y: center.y + Math.random() * radius * Math.sin(Math.random() * Math.PI * 2),
+            size: 10,
+        };
+    });
 }
-
 export function quickSelect(arr: number[], k: number): number {
     // Partition the array around a pivot
     const pivot = arr[Math.floor(Math.random() * arr.length)];

@@ -1,6 +1,6 @@
 import type { ArticleType as Article, EmbeddingsCache } from '$lib/types';
 import axios, { AxiosError, type AxiosResponse } from 'axios';
-import { HUGGINGFACE_API_URL, HUGGINGFACE_TOKEN } from './similarityConfig';
+import { HUGGINGFACE_API_URL, HUGGINGFACE_TOKEN } from '../similarityConfig';
 
 const DEFAULT_QUEUE_TIME = 10; // in seconds
 let articlesQueue: Article[] | null = [];
@@ -25,7 +25,7 @@ async function retryRequest(
         try {
             const response = await axios.post(
                 HUGGINGFACE_API_URL,
-                { inputs: articlesWithIds.map(article => article.text) },
+                { inputs: articlesWithIds.map(article => `${article.title} ${article.text}`) },
                 { headers: { 'Authorization': `Bearer ${HUGGINGFACE_TOKEN}` } }
             );
             for (let i = 0; i < response.data.length; i++)

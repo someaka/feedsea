@@ -19,7 +19,7 @@ async function initDecompressionWorker(): Promise<Worker> {
     } else {
         // Start a new initialization
         workerInitializationPromise = (async () => {
-            const DecompressionWorkerModules = await import('$lib/decompressionWorker?worker');
+            const DecompressionWorkerModules = await import('$lib/workers/decompressionWorker?worker');
             decompressionWorker = new DecompressionWorkerModules.default();
             decompressionWorker.onmessage = (event) => {
                 const articlesBatch: ArticleType[] = event.data;

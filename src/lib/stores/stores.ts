@@ -59,7 +59,10 @@ const initialLinksUpdate: LinkUpdate = {
 const linksStore = writable<LinkUpdate>(initialLinksUpdate);
 
 const focusedArticleId = writable<string | null>(null);
-const linksPercentile = writable<number>(0.5);
+
+const savedLinksPercentileValue = localStorage.getItem('linksPercentile');
+const initialLinksPercentile = savedLinksPercentileValue ? JSON.parse(savedLinksPercentileValue) : 0.5;
+const linksPercentile = writable<number>(initialLinksPercentile);
 
 export {
    feedsStore,

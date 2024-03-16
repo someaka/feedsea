@@ -1,4 +1,4 @@
-import { linksStore } from './stores';
+import { linksStore } from '../stores/stores';
 import type { Link, Pair } from '$lib/types';
 
 const TIMEOUT_INTERVAL = 60 * 1000;
@@ -15,7 +15,7 @@ async function initLinksWorker(): Promise<Worker> {
     } else {
         // Start a new initialization
         workerInitializationPromise = (async () => {
-            const LinksWorkerModule = await import('$lib/linksWorker?worker');
+            const LinksWorkerModule = await import('$lib/workers/linksWorker?worker');
             linksWorker = new LinksWorkerModule.default();
             linksWorker.onmessage = (event) => {
                 const newLinks = event.data;

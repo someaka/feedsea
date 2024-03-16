@@ -1,9 +1,9 @@
-import { pairsStore } from './stores/stores';
+import { pairsStore } from '../stores/stores';
 import type { EmbeddingsState } from '$lib/types';
 
 const TIMEOUT_INTERVAL = 60 * 1000;
 let pairWorker: Worker | null = null;
-let PairsWorkerModule: typeof import('$lib/pairWorker?worker') | null = null;
+let PairsWorkerModule: typeof import('$lib/workers/pairWorker?worker') | null = null;
 let idleTimeout: ReturnType<typeof setTimeout>;
 let workerInitializationPromise: Promise<Worker> | null = null;
 
@@ -16,7 +16,7 @@ async function initPairWorker(): Promise<Worker> {
     } else {
         // Start a new initialization
         workerInitializationPromise = (async () => {
-            PairsWorkerModule = await import('$lib/pairWorker?worker');
+            PairsWorkerModule = await import('$lib/workers/pairWorker?worker');
             pairWorker = new PairsWorkerModule.default();
             pairWorker.onmessage = (event) => {
                 const newPairs = event.data;

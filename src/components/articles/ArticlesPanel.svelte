@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { articlesStore } from '../../lib/stores/stores';
 	import { theme } from '../../lib/stores/night';
-	import { isLoadingArticles } from '$lib/loadingState';
+	import { isLoadingArticles } from '$lib/stores/loadingState';
 
 	import type { FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
 
@@ -56,7 +56,7 @@
 		// Re-enable text selection after drag
 		document.body.style.userSelect = '';
 	}
-	
+
 	onMount(() => {
 		const articleTextContainers = document.querySelectorAll('.article-text');
 		articleTextContainers.forEach((container) => {
@@ -72,6 +72,23 @@
 	onDestroy(() => {
 		isLoadingArticles.set(false); // Ensure loading state is reset when component is destroyed
 	});
+
+	function formatDate(dateString: string | undefined): string {
+		if (!dateString) {
+			return 'No date provided';
+		}
+		const date = new Date(dateString);
+		const options: Intl.DateTimeFormatOptions = {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		};
+		// Use the user's locale and formatting preferences
+		return new Intl.DateTimeFormat(undefined, options).format(date);
+	}
 </script>
 
 {#if $isLoadingArticles}
@@ -93,6 +110,7 @@
 						{#each articles as article (article.id)}
 							<li data-article-id={article.id} style="background-color: {article.feedColor};">
 								<h4>{article.title}</h4>
+								<time class="article-date" datetime={article.date}>{formatDate(article.date)}</time>
 								<a href={article.url} target="_blank">{article.url}</a>
 								<!-- Render the article text as HTML -->
 								<div class="article-text">
@@ -227,5 +245,12 @@
 
 	.articles-container::-webkit-scrollbar-thumb:hover {
 		background: rgba(85, 85, 85, 0.5);
+	}
+
+	.article-date {
+		font-weight: bold; /* Make the date bold */
+		font-size: 1rem; /* Adjust the font size as needed */
+		color: #333; /* Change the color to suit your design */
+		margin-bottom: 0.5rem; /* Add some bottom margin for spacing */
 	}
 </style>

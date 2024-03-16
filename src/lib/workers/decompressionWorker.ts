@@ -1,4 +1,4 @@
-import { decompress } from './compression';
+import { decompress } from '../compression';
 
 self.addEventListener('message', (event) => {
     const compressedData = event.data;
