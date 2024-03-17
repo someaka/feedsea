@@ -95,9 +95,9 @@
 	}
 
 	function scrollToArticle(nodeId: string) {
-		const articleElement = document.querySelector(`[data-article-id="${nodeId}"]`);
+		const articleElement = document.querySelector(`[data-article-id="${nodeId}"] .article-title`);
 		if (articleElement) {
-			articleElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			articleElement.scrollIntoView({ behavior: 'auto', block: 'start' });
 		}
 	}
 
@@ -108,10 +108,7 @@
 
 			if (!feedIds.has(feed.id)) {
 				// Feed is being selected
-				if (
-					//!selectedFeeds.map((f) => f.id).includes(feed.id)
-					!Object.keys(get(articleIdsStore)).includes(feed.id.toString())
-				) {
+				if (!Object.keys(get(articleIdsStore)).includes(feed.id.toString())) {
 					articlesStore.update((articles) => {
 						articles[feed.id] = [];
 						return articles;
@@ -220,9 +217,6 @@
 		selectedArticleIds.set(new Set());
 		selectedFeedIds.set(new Set());
 		clearGraph();
-		// enqueueGraphOperation({
-		// 	type: 'clearGraph'
-		// });
 	}
 </script>
 

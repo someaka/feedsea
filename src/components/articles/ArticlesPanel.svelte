@@ -32,25 +32,6 @@
 		isVisible = true;
 	}
 
-	// articlesStore.subscribe(  (current) => {
-	// 	if (latestSelectedFeed?.id) {
-	// 		// articlesStore.update((current) => {
-	// 			// const currentFeed = current[latestSelectedFeed.id];
-	// 			if (current[latestSelectedFeed.id].length > 0) {
-	// 				// const compressedBatches = current[latestSelectedFeed.id].splice(0, currentFeed.length);
-	// 				let decompressedArticles: ArticleType[] = [];
-	// 				for (const batch of current[latestSelectedFeed.id])
-	// 					decompressedArticles = decompressedArticles.concat(decompress(batch));
-
-	// 				articles = decompressedArticles;
-	// 				// const recompressedBatch = compress(decompressedArticles);
-	// 				// (current[latestSelectedFeed.id] ||= []).unshift(recompressedBatch);
-	// 			}
-	// 			// return current;
-	// 		// });
-	// 	} else articles = [];
-	// });
-
 	function getArticles() {
 		articlesStore.update((current) => {
 			const currentFeed = current[latestSelectedFeed.id];
@@ -143,7 +124,7 @@
 					<ul>
 						{#each articles as article (article.id)}
 							<li data-article-id={article.id} style="background-color: {article.feedColor};">
-								<h4>{article.title}</h4>
+								<h4 class="article-title">{article.title}</h4>
 								<time class="article-date" datetime={article.date}>{formatDate(article.date)}</time>
 								<div><a href={article.url} target="_blank">{article.url}</a></div>
 								<!-- Render the article text as HTML -->
