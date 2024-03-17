@@ -1,6 +1,6 @@
 import { get } from 'svelte/store';
 import { articleIdsStore, articlesStore, selectedArticleIds, selectedFeedIds, selectedFeedsStore } from './stores/stores';
-import type { ArticleType } from './types';
+import type { ArticleType, CompressedBatchesStoreType } from './types';
 
 let eventSource: EventSource | null = null;
 
@@ -22,8 +22,7 @@ async function initDecompressionWorker(): Promise<Worker> {
             const DecompressionWorkerModules = await import('$lib/workers/decompressionWorker?worker');
             decompressionWorker = new DecompressionWorkerModules.default();
             decompressionWorker.onmessage = (event) => {
-                const articlesBatch: ArticleType[] = event.data;
-                updateArticlesState(articlesBatch);
+                updateArticlesState(event.data);
                 // resetWorkerIdleTimeout();
             };
             decompressionWorker.onerror = (error) =>
@@ -35,13 +34,29 @@ async function initDecompressionWorker(): Promise<Worker> {
         return worker;
     }
 }
-function updateArticlesState(articlesBatch: ArticleType[]) {
+function updateArticlesState(
+    data: { decompressedData: ArticleType[], compressedBatches: Record<string, string> }) {
+    const {
+        decompressedData: articlesBatch,
+        compressedBatches: compressedMiniBatches
+    } = data;
 
-    articlesStore.update(currentArticles => {
-        for (const article of articlesBatch)
-            (currentArticles[article.feedId] ||= []).push(article);
+
+
+    articlesStore.update((currentArticles: CompressedBatchesStoreType) => {
+        Object.entries(compressedMiniBatches).forEach(([feedId, compressedBatch]) => {
+            (currentArticles[feedId] ||= []).push(compressedBatch);
+        });
         return currentArticles;
     });
+
+
+    // articlesStore.update(currentArticles => {
+    //     for (const article of articlesBatch)
+    //         (currentArticles[article.feedId] ||= []).push(article);
+    //     return currentArticles;
+    // });
+
     articleIdsStore.update(currentArticleIds => {
         for (const article of articlesBatch)
             (currentArticleIds[article.feedId] ||= new Set<string>()).add(article.id);
@@ -54,7 +69,7 @@ function updateArticlesState(articlesBatch: ArticleType[]) {
         for (const feedId of feedIds)
             if (articleIds[feedId].size > 0)
                 for (const articleId of articleIds[feedId])
-                  newSet.add(articleId);
+                    newSet.add(articleId);
         for (const article of articlesBatch)
             if (newSet.has(article.id))
                 currentIds.add(article.id);

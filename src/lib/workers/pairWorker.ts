@@ -31,7 +31,7 @@ function* calculatePairsGenerator(task: EmbeddingsState) {
             const similarity = (dotProduct / (Math.sqrt(normA) * Math.sqrt(normB)) + 1) / 2;
 
             yield {
-                [`${newKey}_${currentKey}`]: {
+                [`${newKey}+${currentKey}`]: {
                     id1: newKey,
                     id2: currentKey,
                     similarity

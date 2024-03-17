@@ -1,15 +1,8 @@
 import axios, { type AxiosResponse } from 'axios';
-import { v4 as uuidv4 } from 'uuid';
-// import {
-//     extractFromHtml ,
-//     // addTransformations
-// } from '@extractus/article-extractor';
-// import { load, type CheerioAPI } from 'cheerio';
-// import sanitizeHtml from 'sanitize-html';
+import { nanoid } from 'nanoid';
 import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
 
-// import sanitizeHtml from 'sanitize-html';
 import { EventEmitter } from 'events';
 import { compress } from './compression';
 import { hasSubscriber, removeSubscriber } from './updates/subscribers';
@@ -38,7 +31,7 @@ class Article implements ArticleType {
     url: string;
 
     constructor() {
-        this.id = uuidv4();
+        this.id =  nanoid();
         this.feedId = '';
         this.feedColor = '';
         this.title = '';
@@ -80,19 +73,6 @@ class Articles {
         }
     }
 
-    // private preprocessHtml(html: string): string {
-    //     const cleanHtml = sanitizeHtml(html, {
-    //         allowedTags: sanitizeHtml.defaults.allowedTags.filter(tag => tag !== 'style' && tag !== 'link'),
-    //         allowedAttributes: {
-    //             ...sanitizeHtml.defaults.allowedAttributes,
-    //             // Define other attributes you want to allow here
-    //         },
-    //         exclusiveFilter: (frame) => {
-    //             return frame.tag === 'div' && frame.attribs.class === 'ad-container';
-    //         }
-    //     });
-    //     return cleanHtml;
-    // }
 
     private preprocessHtml(html: string): string {
         // Remove style tags and their content

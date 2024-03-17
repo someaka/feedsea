@@ -309,11 +309,8 @@
 	}
 
 	.feed-item.selected {
-		/* background-color: #102402d3 !important; */
 		transform: translateX(-2px); /* Retract the button 2px to the left */
 		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-
-		/* border: 1px solid #d0d0d0; */
 		transition:
 			transform 0.2s ease,
 			box-shadow 0.2s ease; /* Smooth transition for the transform and shadow */

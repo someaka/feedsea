@@ -3,4 +3,3 @@ optimal number of edges ?
     performance
     modularity
     number of clusters
-    

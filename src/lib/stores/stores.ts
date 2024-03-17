@@ -1,13 +1,14 @@
-import { writable } from 'svelte/store';
+import { writable, type Writable } from 'svelte/store';
 
 import type {
    SelectedFeedsState,
    EmbeddingsState,
    PairsState,
    FeedWithUnreadStories,
-   ArticleType as Article,
+   // ArticleType as Article,
    NodeUpdate,
-   LinkUpdate
+   LinkUpdate,
+   CompressedBatchesStoreType
 } from '$lib/types';
 
 const feedCache: Record<string, FeedWithUnreadStories> = {};
@@ -20,8 +21,12 @@ const selectedFeedIds = writable(new Set<string>());
 
 
 
-const articleCache: Record<string, Article[]> = {};
-const articlesStore = writable(articleCache);
+// const articleCache: Record<string, Article[]> = {};
+// const articlesStore = writable(articleCache);
+
+
+const articlesStore: Writable<CompressedBatchesStoreType> = writable({});
+
 
 
 const articleIdsStore = writable<Record<string, Set<string>>>({});

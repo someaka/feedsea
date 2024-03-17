@@ -90,7 +90,7 @@ function* nodesToLinksGenerator(
 
         //const filteredPairsStore = filterLinksByPercentile(pairsStore);
         for (const [pairKey, pair] of Object.entries(pairsStore)) {
-            const [sourceId, targetId] = pairKey.split('_');
+            const [sourceId, targetId] = pairKey.split('+');
             const sourceColor = nodeColorMap.get(sourceId);
             const targetColor = nodeColorMap.get(targetId);
 

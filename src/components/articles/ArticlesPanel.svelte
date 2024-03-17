@@ -1,10 +1,16 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { articlesStore } from '../../lib/stores/stores';
-	import { theme } from '../../lib/stores/night';
+	import { onMount, onDestroy, tick } from 'svelte';
+	import { theme } from '$lib/stores/night';
 	import { isLoadingArticles } from '$lib/stores/loadingState';
+	import { compress, decompress } from '$lib/compression';
+	import { articleIdsStore, articlesStore } from '$lib/stores/stores';
 
-	import type { FeedWithUnreadStories, ArticleType as Article } from '$lib/types';
+	import type {
+		FeedWithUnreadStories,
+		ArticleType as Article,
+		ArticleType,
+		CompressedBatchesStoreType
+	} from '$lib/types';
 
 	import DayNightModeButton from '../daynight/DayNightModeButton.svelte';
 	import ForcesButton from '../forces/ForcesButton.svelte';
@@ -26,11 +32,39 @@
 		isVisible = true;
 	}
 
-	// Reactive subscription to articlesStore
-	$: $articlesStore[latestSelectedFeed?.id]
-		? (articles = $articlesStore[latestSelectedFeed.id])
-		: (articles = []);
-	$: if (articles.length > 0) isLoadingArticles.set(false); // Stop loading when the first article appears
+	// articlesStore.subscribe(  (current) => {
+	// 	if (latestSelectedFeed?.id) {
+	// 		// articlesStore.update((current) => {
+	// 			// const currentFeed = current[latestSelectedFeed.id];
+	// 			if (current[latestSelectedFeed.id].length > 0) {
+	// 				// const compressedBatches = current[latestSelectedFeed.id].splice(0, currentFeed.length);
+	// 				let decompressedArticles: ArticleType[] = [];
+	// 				for (const batch of current[latestSelectedFeed.id])
+	// 					decompressedArticles = decompressedArticles.concat(decompress(batch));
+
+	// 				articles = decompressedArticles;
+	// 				// const recompressedBatch = compress(decompressedArticles);
+	// 				// (current[latestSelectedFeed.id] ||= []).unshift(recompressedBatch);
+	// 			}
+	// 			// return current;
+	// 		// });
+	// 	} else articles = [];
+	// });
+
+	function getArticles() {
+		articlesStore.update((current) => {
+			const currentFeed = current[latestSelectedFeed.id];
+			const compressedBatches = currentFeed.splice(0, currentFeed.length);
+			articles = [];
+			for (const batch of compressedBatches) articles = articles.concat(decompress(batch));
+			(current[latestSelectedFeed.id] ||= []).unshift(compress(articles))
+			return current;
+		});
+	}
+
+	$: $articleIdsStore[latestSelectedFeed?.id] ? getArticles() : articles = [];
+
+	$: if (articles.length > 0) isLoadingArticles.set(false);
 
 	function initDrag(e: MouseEvent) {
 		startX = e.clientX;
@@ -111,7 +145,7 @@
 							<li data-article-id={article.id} style="background-color: {article.feedColor};">
 								<h4>{article.title}</h4>
 								<time class="article-date" datetime={article.date}>{formatDate(article.date)}</time>
-								<a href={article.url} target="_blank">{article.url}</a>
+								<div><a href={article.url} target="_blank">{article.url}</a></div>
 								<!-- Render the article text as HTML -->
 								<div class="article-text">
 									{@html article.text}
@@ -248,9 +282,9 @@
 	}
 
 	.article-date {
+		display: block;
 		font-weight: bold; /* Make the date bold */
-		font-size: 1rem; /* Adjust the font size as needed */
-		color: #333; /* Change the color to suit your design */
-		margin-bottom: 0.5rem; /* Add some bottom margin for spacing */
+		color: #234; /* Change the color to suit your design */
+		margin-bottom: 0.1rem; /* Add some bottom margin for spacing */
 	}
 </style>

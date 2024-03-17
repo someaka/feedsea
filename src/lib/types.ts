@@ -101,6 +101,7 @@ interface FeedsWithUnreadStories {
     [key: string]: FeedWithUnreadStories;
 }
 
+type CompressedBatchesStoreType = Record<string, string[]>;
 
 
 interface ArticleType {
@@ -199,6 +200,7 @@ export type {
     Feeds,
     FeedsWithColor,
     FeedsWithUnreadStories,
+    CompressedBatchesStoreType,
     ArticleType,
     FeedChange,
     SelectedFeedsState,
