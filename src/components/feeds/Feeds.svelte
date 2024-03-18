@@ -27,7 +27,6 @@
 	import '$lib/updates/updates';
 	import axios from 'axios';
 	import { clearGraph } from '../graph/SigmaGraphUpdate';
-	import enqueueGraphOperation from '$lib/updates/updates';
 
 	let feeds: FeedWithUnreadStories[] = [];
 	// let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds

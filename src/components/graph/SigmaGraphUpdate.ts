@@ -14,10 +14,11 @@ import ForceAtlasSupervisor from 'graphology-layout-forceatlas2/worker';
 
 import { EdgeClampedProgram } from 'sigma/rendering';
 
-import type { Attributes, SerializedGraph } from 'graphology-types';
+import type { Attributes } from 'graphology-types';
 import type { ForceLayoutSettings } from 'graphology-layout-force';
 import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
 import type { GraphData, Link, Node } from '$lib/types';
+import { getSelectedLinks } from '$lib/updates/updates';
 
 
 let graphContainer: HTMLElement;
@@ -39,7 +40,7 @@ function initializeSigmaGraph(container: HTMLElement) {
     graphInstance = new Graph();
     sigmaInstance = new Sigma(graphInstance, graphContainer, {
         // hideEdgesOnMove: true,
-        // allowInvalidContainer: true, //shusshes cypress
+        // allowInvalidContainer: true, 
         labelDensity: 1,
         labelGridCellSize: 150,
         edgeProgramClasses: {
@@ -141,9 +142,7 @@ function addNewLinks(links: Link[]) {
             link.target,
             {
                 weight: link.weight,
-                color: DayOrNight ? link.day_color : link.night_color,
-                day_color: link.day_color,
-                night_color: link.night_color
+                color: DayOrNight ? link.day_color : link.night_color
             }
         );
     graphInstance.import(tempGraph, true);
@@ -154,11 +153,12 @@ function redrawLinks(links: Link[]) {
     addNewLinks(links);
 }
 
-function removeNodesById(nodes: Set<string>) {
+function removeNodesById(nodes: Set<string>, links: Link[] = []) {
     layoutInstance.kill();
-    const tempGraph: Graph = graphInstance.copy();
+    const tempGraph: Graph = graphInstance.emptyCopy();
     nodes.forEach(node => tempGraph.dropNode(node));
     graphInstance = tempGraph;
+    addNewLinks(links);
     sigmaInstance.setGraph(graphInstance);
     layoutInstance = setLayout();
     startLayout();
@@ -210,29 +210,13 @@ function updateDayNightMode() {
     if (!DayOrNight) {
         sigmaInstance.setSetting("labelColor", { color: '#000000' });
         sigmaInstance.setSetting("defaultDrawNodeHover", lightDrawDiscNodeHover);
-        graphInstance.forEachEdge((edge) => {
-            graphInstance.updateEdgeAttributes(edge, attr => {
-                attr.color = attr.day_color;
-                return attr;
-            });
-        });
         DayOrNight = true;
     } else if (DayOrNight) {
         sigmaInstance.setSetting("labelColor", { color: '#FFFFFF' });
         sigmaInstance.setSetting("defaultDrawNodeHover", darkDrawDiscNodeHover);
-        graphInstance.forEachEdge((edge) => {
-            graphInstance.updateEdgeAttributes(edge, attr => {
-                attr.color = attr.night_color;
-                return attr;
-            });
-        });
         DayOrNight = false;
     }
-}
-
-function updateGraphFromSerializedData(serializedData: SerializedGraph) {
-    if (!graphInstance || !sigmaInstance) return;
-    graphInstance.import(serializedData, true);
+    redrawLinks(getSelectedLinks());
 }
 
 function updateForceSettings(newSettings: ForceLayoutSettings | ForceAtlas2Settings) {
@@ -278,7 +262,6 @@ export {
     addNewLinks,
     removeNodesById,
     switchLayout,
-    updateGraphFromSerializedData,
     addAll,
     redrawLinks
 };
