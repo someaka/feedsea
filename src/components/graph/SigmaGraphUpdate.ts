@@ -1,267 +1,127 @@
-// import { graphLogger as logger } from '../../logger';
-import { get } from 'svelte/store';
-
+import ForceGraph3D from '3d-force-graph';
+import type { ForceGraph3DInstance } from '3d-force-graph';
+import type { GraphData, Node, Link } from '$lib/types';
+// import type { Renderer } from 'three';
+import {
+    CSS2DRenderer,
+    // CSS2DObject 
+} from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { Vector2, type Renderer } from 'three';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { focusedArticleId } from '$lib/stores/stores';
-import { isNightMode } from '$lib/stores/night';
-import { isForceAtlas } from '$lib/stores/forces';
-import { lightDrawDiscNodeHover, darkDrawDiscNodeHover } from './customHover';
-import { defaultForceAtlasSettings, defaultForceAtlas2Settings } from '../forces/defaultGraphSettings';
 
-import Graph from "graphology";
-import Sigma from "sigma";
-import ForceSupervisor from "graphology-layout-force/worker";
-import ForceAtlasSupervisor from 'graphology-layout-forceatlas2/worker';
+type Settings = { [key: string]: number };
 
-import { EdgeClampedProgram } from 'sigma/rendering';
-
-import type { Attributes } from 'graphology-types';
-import type { ForceLayoutSettings } from 'graphology-layout-force';
-import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
-import type { GraphData, Link, Node } from '$lib/types';
-import { getSelectedLinks } from '$lib/updates/updates';
-
-
-let graphContainer: HTMLElement;
-let sigmaInstance: Sigma;
-let graphInstance: Graph;
-let layoutInstance: ForceSupervisor | ForceAtlasSupervisor;
-let layoutType: string = 'forceAtlas';
-let layoutSettings: ForceLayoutSettings | ForceAtlas2Settings;
-let draggedNode: string | null = null;
-let isDragging: boolean = false;
-let settings: Attributes;
-let DayOrNight: boolean;
-
-
-
-function initializeSigmaGraph(container: HTMLElement) {
-    graphContainer = container;
-
-    graphInstance = new Graph();
-    sigmaInstance = new Sigma(graphInstance, graphContainer, {
-        // hideEdgesOnMove: true,
-        // allowInvalidContainer: true, 
-        labelDensity: 1,
-        labelGridCellSize: 150,
-        edgeProgramClasses: {
-            default: EdgeClampedProgram
-        }
-    });
-
-    DayOrNight = get(isNightMode);
-    updateDayNightMode();
-
-    layoutType = getLayoutType();
-    layoutSettings = getSettings();
-    settings = {
-        isNodeFixed: (_: unknown, attr: Attributes) => attr.highlighted,
-        settings: layoutSettings
-    };
-    layoutInstance = setLayout();
-
-    initializeInteractions();
-    startLayout();
+const defaultForce3DSettings: Settings = {
+    attraction: 1,
+    repulsion: 1,
+    gravity: 1
 }
 
-function initializeInteractions() {
-    if (!sigmaInstance) return;
+let layoutSettings: { [key: string]: number } = getSettings();
 
-    sigmaInstance.on("downNode", (e) => {
-        isDragging = true;
-        draggedNode = e.node;
-        graphInstance.setNodeAttribute(draggedNode, "highlighted", true);
-        focusedArticleId.set(e.node);
-    });
+let graphInstance: ForceGraph3DInstance;
+const graphData: GraphData = { nodes: [], links: [] };
 
-    sigmaInstance.getMouseCaptor().on("mousemovebody", (e) => {
-        if (!isDragging || !draggedNode || !sigmaInstance) return;
-        const pos = sigmaInstance.viewportToGraph(e);
+function initializeGraph(container: HTMLElement) {
+    graphInstance = ForceGraph3D({
+        extraRenderers: [new CSS2DRenderer() as unknown as Renderer]
+    })(container)
+        .backgroundColor('#000000')
+        .nodeColor('color')
+        .nodeLabel('title')
+        // .nodeThreeObject(node => {
+        //     const nodeEl = document.createElement('div');
+        //     // console.log('node ' + (Object.getOwnPropertyNames(node)));
+        //     nodeEl.textContent = node.title as string;
+        //     nodeEl.style.color = 'white';
+        //     nodeEl.className = 'node-label';
+        //     return new CSS2DObject(nodeEl);
+        // })
+        .nodeThreeObjectExtend(true)
+        .linkCurveRotation('rotation')
+        .linkCurvature(parseFloat('weight'))
+        .linkOpacity(parseFloat('weight'))
+        .linkColor('color')
+        .width(1920)
+        .height(1080)
+        .onNodeClick(node => focusedArticleId.set((node as { id: string }).id))
+        .graphData(graphData)
 
-        graphInstance.setNodeAttribute(draggedNode, "x", pos.x);
-        graphInstance.setNodeAttribute(draggedNode, "y", pos.y);
 
-        e.preventSigmaDefault();
-        e.original.preventDefault();
-        e.original.stopPropagation();
-    });
-
-    sigmaInstance.getMouseCaptor().on("mouseup", () => {
-        if (draggedNode) {
-            graphInstance?.removeNodeAttribute(draggedNode, "highlighted");
-        }
-        isDragging = false;
-        draggedNode = null;
-    });
-
-    sigmaInstance.getMouseCaptor().once("mousedown", () => {
-        if (!sigmaInstance.getCustomBBox()) sigmaInstance.setCustomBBox(sigmaInstance.getBBox());
-    });
+    // graphInstance.d3Force('charge')?.strength(-100);
+    const bloomPass = new UnrealBloomPass(
+        new Vector2(1920, 1080), 0.1, 10, 0
+    );
+    graphInstance.postProcessingComposer().addPass(bloomPass);
 }
 
-function getLayoutType() {
-    const loadedLayoutType = localStorage.getItem('layoutType');
-    if (loadedLayoutType) isForceAtlas.update(() => loadedLayoutType === 'forceAtlas');
-    return loadedLayoutType || 'forceAtlas';
+function addNodes(nodes: Node[]) {
+    graphData.nodes.push(...nodes);
+    graphInstance.graphData(graphData);
 }
 
-function getSettings() {
-    if (layoutType === 'forceAtlas') {
-        const settings = localStorage.getItem('layoutForceSettings');
-        return settings ? JSON.parse(settings) : defaultForceAtlasSettings;
-    } else {
-        const settings = localStorage.getItem('layoutFA2Settings');
-        return settings ? JSON.parse(settings) : defaultForceAtlas2Settings;
-    }
+function addLinks(links: Link[]) {
+    for (const link of links) graphData.links.push(link);
+    graphInstance.graphData(graphData);
 }
 
-
-const setLayout = (res: boolean = layoutType === "forceAtlas") => res
-    ? new ForceSupervisor(graphInstance, settings)
-    : new ForceAtlasSupervisor(graphInstance, settings);
-
-function addNewNodes(nodes: Node[]) {
-    const tempGraph: Graph = new Graph();
-    for (const node of nodes)
-        tempGraph.addNode(node.id, {
-            x: node.x,
-            y: node.y,
-            size: node.size,
-            color: node.color,
-            label: node.title,
-            title: node.title,
-        });
-    graphInstance.import(tempGraph);
+function removeNodesById(nodeIds: Set<string>) {
+    graphData.nodes = graphData.nodes.filter(node => !nodeIds.has(node.id));
+    graphData.links = graphData.links.filter(link => !nodeIds.has(link.source) && !nodeIds.has(link.target));
+    graphInstance.graphData(graphData);
 }
 
-function addNewLinks(links: Link[]) {
-    const tempGraph: Graph = graphInstance.emptyCopy();
-    for (const link of links)
-        tempGraph.addEdgeWithKey(
-            `${link.source}_${link.target}`,
-            link.source,
-            link.target,
-            {
-                weight: link.weight,
-                color: DayOrNight ? link.day_color : link.night_color
-            }
-        );
-    graphInstance.import(tempGraph, true);
-}
-
-function redrawLinks(links: Link[]) {
-    graphInstance.clearEdges();
-    addNewLinks(links);
-}
-
-function removeNodesById(nodes: Set<string>, links: Link[] = []) {
-    layoutInstance.kill();
-    const tempGraph: Graph = graphInstance.emptyCopy();
-    nodes.forEach(node => tempGraph.dropNode(node));
-    graphInstance = tempGraph;
-    addNewLinks(links);
-    sigmaInstance.setGraph(graphInstance);
-    layoutInstance = setLayout();
-    startLayout();
-}
-
-function addAll(graphData: GraphData) {
-    if (!graphInstance) return;
-    graphInstance.clearEdges();
-    addBoth(graphData);
-}
 
 function addBoth(graphData: GraphData) {
-    if (graphData.nodes.length > 0) addNewNodes(graphData.nodes);
-    if (graphData.links.length > 0) addNewLinks(graphData.links);
+    if (graphData.nodes.length > 0) addNodes(graphData.nodes);
+    if (graphData.links.length > 0) addLinks(graphData.links);
 }
 
 function clearGraph() {
-    graphInstance.clear();
-    graphInstance = new Graph();
-    sigmaInstance.kill();
-    layoutInstance.kill();
-    sigmaInstance = new Sigma(graphInstance, graphContainer, {
-        labelDensity: 1,
-        labelGridCellSize: 150,
-        edgeProgramClasses: { default: EdgeClampedProgram }
-    });
-    initializeInteractions();
-    if (DayOrNight) {
-        sigmaInstance.setSetting("labelColor", { color: '#000000' });
-        sigmaInstance.setSetting("defaultDrawNodeHover", lightDrawDiscNodeHover);
-    } else {
-        sigmaInstance.setSetting("labelColor", { color: '#FFFFFF' });
-        sigmaInstance.setSetting("defaultDrawNodeHover", darkDrawDiscNodeHover);
+    graphData.nodes = [];
+    graphData.links = [];
+    graphInstance.graphData(graphData);
+}
+
+function redrawLinks(links: Link[]) {
+    if (links.length > 0) {
+        const copiedLinks = structuredClone(links);
+        graphData.links = [];
+        addLinks(copiedLinks);
     }
-    layoutInstance = setLayout();
-    startLayout();
 }
 
-function startLayout() {
-    layoutInstance.start();
-}
 
-function stopLayout() {
-    if (layoutInstance?.isRunning()) layoutInstance.stop();
-}
-
-function updateDayNightMode() {
-    if (!sigmaInstance || !graphInstance) return;
-    if (!DayOrNight) {
-        sigmaInstance.setSetting("labelColor", { color: '#000000' });
-        sigmaInstance.setSetting("defaultDrawNodeHover", lightDrawDiscNodeHover);
-        DayOrNight = true;
-    } else if (DayOrNight) {
-        sigmaInstance.setSetting("labelColor", { color: '#FFFFFF' });
-        sigmaInstance.setSetting("defaultDrawNodeHover", darkDrawDiscNodeHover);
-        DayOrNight = false;
-    }
-    redrawLinks(getSelectedLinks());
-}
-
-function updateForceSettings(newSettings: ForceLayoutSettings | ForceAtlas2Settings) {
-    if (!layoutSettings || !settings) return;
+function updateForceSettings(newSettings: Settings) {
     layoutSettings = { ...layoutSettings, ...newSettings };
-    settings.settings = layoutSettings;
     saveCurrentSettings();
-    stopLayout();
-    layoutInstance.kill();
-    layoutInstance = setLayout();
-    startLayout();
+    graphInstance.d3Force('link')?.distance(layoutSettings.repulsion);
+    graphInstance.numDimensions(3);
 }
+
+function getSettings() {
+    const settings = localStorage.getItem('layoutForce3DSettings');
+    return settings ? JSON.parse(settings) : defaultForce3DSettings;
+}
+
 
 function saveCurrentSettings() {
-    if (layoutType === 'forceAtlas')
-        localStorage.setItem('layoutForceSettings', JSON.stringify(layoutSettings));
-    else
-        localStorage.setItem('layoutFA2Settings', JSON.stringify(layoutSettings));
+    localStorage.setItem('layoutForce3DSettings', JSON.stringify(layoutSettings));
 }
 
-function switchLayout() {
-    saveCurrentSettings();
-    const res = layoutType === 'forceAtlas';
-    layoutType = res ? 'forceAtlas2' : 'forceAtlas';
-    localStorage.setItem('layoutType', layoutType);
-    layoutSettings = getSettings();
-    settings.settings = layoutSettings;
-    stopLayout();
-    layoutInstance.kill();
-    layoutInstance = setLayout();
-    startLayout();
-    isForceAtlas.update(() => !res);
-    return res;
-}
+function dummy() { }
 
 export {
-    initializeSigmaGraph,
-    clearGraph,
-    updateDayNightMode,
-    updateForceSettings,
+    addBoth as addAll,
     addBoth,
-    addNewNodes,
-    addNewLinks,
+    redrawLinks,
+    clearGraph,
+    initializeGraph as initializeSigmaGraph,
+    addNodes as addNewNodes,
+    addLinks as addNewLinks,
     removeNodesById,
-    switchLayout,
-    addAll,
-    redrawLinks
+    dummy as switchLayout,
+    dummy as updateDayNightMode,
+    updateForceSettings
 };

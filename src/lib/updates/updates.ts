@@ -99,7 +99,9 @@ selectedFeedsStore.subscribe(($selectedFeedsStore: SelectedFeedsState) => {
             });
             break;
         case 'remove':
-            removeNodesById(articleIdsForFeed, selectedLinks);
+            removeNodesById(articleIdsForFeed
+                //, selectedLinks
+            );
             break;
         case 'all':
             addAll({
