@@ -41,7 +41,7 @@ function getThresholdFromLinks(links: Link[], percentile: number): number {
     return selectedWeights.length > 1 ? quickSelect(selectedWeights, thresholdIndex + 1) : threshold;
 }
 
-function processLinks(percentile: number, links: Link[], selectedArticleIdsSet: Set<string>): Link[] {
+function filterLinks(percentile: number, links: Link[], selectedArticleIdsSet: Set<string>): Link[] {
     const selectedLinks = links.filter(link =>
         selectedArticleIdsSet.has(link.source) && selectedArticleIdsSet.has(link.target));
     threshold = getThresholdFromLinks(selectedLinks, percentile);
@@ -49,11 +49,13 @@ function processLinks(percentile: number, links: Link[], selectedArticleIdsSet: 
 }
 
 linksPercentile.subscribe(percentile => {
-    const selectedArticleIdsSet = new Set(get(selectedArticleIds));
-    if (selectedArticleIdsSet.size === 0) return;
-    const links = get(linksStore).links;
-    const filteredLinks = processLinks(percentile, links, selectedArticleIdsSet);
-    redrawLinks(filteredLinks);
+    const selectedArticleIdsSet = get(selectedArticleIds);
+    if (selectedArticleIdsSet.size > 0)
+        redrawLinks(filterLinks(
+            percentile,
+            get(linksStore).links,
+            selectedArticleIdsSet
+        ));
 });
 
 embeddingsStore.subscribe(($embeddingsStore: EmbeddingsState) => calculateAllPairs($embeddingsStore));
@@ -64,15 +66,16 @@ pairsStore.subscribe(($pairsStore: PairsState) => {
 });
 
 nodesStore.subscribe(($nodesStore: NodeUpdate) => {
-    const selectedArticleIdsSet = new Set(get(selectedArticleIds));
-    if(selectedArticleIdsSet.size > 0) addNewNodes($nodesStore.newNodes.filter(node => selectedArticleIdsSet.has(node.id)));
+    const selectedArticleIdsSet = get(selectedArticleIds);
+    if (selectedArticleIdsSet.size > 0)
+        addNewNodes($nodesStore.newNodes.filter(node => selectedArticleIdsSet.has(node.id)));
 });
 
 linksStore.subscribe(($linksStore: LinkUpdate) => {
     const percentile = get(linksPercentile);
     if (percentile === 1) return;
-    const selectedArticleIdsSet = new Set(get(selectedArticleIds));
-    const newLinks = processLinks(percentile, $linksStore.newLinks, selectedArticleIdsSet);
+    const selectedArticleIdsSet = get(selectedArticleIds);
+    const newLinks = filterLinks(percentile, $linksStore.newLinks, selectedArticleIdsSet);
     if (newLinks.length > 0) addNewLinks(newLinks);
 });
 
@@ -80,7 +83,8 @@ selectedFeedsStore.subscribe(($selectedFeedsStore: SelectedFeedsState) => {
     if (!$selectedFeedsStore.change) return;
     if ($selectedFeedsStore.change.type === 'new') {
         queueNewArticles($selectedFeedsStore.change.articles as Article[]);
-        queueArticlesToNodes(($selectedFeedsStore.change.articles as Article[]).map(({ id, feedColor, title, date }) => ({ id, feedColor, title, date })));
+        queueArticlesToNodes(($selectedFeedsStore.change.articles as Article[])
+            .map(({ id, feedColor, title, date }) => ({ id, feedColor, title, date })));
         return;
     }
 
@@ -99,15 +103,16 @@ selectedFeedsStore.subscribe(($selectedFeedsStore: SelectedFeedsState) => {
             break;
         case 'all':
             addAll({
-                nodes: nodes.filter(node => $selectedFeedsStore.change?.articles && ($selectedFeedsStore.change.articles as Set<string>).has(node.id)),
-                links: selectedLinks.filter(link => link.weight > threshold) // Ensure threshold is calculated or fetched beforehand
+                nodes: nodes.filter(node => $selectedFeedsStore.change?.articles
+                    && ($selectedFeedsStore.change.articles as Set<string>).has(node.id)),
+                links: selectedLinks
             });
             break;
     }
 });
 
 export function getSelectedLinks(): Link[] {
-    const selectedArticleIdsSet = new Set(get(selectedArticleIds));
+    const selectedArticleIdsSet = get(selectedArticleIds);
     const links = get(linksStore).links;
-    return processLinks(get(linksPercentile), links, selectedArticleIdsSet);
+    return filterLinks(get(linksPercentile), links, selectedArticleIdsSet);
 }
