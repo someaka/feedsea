@@ -9,8 +9,12 @@ export async function POST({ request }) {
   if (!clientId || !hasSubscriber(clientId))
     return new Response(null, { status: 401 });
 
-  const articleEvents = getArticleEvents(clientId);
-  stopAllRequests(clientId);
-  articleEvents.emit('jobComplete');
+  try {
+    const articleEvents = getArticleEvents(clientId);
+    stopAllRequests(clientId);
+    articleEvents.emit('jobComplete');
+  } catch (error) {
+    console.error(error);
+  }
   return new Response(null, { status: 200 });
 }
