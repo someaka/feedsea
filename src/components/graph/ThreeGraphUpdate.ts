@@ -1,13 +1,14 @@
 import ForceGraph3D from '3d-force-graph';
 import type { ForceGraph3DInstance } from '3d-force-graph';
 import type { GraphData, Node, Link } from '$lib/types';
-// import type { Renderer } from 'three';
+import type { Renderer } from 'three';
 import {
-    CSS2DRenderer,
-    // CSS2DObject 
-} from 'three/examples/jsm/renderers/CSS2DRenderer.js';
-import { Vector2, type Renderer } from 'three';
+    CSS3DRenderer,
+    // CSS3DSprite
+} from 'three/examples/jsm/renderers/CSS3DRenderer.js';
+import { Vector2 } from 'three';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+// import SpriteText from "three-spritetext";
 import { focusedArticleId } from '$lib/stores/stores';
 
 type Settings = { [key: string]: number };
@@ -23,21 +24,55 @@ let layoutSettings: { [key: string]: number } = getSettings();
 let graphInstance: ForceGraph3DInstance;
 const graphData: GraphData = { nodes: [], links: [] };
 
+const renderer = new CSS3DRenderer();
+renderer.setSize(100, 150);
+
 function initializeGraph(container: HTMLElement) {
     graphInstance = ForceGraph3D({
-        extraRenderers: [new CSS2DRenderer() as unknown as Renderer]
+        extraRenderers: [renderer as unknown as Renderer]
     })(container)
         .backgroundColor('#000000')
         .nodeColor('color')
         .nodeLabel('title')
+
         // .nodeThreeObject(node => {
         //     const nodeEl = document.createElement('div');
-        //     // console.log('node ' + (Object.getOwnPropertyNames(node)));
-        //     nodeEl.textContent = node.title as string;
+        //     // Assuming the article's text is in the node's text property
+        //     let nodeText = (node as { text: string }).text as string;
+        //     // Modify links to open in a new tab
+        //     nodeText = nodeText.replace(/<a href="([^"]+)"/g, '<a href="$1" target="_blank"');
+        //     nodeEl.innerHTML = nodeText;
         //     nodeEl.style.color = 'white';
         //     nodeEl.className = 'node-label';
-        //     return new CSS2DObject(nodeEl);
+
+        //     // Style adjustments
+        //     nodeEl.style.pointerEvents = 'auto'; // Make the div not capture click events
+        //     nodeEl.style.background = 'rgba(0, 0, 0, 0.7)'; // Optional: Add background to enhance readability
+        //     nodeEl.style.padding = '10px'; // Optional: Add some padding
+        //     nodeEl.style.borderRadius = '5px'; // Optional: Round corners
+        //     nodeEl.style.color = '#fff'; // Optional: Text color
+        //     // Ensure the text wraps and is fully visible
+        //     nodeEl.style.whiteSpace = 'normal';
+        //     nodeEl.style.textAlign = 'left'; // Align text for readability
+        //     nodeEl.style.fontSize = '14px'; // Adjust font size as needed
+
+        //     const st = new SpriteText((node as { title: string }).title);
+        //     st.material.depthWrite = false; // make sprite background transparent
+        //     st.color = (node as { color: string }).color;
+        //     st.textHeight = 8;
+
+        //     const sprite = new CSS3DSprite(nodeEl);
+        //     return sprite.add(st);
         // })
+
+        // .nodeThreeObject(node => {
+        //     const sprite = new SpriteText((node as { title: string }).title);
+        //     sprite.material.depthWrite = false; // make sprite background transparent
+        //     sprite.color = (node as { color: string }).color;
+        //     sprite.textHeight = 8;
+        //     return sprite;
+        // })
+
         .nodeThreeObjectExtend(true)
         .linkCurveRotation('rotation')
         .linkCurvature(parseFloat('weight'))
@@ -45,7 +80,25 @@ function initializeGraph(container: HTMLElement) {
         .linkColor('color')
         .width(1920)
         .height(1080)
-        .onNodeClick(node => focusedArticleId.set((node as { id: string }).id))
+        .onNodeClick(clickedNode =>
+            focusedArticleId.set((clickedNode as { id: string }).id)
+
+            //     {
+            //     const node = clickedNode as { x: number; y: number; z: number };
+            //     const distance = 40;
+            //     const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+
+            //     const newPos = (node).x || node.y || node.z
+            //         ? { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }
+            //         : { x: 0, y: 0, z: distance }; // special case if node is in (0,0,0)
+
+            //     graphInstance.cameraPosition(
+            //         newPos, // new position
+            //         node,
+            //         100  // ms transition duration
+            //     );
+            // }
+        )
         .graphData(graphData)
 
 
@@ -97,6 +150,8 @@ function updateForceSettings(newSettings: Settings) {
     layoutSettings = { ...layoutSettings, ...newSettings };
     saveCurrentSettings();
     graphInstance.d3Force('link')?.distance(layoutSettings.repulsion * 1000);
+    graphInstance.d3Force('charge')?.strength(layoutSettings.attraction * 1000);
+    graphInstance.d3Force('center')?.strength(layoutSettings.gravity * 1000);
     graphInstance.numDimensions(3);
 }
 
@@ -117,9 +172,9 @@ export {
     addBoth,
     redrawLinks,
     clearGraph,
-    initializeGraph as initializeSigmaGraph,
-    addNodes as addNewNodes,
-    addLinks as addNewLinks,
+    initializeGraph,
+    addNodes,
+    addLinks,
     removeNodesById,
     dummy as switchLayout,
     dummy as updateDayNightMode,

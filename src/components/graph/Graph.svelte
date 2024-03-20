@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { theme } from '$lib/stores/night';
-	import { initializeSigmaGraph, updateDayNightMode } from './SigmaGraphUpdate';
+	import { initializeGraph, updateDayNightMode } from './ThreeGraphUpdate';
 
 	let graphContainer: HTMLElement;
 	onMount(() => {
-		initializeSigmaGraph(graphContainer);
+		initializeGraph(graphContainer);
 	});
 
 	const unsubscribeDayNight = theme.subscribe((value) => {

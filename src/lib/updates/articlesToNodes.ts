@@ -1,5 +1,5 @@
 import { nodesStore } from '../stores/stores';
-import type { Node } from '$lib/types';
+import type { ArticleType, Node } from '$lib/types';
 
 const TIMEOUT_INTERVAL = 60 * 1000;
 let idleTimeout: ReturnType<typeof setTimeout>;
@@ -50,9 +50,7 @@ function terminateNodesWorker() {
     }
 }
 
-async function queueArticlesToNodes(
-    articles: { id: string, feedColor: string, title: string, date: string }[]
-) {
+async function queueArticlesToNodes(articles: ArticleType[]) {
     nodesWorker = await initNodesWorker();
     // clearTimeout(idleTimeout);
     nodesWorker.postMessage(articles);

@@ -26,7 +26,7 @@
 
 	import '$lib/updates/updates';
 	import axios from 'axios';
-	import { clearGraph } from '../graph/SigmaGraphUpdate';
+	import { clearGraph } from '../graph/ThreeGraphUpdate';
 
 	let feeds: FeedWithUnreadStories[] = [];
 	// let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds

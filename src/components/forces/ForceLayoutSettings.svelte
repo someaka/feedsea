@@ -4,7 +4,7 @@
 	import Slider from './slider';
 	import { forcePanelSettings } from './forceSettingsStore';
 	import { defaultForceAtlasSettings } from './defaultGraphSettings';
-	import { updateForceSettings } from '../graph/SigmaGraphUpdate';
+	import { updateForceSettings } from '../graph/ThreeGraphUpdate';
 	import type { ForceLayoutSettings } from 'graphology-layout-force';
 
 	const loadedSettings = localStorage.getItem('layoutForceSettings');

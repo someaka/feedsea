@@ -3,7 +3,7 @@
 
 	import { fly } from 'svelte/transition';
 	import { isForceAtlas } from '$lib/stores/forces';
-	import { switchLayout } from '../graph/SigmaGraphUpdate';
+	import { switchLayout } from '../graph/ThreeGraphUpdate';
 	import ForceLayoutSettings from './ForceLayoutSettings.svelte';
 	import ForceAtlas2Settings from './ForceAtlas2Settings.svelte';
 	import Slider from './slider';

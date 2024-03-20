@@ -8,7 +8,7 @@
 	import { defaultForceAtlas2Settings } from './defaultGraphSettings';
 
 	import type { ForceAtlas2Settings } from 'graphology-layout-forceatlas2';
-	import { updateForceSettings } from '../graph/SigmaGraphUpdate';
+	import { updateForceSettings } from '../graph/ThreeGraphUpdate';
 
 	const loadedSettings = localStorage.getItem('layoutFA2Settings');
 	const initialSettings = loadedSettings ? JSON.parse(loadedSettings) : defaultForceAtlas2Settings;

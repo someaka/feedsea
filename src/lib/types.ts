@@ -130,6 +130,7 @@ interface SelectedFeedsState {
 interface Node {
     id: string;
     title: string;
+    text: string;
     color: string;
     x: number;
     y: number;

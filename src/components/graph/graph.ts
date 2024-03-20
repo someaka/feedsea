@@ -1,11 +1,11 @@
 import { getColorFromString } from '$lib/colors';
 import chroma from 'chroma-js';
-import type { Node, Link, Pair } from '$lib/types';
+import type { Node, Link, Pair, ArticleType } from '$lib/types';
 
 const DEFAULT_BATCHISIZE = 1;
 
 function articlesToNodes(
-    articles: { id: string, feedColor: string, title: string, date: string }[]
+    articles: ArticleType[]
 ): Node[] {
     const center = { x: 0, y: 0 };
     const radius = 0.01;
@@ -25,6 +25,7 @@ function articlesToNodes(
         return {
             id: article.id,
             title: article.title,
+            text: article.text,
             color: color,
             x: center.x + Math.random() * radius * Math.cos(Math.random() * Math.PI * 2),
             y: center.y + Math.random() * radius * Math.sin(Math.random() * Math.PI * 2),

@@ -2,11 +2,11 @@ import { get } from 'svelte/store';
 import {
     addAll,
     addBoth,
-    addNewLinks,
-    addNewNodes,
+    addNodes,
+    addLinks,
     redrawLinks,
     removeNodesById,
-} from '../../components/graph/SigmaGraphUpdate';
+} from '../../components/graph/ThreeGraphUpdate';
 import {
     embeddingsStore,
     selectedFeedsStore,
@@ -68,7 +68,7 @@ pairsStore.subscribe(($pairsStore: PairsState) => {
 nodesStore.subscribe(($nodesStore: NodeUpdate) => {
     const selectedArticleIdsSet = get(selectedArticleIds);
     if (selectedArticleIdsSet.size > 0)
-        addNewNodes($nodesStore.newNodes.filter(node => selectedArticleIdsSet.has(node.id)));
+        addNodes($nodesStore.newNodes.filter(node => selectedArticleIdsSet.has(node.id)));
 });
 
 linksStore.subscribe(($linksStore: LinkUpdate) => {
@@ -76,15 +76,14 @@ linksStore.subscribe(($linksStore: LinkUpdate) => {
     if (percentile === 1) return;
     const selectedArticleIdsSet = get(selectedArticleIds);
     const newLinks = filterLinks(percentile, $linksStore.newLinks, selectedArticleIdsSet);
-    if (newLinks.length > 0) addNewLinks(newLinks);
+    if (newLinks.length > 0) addLinks(newLinks);
 });
 
 selectedFeedsStore.subscribe(($selectedFeedsStore: SelectedFeedsState) => {
     if (!$selectedFeedsStore.change) return;
     if ($selectedFeedsStore.change.type === 'new') {
         queueNewArticles($selectedFeedsStore.change.articles as Article[]);
-        queueArticlesToNodes(($selectedFeedsStore.change.articles as Article[])
-            .map(({ id, feedColor, title, date }) => ({ id, feedColor, title, date })));
+        queueArticlesToNodes($selectedFeedsStore.change.articles as Article[]);
         return;
     }
 
