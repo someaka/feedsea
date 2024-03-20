@@ -96,7 +96,7 @@ function redrawLinks(links: Link[]) {
 function updateForceSettings(newSettings: Settings) {
     layoutSettings = { ...layoutSettings, ...newSettings };
     saveCurrentSettings();
-    graphInstance.d3Force('link')?.distance(layoutSettings.repulsion);
+    graphInstance.d3Force('link')?.distance(layoutSettings.repulsion * 1000);
     graphInstance.numDimensions(3);
 }
 
