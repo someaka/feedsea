@@ -80,24 +80,22 @@ function initializeGraph(container: HTMLElement) {
         .linkColor('color')
         .width(1920)
         .height(1080)
-        .onNodeClick(clickedNode =>
+        .onNodeClick(clickedNode => {
             focusedArticleId.set((clickedNode as { id: string }).id)
+            const node = clickedNode as { x: number; y: number; z: number };
+            const distance = 500;
+            const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
 
-            //     {
-            //     const node = clickedNode as { x: number; y: number; z: number };
-            //     const distance = 40;
-            //     const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+            const newPos = (node).x || node.y || node.z
+                ? { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }
+                : { x: 0, y: 0, z: distance }; // special case if node is in (0,0,0)
 
-            //     const newPos = (node).x || node.y || node.z
-            //         ? { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }
-            //         : { x: 0, y: 0, z: distance }; // special case if node is in (0,0,0)
-
-            //     graphInstance.cameraPosition(
-            //         newPos, // new position
-            //         node,
-            //         100  // ms transition duration
-            //     );
-            // }
+            graphInstance.cameraPosition(
+                newPos, // new position
+                node,
+                200  // ms transition duration
+            );
+        }
         )
         .graphData(graphData)
 
