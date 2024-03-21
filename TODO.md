@@ -1,3 +1,7 @@
-fix link to new tab in main
+must update force settings on init
 
-remove links too in sky
+fix graph init error
+
+zoom to title
+
+fix styles

@@ -7,7 +7,7 @@ import {
     CSS3DRenderer,
     CSS3DSprite
 } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
-import { Vector2 } from 'three';
+import { Vector2, Vector3 } from 'three';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 // import { focusedArticleId } from '$lib/stores/stores';
 // import SpriteText from "three-spritetext";
@@ -38,8 +38,9 @@ function initializeGraph(container: HTMLElement) {
 
         .nodeThreeObject(node => {
             const nodeEl = document.createElement('div');
-            nodeEl.innerHTML = (node as { text: string }).text as string;
-            nodeEl.style.color = 'white';
+            const nodeTitle = (node as { title: string }).title;
+            const nodeText = (node as { text: string }).text as string;
+            nodeEl.innerHTML = `<h3>${nodeTitle}</h3>${nodeText}`;
             nodeEl.className = 'node-label';
 
             // Style adjustments
@@ -47,7 +48,7 @@ function initializeGraph(container: HTMLElement) {
             // nodeEl.style.background = 'rgba(0, 0, 0, 0.7)'; // Optional: Add background to enhance readability
             nodeEl.style.padding = '10px'; // Optional: Add some padding
             nodeEl.style.borderRadius = '5px'; // Optional: Round corners
-            nodeEl.style.color = '#fff'; // Optional: Text color
+            nodeEl.style.color = '#000'; // Optional: Text color
             // Ensure the text wraps and is fully visible
             nodeEl.style.whiteSpace = 'normal';
             nodeEl.style.textAlign = 'left'; // Align text for readability
@@ -60,10 +61,13 @@ function initializeGraph(container: HTMLElement) {
                 img.style.height = 'auto'; // Maintain aspect ratio
             });
 
+            document.body.appendChild(nodeEl); // Temporarily add to DOM to measure
+            const nodeHeight = nodeEl.offsetHeight; // Get the rendered height
+            document.body.removeChild(nodeEl); // Remove from DOM after measuring
 
             nodeEl.addEventListener('wheel', (event) => {
-                const ZOOM_INTENSITY = 0.1; // Adjust this value to control the zoom intensity
-                const MIN_DISTANCE = 50; // Minimum distance to the node
+                const ZOOM_INTENSITY = 0.15; // Adjust this value to control the zoom intensity
+                const MIN_DISTANCE = 30; // Minimum distance to the node
                 const MAX_DISTANCE = 1000; // Maximum distance to the node
                 const zoomIn = event.deltaY < 0; // Determine zoom direction
 
@@ -93,25 +97,113 @@ function initializeGraph(container: HTMLElement) {
                     z: nodePosition.z - normalizedVectorToNode.z * targetDistance
                 };
 
-                graphInstance.cameraPosition(targetPos, nodePosition, 20);
+                graphInstance.cameraPosition(targetPos, nodePosition, 0);
             }, true);
 
-            nodeEl.addEventListener('click', () => {
-                // console.log('click', event);
-                const clickedNode = node as { x: number; y: number; z: number };
-                const distance = 144;
-                const distRatio = 1 + distance / Math.hypot(clickedNode.x, clickedNode.y, clickedNode.z);
+            // nodeEl.addEventListener('click', () => {
+            //     // console.log('click', event);
+            //     const clickedNode = node as { x: number; y: number; z: number };
+            //     const distance = 144;
+            //     const distRatio = 1 + distance / Math.hypot(clickedNode.x, clickedNode.y, clickedNode.z);
 
-                const newPos = (clickedNode).x || clickedNode.y || clickedNode.z
-                    ? { x: clickedNode.x * distRatio, y: clickedNode.y * distRatio, z: clickedNode.z * distRatio }
-                    : { x: 0, y: 0, z: distance };
+            //     const newPos = (clickedNode).x || clickedNode.y || clickedNode.z
+            //         ? { x: clickedNode.x * distRatio, y: clickedNode.y * distRatio, z: clickedNode.z * distRatio }
+            //         : { x: 0, y: 0, z: distance };
 
-                graphInstance.cameraPosition(
-                    newPos,
-                    clickedNode,
-                    10
-                );
-            }, true);
+            //     graphInstance.cameraPosition(
+            //         newPos,
+            //         clickedNode,
+            //         10
+            //     );
+            // }, true);
+
+
+            let isDragging = false;
+            let dragStart: { x: number; y: number; time: number } | null = null;
+            let lastDragPosition: { x: number; y: number } | null = null;
+
+            const onMouseDown = (event: MouseEvent) => {
+                isDragging = true;
+                dragStart = { x: event.clientX, y: event.clientY, time: Date.now() };
+                lastDragPosition = { x: event.clientX, y: event.clientY };
+                console.log('MouseDown', dragStart);
+                event.preventDefault(); // Prevent text selection, etc.
+            };
+
+            const onMouseMove = (event: MouseEvent) => {
+                if (isDragging && dragStart) {
+                    const deltaX = event.clientX - (lastDragPosition?.x || event.clientX);
+                    const deltaY = event.clientY - (lastDragPosition?.y || event.clientY);
+                    lastDragPosition = { x: event.clientX, y: event.clientY };
+
+                    if (Math.abs(deltaX) > 0 || Math.abs(deltaY) > 0) {
+                        const sensitivity = 0.5; // Adjust based on desired scrolling speed
+
+                        // Get the camera
+                        const camera = graphInstance.camera();
+
+                        // Calculate the right and up vectors for the camera
+                        const cameraDirection = new Vector3();
+                        camera.getWorldDirection(cameraDirection);
+                        const cameraRight = new Vector3();
+                        cameraRight.crossVectors(camera.up, cameraDirection).normalize();
+                        const cameraUp = new Vector3();
+                        cameraUp.crossVectors(cameraDirection, cameraRight).normalize();
+
+                        // Calculate movement deltas
+                        const moveRight = cameraRight.multiplyScalar(deltaX * sensitivity);
+                        const moveUp = cameraUp.multiplyScalar(deltaY * sensitivity);
+
+                        // Calculate the new camera position
+                        const newPosition = new Vector3().addVectors(camera.position, moveRight).add(moveUp);
+
+                        // Use graphInstance.cameraPosition to update the camera
+                        graphInstance.cameraPosition(
+                            newPosition, // New position
+                            { x: newPosition.x + cameraDirection.x, y: newPosition.y + cameraDirection.y, z: newPosition.z + cameraDirection.z }, // LookAt: Maintain focus in the same direction
+                            0 // Immediate transition
+                        );
+                    }
+                }
+            };
+
+            const onMouseUp = (event: MouseEvent) => {
+                if (!dragStart) return; // Ensure dragStart is initialized
+                console.log('MouseUp', { x: event.clientX, y: event.clientY });
+                const timeElapsed = Date.now() - dragStart.time;
+
+                if (isDragging && timeElapsed > 200) { // Consider it a drag if the time elapsed is more than 200ms
+                    // Drag end logic here (if any)
+                } else {
+                    // It's a click
+                    console.log('Click detected');
+                    const clickedNode = node as { x: number; y: number; z: number };
+                    const distance = 85;
+                    const distRatio = 1 + distance / Math.hypot(clickedNode.x, clickedNode.y, clickedNode.z);
+
+                    const newPos = (clickedNode).x || clickedNode.y || clickedNode.z
+                        ? {
+                            x: clickedNode.x * distRatio,
+                            y: clickedNode.y * distRatio,
+                            z: clickedNode.z * distRatio
+                        }
+                        : { x: 0, y: 0, z: distance };
+
+                    graphInstance.cameraPosition(
+                        newPos,
+                        undefined,
+                        500
+                    );
+                }
+
+                isDragging = false;
+                dragStart = null;
+                lastDragPosition = null;
+            };
+
+            nodeEl.addEventListener('mousedown', onMouseDown, true);
+            window.addEventListener('mousemove', onMouseMove, true);
+            window.addEventListener('mouseup', onMouseUp, true);
 
             const sprite = new CSS3DSprite(nodeEl);
             sprite.scale.set(0.1, 0.1, 0.1);

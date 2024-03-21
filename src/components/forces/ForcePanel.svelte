@@ -18,25 +18,28 @@
 	const flyParams = { x: -100, duration: 500 };
 
 	const savedValue = localStorage.getItem('linksPercentile');
-    let savedPercentile = savedValue ? JSON.parse(savedValue) : 0.5;
-    let linksPercentileSlider = new Slider<number>(
-        'linksPercentile',
-        'Links Percentile',
-        'Adjusts the percentile of links filtered.',
-        savedPercentile, 
+	let savedPercentile = savedValue ? JSON.parse(savedValue) : 0.5;
+	let linksPercentileSlider = new Slider<number>(
+		'linksPercentile',
+		'Links Percentile',
+		'Adjusts the percentile of links filtered.',
+		savedPercentile,
 		{
-            min: 0,
-            max: 1,
-            precision: 3,
-            scaleType: 'linear'
-        }
-    );
+			min: 0,
+			max: 1,
+			precision: 3,
+			scaleType: 'linear'
+		}
+	);
 
-    function updateLinksPercentile() {
-        const originalValue = Slider.calculateOriginalValue(linksPercentileSlider.value, linksPercentileSlider.config);
-        linksPercentile.set(originalValue);
-        localStorage.setItem('linksPercentile', JSON.stringify(originalValue));
-    }
+	function updateLinksPercentile() {
+		const originalValue = Slider.calculateOriginalValue(
+			linksPercentileSlider.value,
+			linksPercentileSlider.config
+		);
+		linksPercentile.set(originalValue);
+		localStorage.setItem('linksPercentile', JSON.stringify(originalValue));
+	}
 
 	let easterEggActive = Math.random() < 0.1;
 </script>
@@ -94,10 +97,18 @@
 	/* @import 'src/components/forces/forceStyles.css'; */
 
 	.force-panel {
+		/* background-color: rgba(255, 193, 135, 0.719); */
+		color: white;
+		width: 25%;
 		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
+		position: absolute; /* or 'fixed' if you want it to stay in place on scroll */
+		right: 0;
+		top: 0;
+		z-index: 0;
 	}
+	
 	.force-clickable {
 		cursor: pointer;
 		color: inherit;
@@ -108,5 +119,4 @@
 		display: inline-flex;
 		align-items: center;
 	}
-
 </style>

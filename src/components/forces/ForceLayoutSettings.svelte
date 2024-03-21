@@ -6,8 +6,9 @@
 	import { defaultForceAtlasSettings } from './defaultGraphSettings';
 	import { updateForceSettings } from '../graph/ThreeGraphUpdate';
 	import type { ForceLayoutSettings } from 'graphology-layout-force';
+	import { onMount } from 'svelte';
 
-	const loadedSettings = localStorage.getItem('layoutForceSettings');
+	const loadedSettings = localStorage.getItem('layoutForce3DSettings');
 	const initialSettings = loadedSettings ? JSON.parse(loadedSettings) : defaultForceAtlasSettings;
 
 	let sliders: Slider<ForceLayoutSettings>[] = [
@@ -29,8 +30,8 @@
 			'Higher repulsion spreads nodes further apart, lower brings them closer.',
 			initialSettings.repulsion,
 			{
-				min: 0.000001,
-				max: 10,
+				min: 0.01,
+				max: 100,
 				precision: 9,
 				scaleType: 'log'
 			}
@@ -84,6 +85,10 @@
 		forcePanelSettings.set(settings);
 		updateForceSettings(settings);
 	}
+
+	onMount(() => {
+		updateSettings();
+	});
 
 	export let easterEggActive: boolean;
 </script>

@@ -123,14 +123,12 @@
 	.slider::-webkit-slider-thumb {
 	    -webkit-appearance: none;
 	    margin-top: -6px;
-	    /* Adjust based on the slider height to align properly */
 	    width: var(--slider-thumb-width);
 	    height: var(--slider-thumb-height);
 	    background: var(--slider-thumb-background);
 	    border: var(--slider-thumb-border);
 	    border-radius: var(--slider-thumb-border-radius);
 	    box-shadow: var(--slider-thumb-box-shadow);
-	    z-index: 2;
 	    cursor: pointer;
 	}
 
@@ -141,7 +139,6 @@
 	    border: var(--slider-thumb-border);
 	    border-radius: var(--slider-thumb-border-radius);
 	    box-shadow: var(--slider-thumb-box-shadow);
-	    z-index: 2;
 	    cursor: pointer;
 	}
 
@@ -152,6 +149,5 @@
 	    border: var(--slider-thumb-border);
 	    border-radius: var(--slider-thumb-border-radius);
 	    box-shadow: var(--slider-thumb-box-shadow);
-	    z-index: 2;
 	    cursor: pointer;
 	}

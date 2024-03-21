@@ -10,25 +10,25 @@
 <button on:click={handleForces} class="forces-button">Forces</button>
 
 <style>
-	.forces-button {
-		color: #fff;
-		padding: 3px 8px;
-		margin-top: -1px;
-		margin-right: 1px;
-		background-color: #9156f0;
-		font-size: 0.9em;
-		border: none;
-		border-radius: 4px;
-		cursor: pointer;
-		transition: background-color 0.3s ease;
-		outline: none; /* Removes the default focus outline */
-	}
+    .forces-button {
+        color: #fff;
+        padding: 3px 8px;
+        margin-top: -7px;
+        margin-right: -4px;
+        background-color: transparent;
+        font-size: 0.7em;
+        border: 2px solid #9156f096; /* Updated border style */
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        outline: none; /* Removes the default focus outline */
+    }
 
-	.forces-button:hover {
-		background-color: #a06ef2; /* Slightly lighter purple on hover */
-	}
+    .forces-button:hover {
+        border-color: #a16ef2c2; /* Slightly lighter purple on hover */
+    }
 
-	.forces-button:focus {
-		box-shadow: none
-	}
+    .forces-button:focus {
+        box-shadow: none
+    }
 </style>

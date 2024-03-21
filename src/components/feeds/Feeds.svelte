@@ -27,6 +27,8 @@
 	import '$lib/updates/updates';
 	import axios from 'axios';
 	import { clearGraph } from '../graph/ThreeGraphUpdate';
+	import ForcePanel from '../forces/ForcePanel.svelte';
+	import ForcesButton from '../forces/ForcesButton.svelte';
 
 	let feeds: FeedWithUnreadStories[] = [];
 	// let selectedFeeds: FeedWithUnreadStories[] = []; // Track selected feeds
@@ -217,28 +219,28 @@
 		selectedFeedIds.set(new Set());
 		clearGraph();
 	}
+
+	let showForcePanel = false;
+
+	function toggleForcePanel() {
+		showForcePanel = !showForcePanel;
+	}
 </script>
 
 <div class="feeds-wrapper">
 	<div class="feeds-container {$isLoadingFeeds ? 'loading' : ''}" class:dark={$theme === 'dark'}>
 		{#if $isLoadingFeeds}
-			<h1>Feeds</h1>
 			<div class="spinner" aria-label="Loading feeds"></div>
 		{:else}
-			<button
-				class="feed-item"
-				on:click={toggleSelectAll}
-				style="color: #fff; padding: 9px 20px; margin-top: 7px; background-color: #9156f0;"
-			>
+			<button class="feed-item" on:click={toggleSelectAll}>
 				<div class="feed-item-content">{selectAll ? 'Select All' : 'Unselect All'}</div>
 			</button>
-
 			{#each feeds as feed}
 				<button
 					class="feed-item"
 					class:selected={$selectedFeedIds.has(feed.id.toString())}
 					on:click={() => handleFeedClick(feed)}
-					style="background-color: {feed.color};"
+					style="--neon-glow-color: {feed.color}; --neon-glow-subtle: {feed.color}77; --neon-glow-strong: {feed.color}E6;"
 				>
 					<div class="feed-item-content">{feed.feed_title}</div>
 					<div class="unread-count">{feed.nt}</div>
@@ -247,6 +249,13 @@
 		{/if}
 	</div>
 </div>
+
+<div class="buttons-container">
+	<ForcesButton on:toggleForcePanel={toggleForcePanel} />
+</div>
+{#if showForcePanel}
+	<ForcePanel />
+{/if}
 
 <!-- {#if latestSelectedFeed}
 	{#if $isLoadingArticles}
@@ -257,91 +266,76 @@
 {/if} -->
 
 <style>
-	.dark h1 {
-		color: white;
-	}
-
-	.spinner {
-		border: 4px solid rgba(0, 0, 0, 0.1);
-		width: 36px;
-		height: 36px;
-		border-radius: 50%;
-		border-left-color: #09f;
-		animation: spin 1s linear infinite;
-		/* margin: auto; */
-		margin-left: 10px;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	.feed-item {
-		width: 250px; /* Fixed width */
-		text-align: left;
-		transition:
-			background-color 0.3s ease,
-			box-shadow 0.3s ease;
-		padding: 10px 15px;
-		font-family: 'Roboto', sans-serif;
-		font-size: 16px;
-		color: #333;
-		border: none;
-		background-color: #fff;
-		border-radius: 5px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		cursor: pointer;
-		position: relative;
-		overflow: hidden;
-		margin-bottom: 5px; /* Space between items */
+	.buttons-container {
 		display: flex;
-		justify-content: space-between;
+		justify-content: flex-end;
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		z-index: 1;
+	}
+
+	.buttons-container :global(button) {
+		margin-left: 10px; /* Adds margin to the left of each button */
+		flex: 0 0 auto; /* Prevents the buttons from growing or shrinking */
+	}
+
+	.buttons-container :global(button:first-child) {
+		margin-left: 0; /* Removes left margin from the first button */
+	}
+
+	:root {
+		--neon-glow-color: #0ff;
+		--neon-glow-subtle: rgba(0, 255, 255, 0.6);
+		--neon-glow-strong: rgba(0, 255, 255, 0.9);
+		--button-padding: 0px 5px;
+		--button-font-size: 1rem;
+	}
+
+	.feeds-wrapper {
+		display: inline-block;
+		max-height: 100vh;
+		overflow: hidden;
+	}
+
+	.feeds-container {
+		overflow-y: auto;
+		overflow-x: hidden;
+		max-height: 100vh;
+	}
+
+	.feeds-container.loading {
+		display: flex;
+		justify-content: center;
 		align-items: center;
 	}
 
-	.feed-item.selected {
-		transform: translateX(-2px); /* Retract the button 2px to the left */
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+	.feed-item {
+		padding: var(--button-padding);
+		font-size: var(--button-font-size);
+		background-color: transparent;
+		color: rgba(255, 255, 255, 0.7);
+		border: 1px solid transparent;
 		transition:
-			transform 0.2s ease,
-			box-shadow 0.2s ease; /* Smooth transition for the transform and shadow */
-	}
-
-	.feed-item.selected::after {
-		content: '';
-		position: absolute;
-		top: -1px; /* Adjust these values to match the border size */
-		left: -1px;
-		right: -1px;
-		bottom: -1px;
-		z-index: -1;
-		/* background: linear-gradient(to right, rgba(208, 208, 208, 0.5), rgba(208, 208, 208, 0.5)); */
-		border-radius: 3px; /* Match the border-radius of .feed-item if any */
-	}
-
-	.feed-item::after {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
+			color 0.3s ease,
+			border-color 0.3s ease,
+			box-shadow 0.3s ease;
+		cursor: pointer;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 		width: 100%;
-		height: 100%;
-		background: radial-gradient(circle at left, rgba(255, 255, 255, 0.5), transparent);
-		pointer-events: none;
-		opacity: 0;
-		transition: opacity 0.5s ease-in-out;
-		z-index: 1; /* Adjusted to ensure visibility */
+		margin-bottom: 5px;
+		max-width: 250px;
 	}
 
-	.feed-item:hover::after {
-		opacity: 1; /* Show the hover effect */
-	}
-
-	.feed-item-content {
-		z-index: 2; /* Ensure text is above the hover effect */
-		position: relative; /* Required for z-index to take effect */
+	.feed-item:hover,
+	.feed-item.selected {
+		color: var(--neon-glow-color);
+		border-color: var(--neon-glow-subtle);
+		box-shadow:
+			0 0 5px var(--neon-glow-subtle),
+			0 0 10px var(--neon-glow-subtle) inset;
 	}
 
 	.unread-count {
@@ -355,46 +349,19 @@
 		position: relative; /* Required for z-index to take effect */
 	}
 
-	.feed-item:focus {
-		outline: none;
-		/* box-shadow: 0 0 0 1px rgba(0, 123, 255, 0.5); */
+	.spinner {
+		border: 4px solid rgba(0, 0, 0, 0.1);
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		border-left-color: #09f;
+		animation: spin 1s linear infinite;
+		margin-left: 10px;
 	}
 
-	.feeds-wrapper {
-		display: inline-block; /* Or width: fit-content; */
-		max-height: 100vh;
-		overflow: hidden; /* Prevents the wrapper from expanding beyond the width of its content */
-	}
-
-	.feeds-container {
-		overflow-y: auto;
-		overflow-x: hidden; /* Prevent horizontal scrolling */
-		max-height: 100vh;
-	}
-
-	.feeds-container.loading {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
-
-	.feeds-container::-webkit-scrollbar {
-		width: 4px; /* Make the scrollbar thinner */
-	}
-
-	.feeds-container::-webkit-scrollbar-track {
-		background: transparent; /* Make the track transparent */
-	}
-
-	.feeds-container::-webkit-scrollbar-thumb {
-		background: transparent; /* Make the thumb transparent by default */
-	}
-
-	.feeds-container:hover::-webkit-scrollbar-thumb {
-		background: rgba(136, 136, 136, 0.5); /* Show the thumb on hover with transparency */
-	}
-
-	.feeds-container::-webkit-scrollbar-thumb:hover {
-		background: rgba(85, 85, 85, 0.5); /* Darker color on thumb hover */
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 </style>
