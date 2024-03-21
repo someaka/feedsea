@@ -248,13 +248,13 @@
 	</div>
 </div>
 
-{#if latestSelectedFeed}
+<!-- {#if latestSelectedFeed}
 	{#if $isLoadingArticles}
 		<div class="spinner" aria-label="Loading articles"></div>
 	{:else}
 		<ArticlesPanel {latestSelectedFeed} />
 	{/if}
-{/if}
+{/if} -->
 
 <style>
 	.dark h1 {
