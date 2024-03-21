@@ -75,6 +75,7 @@ class Articles {
 
 
     private preprocessHtml(html: string): string {
+        html = html.replace(/<a href="([^"]+)"/g, '<a href="$1" target="_blank"');
         // Remove style tags and their content
         html = html.replace(/<style[^>]*>.*?<\/style>/gs, '');
         // Remove link tags for stylesheets
